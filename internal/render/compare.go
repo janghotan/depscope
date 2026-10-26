@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 const (

@@ -1,0 +1,100 @@
+name: Bug report
+description: Report a defect, crash, or inaccurate result in DepScope
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem.
+
+        **Do not use this form for a security vulnerability in DepScope itself.** Follow [SECURITY.md](https://github.com/janghotan/depscope/blob/main/SECURITY.md) instead.
+
+        Remove credentials, private package names, internal hostnames, and personal data before submitting.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      description: Where did you observe the problem?
+      options:
+        - Terminal CLI
+        - Interactive terminal app (TUI)
+        - HTTP API
+        - Website
+        - Offline demo
+        - Project or inventory scan
+        - Build, tests, or tooling
+        - Documentation
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: DepScope version or commit
+      description: Output of `depscope version`, or the commit SHA you built.
+      placeholder: depscope 0.4.0-dev
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, architecture, and Go or Node version.
+      placeholder: Linux amd64, Go 1.26.10
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact command or request. Use synthetic or public package names only.
+      placeholder: |
+        1. Run `depscope scan lodash@4.17.21`
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect, and why? Reference the documented contract if the expectation comes from the docs.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: The report status, error message, or exit code you observed. Paste only redacted output.
+    validations:
+      required: true
+  - type: dropdown
+    id: status
+    attributes:
+      label: Report status shown
+      description: The `status` field or terminal status label, if the problem involves a scan result.
+      options:
+        - Not applicable
+        - clean
+        - findings
+        - incomplete
+        - failed
+        - cancelled
+    validations:
+      required: false
+  - type: textarea
+    id: checks
+    attributes:
+      label: Commands you ran
+      description: Verification commands you executed before reporting, if any.
+      placeholder: |
+        go test -count=1 ./...
+        pnpm check:contract
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: This report contains no secrets, private source code, or personal data.
+          required: true
+        - label: This is not a security vulnerability in DepScope itself.
+          required: true

@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"depscope/internal/engine"
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/engine"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 type parsedProject struct {

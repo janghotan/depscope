@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/api"
+	"github.com/janghotan/depscope/internal/api"
 )
 
 func TestDefaultConfigIsUsable(t *testing.T) {

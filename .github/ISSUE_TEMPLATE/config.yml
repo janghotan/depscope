@@ -1,0 +1,9 @@
+# issue 配置：引导安全问题与一般问题走正确渠道。
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability in DepScope
+    url: https://github.com/janghotan/depscope/security/policy
+    about: Please read SECURITY.md and use private vulnerability reporting instead of a public issue.
+  - name: Read the limitations and risk rules
+    url: https://github.com/janghotan/depscope/blob/main/docs/risk-rules.md
+    about: Check what DepScope does and does not check before reporting an expected result as a bug.

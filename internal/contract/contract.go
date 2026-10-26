@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"sync"
 
-	"depscope/internal/model"
-	"depscope/schemas"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/schemas"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )

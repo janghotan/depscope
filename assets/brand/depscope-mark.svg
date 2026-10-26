@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 144" width="560" height="144" role="img" aria-labelledby="t d">
+  <title id="t">DepScope mark: inspectable package, dependency trail, and check coverage</title>
+  <desc id="d">DepScope mark: inspectable package, dependency trail, and check coverage</desc>
+  <rect x="8" y="8" width="128" height="128" rx="18" fill="#0d1519" stroke="#33434a" stroke-width="2"/>
+
+  <g transform="translate(18,18) scale(4.5)">
+    <circle cx="12" cy="12" r="10.6" fill="none" stroke="#74b997" stroke-width="1.9"/>
+    <path d="M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2" stroke="#74b997" stroke-width="1.9" stroke-linecap="round"/>
+    <rect x="8.9" y="8.9" width="6.2" height="6.2" fill="none" stroke="#e5eceb" stroke-width="1.6"/>
+    <path d="M12 12v5.4" stroke="#f1855c" stroke-width="2.1" stroke-linecap="round"/>
+  </g>
+
+  <rect x="144" y="8" width="128" height="128" rx="18" fill="#74b997" stroke="#33434a" stroke-width="2"/>
+
+  <g transform="translate(154,18) scale(4.5)">
+    <circle cx="12" cy="12" r="10.6" fill="none" stroke="#0d1519" stroke-width="1.9"/>
+    <path d="M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2" stroke="#0d1519" stroke-width="1.9" stroke-linecap="round"/>
+    <rect x="8.9" y="8.9" width="6.2" height="6.2" fill="none" stroke="#0d1519" stroke-width="1.6"/>
+    <path d="M12 12v5.4" stroke="#f1855c" stroke-width="2.1" stroke-linecap="round"/>
+  </g>
+
+  <rect x="280" y="8" width="128" height="128" rx="18" fill="#ffffff" stroke="#33434a" stroke-width="2"/>
+
+  <g transform="translate(290,18) scale(4.5)">
+    <circle cx="12" cy="12" r="10.6" fill="none" stroke="#74b997" stroke-width="1.9"/>
+    <path d="M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2" stroke="#74b997" stroke-width="1.9" stroke-linecap="round"/>
+    <rect x="8.9" y="8.9" width="6.2" height="6.2" fill="none" stroke="#0d1519" stroke-width="1.6"/>
+    <path d="M12 12v5.4" stroke="#f1855c" stroke-width="2.1" stroke-linecap="round"/>
+  </g>
+
+  <rect x="416" y="8" width="128" height="128" rx="18" fill="none" stroke="#33434a" stroke-width="2"/>
+
+  <g transform="translate(426,18) scale(4.5)">
+    <circle cx="12" cy="12" r="10.6" fill="none" stroke="#74b997" stroke-width="1.9"/>
+    <path d="M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2" stroke="#74b997" stroke-width="1.9" stroke-linecap="round"/>
+    <rect x="8.9" y="8.9" width="6.2" height="6.2" fill="none" stroke="#e5eceb" stroke-width="1.6"/>
+    <path d="M12 12v5.4" stroke="#f1855c" stroke-width="2.1" stroke-linecap="round"/>
+  </g>
+
+</svg>

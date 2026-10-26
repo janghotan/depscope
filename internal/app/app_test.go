@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/engine"
-	"depscope/internal/inventory"
-	"depscope/internal/model"
-	"depscope/internal/project"
+	"github.com/janghotan/depscope/internal/engine"
+	"github.com/janghotan/depscope/internal/inventory"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/project"
 )
 
 var testTime = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)

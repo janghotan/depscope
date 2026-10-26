@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"depscope/internal/app"
+	"github.com/janghotan/depscope/internal/app"
 )
 
 // Run 启动交互界面。调用方必须确认输入与输出都是终端。

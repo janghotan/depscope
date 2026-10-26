@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"depscope/internal/model"
-	"depscope/internal/render"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/render"
 )
 
 // View 渲染当前界面；颜色关闭时不产生任何 ANSI 转义序列。

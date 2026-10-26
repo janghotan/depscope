@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"depscope/internal/contract"
-	"depscope/internal/demo"
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/contract"
+	"github.com/janghotan/depscope/internal/demo"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 func TestScenariosAreDeterministicAndContractValid(t *testing.T) {

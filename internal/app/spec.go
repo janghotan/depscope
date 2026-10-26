@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 // ParsePackageSpec 解析交互表单与命令行使用的包标识。

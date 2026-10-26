@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 const (

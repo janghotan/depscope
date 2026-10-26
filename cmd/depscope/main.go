@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"depscope/internal/cli"
+	"github.com/janghotan/depscope/internal/cli"
 )
 
 var version = "0.4.0-dev"

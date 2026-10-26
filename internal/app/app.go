@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strings"
 
-	"depscope/internal/inventory"
-	"depscope/internal/model"
-	"depscope/internal/project"
+	"github.com/janghotan/depscope/internal/inventory"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/project"
 )
 
 // PackageRequest 描述一次单包扫描请求；Version 为空时解析最新版本。

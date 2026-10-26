@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" role="img" aria-labelledby="t d">
+  <title id="t">DepScope 架构 — 一个 Go 安全引擎，三种界面，一份规范报告</title>
+  <desc id="d">DepScope 架构 — 一个 Go 安全引擎，三种界面，一份规范报告</desc>
+  <defs>
+    <marker id="ov-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#394a51"/>
+    </marker>
+    <marker id="ov-arrow-green" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#74b997"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="800" fill="#0d1519"/>
+  <rect x="0" y="0" width="1200" height="800" fill="none" stroke="#33434a" stroke-width="1"/>
+  <g>
+
+  <g transform="translate(40,38) scale(2.1)">
+    <circle cx="12" cy="12" r="10.6" fill="none" stroke="#74b997" stroke-width="1.9"/>
+    <path d="M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2" stroke="#74b997" stroke-width="1.9" stroke-linecap="round"/>
+    <rect x="8.9" y="8.9" width="6.2" height="6.2" fill="none" stroke="#e5eceb" stroke-width="1.6"/>
+    <path d="M12 12v5.4" stroke="#f1855c" stroke-width="2.1" stroke-linecap="round"/>
+  </g>
+
+    <text x="112" y="62" font-family="'Inter','Noto Sans','Helvetica Neue',Arial,sans-serif" font-size="27" font-weight="700" fill="#e5eceb">DepScope 架构</text>
+    <text x="112" y="84" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="13.5" fill="#91a1a6">一个 Go 安全引擎，三种界面，一份规范报告</text>
+  </g>
+  <text x="40" y="128" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" letter-spacing="2.2" fill="#91a1a6">界面层</text>
+  <rect x="40" y="142" width="358" height="82" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="40" y="142" width="4" height="82" fill="#74b997"/>
+  <text x="58" y="170" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="15" font-weight="700" fill="#e5eceb">终端 CLI + TUI</text>
+  <text x="58" y="188.5" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" fill="#b8c5c8">depscope · Bubble Tea</text>
+  <rect x="421" y="142" width="358" height="82" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="421" y="142" width="4" height="82" fill="#f0c46a"/>
+  <text x="439" y="170" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="15" font-weight="700" fill="#e5eceb">HTTP API</text>
+  <text x="439" y="188.5" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" fill="#b8c5c8">depscope-api · 仅本地</text>
+  <rect x="802" y="142" width="358" height="82" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="802" y="142" width="4" height="82" fill="#74b997"/>
+  <text x="820" y="170" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="15" font-weight="700" fill="#e5eceb">网站</text>
+  <text x="820" y="188.5" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" fill="#b8c5c8">Next.js + TypeScript</text>
+  <path d="M140 224 L140 290" stroke="#74b997" stroke-width="1.6" fill="none" marker-end="url(#ov-arrow-green)"/>
+  <path d="M320 224 L320 290" stroke="#394a51" stroke-width="1.6" fill="none" marker-end="url(#ov-arrow-rule)"/>
+  <path d="M1030 224 L1030 290" stroke="#394a51" stroke-width="1.6" fill="none" marker-end="url(#ov-arrow-rule)"/>
+  <rect x="40" y="300" width="1120" height="66" rx="3" fill="#152229" stroke="#74b997" stroke-width="1.6"/>
+  <text x="72" y="328" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" letter-spacing="2" fill="#74b997">应用服务层</text>
+  <text x="72" y="350" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="15" font-weight="700" fill="#e5eceb">app.Service</text>
+  <text x="240" y="350" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="13" fill="#91a1a6">LiveService · 实时与演示路径相互隔离</text>
+  <rect x="40" y="408" width="720" height="214" rx="3" fill="#152229" stroke="#74b997" stroke-width="1.6"/>
+  <text x="64" y="438" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" letter-spacing="2" fill="#74b997">共享安全引擎（Go）</text>
+  <circle cx="80" cy="455" r="4.5" fill="#74b997"/>
+  <text x="100" y="460" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">包版本解析</text>
+  <text x="330" y="460" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" fill="#91a1a6">只读取注册表元数据</text>
+  <circle cx="80" cy="493" r="4.5" fill="#74b997"/>
+  <text x="100" y="498" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">检查装配</text>
+  <text x="330" y="498" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" fill="#91a1a6">成功 · 失败 · 不可用</text>
+  <circle cx="80" cy="531" r="4.5" fill="#74b997"/>
+  <text x="100" y="536" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">风险评估</text>
+  <text x="330" y="536" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" fill="#91a1a6">确认漏洞与启发式信号分离</text>
+  <circle cx="80" cy="569" r="4.5" fill="#74b997"/>
+  <text x="100" y="574" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">报告装配</text>
+  <text x="330" y="574" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" fill="#91a1a6">确定性排序</text>
+  <rect x="792" y="408" width="368" height="214" rx="3" fill="#152229" stroke="#33434a" stroke-width="1.5"/>
+  <text x="816" y="438" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" letter-spacing="2" fill="#91a1a6">已批准的数据源</text>
+  <rect x="816" y="454" width="320" height="44" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="816" y="454" width="4" height="44" fill="#394a51"/>
+  <text x="834" y="482" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">npm Registry</text>
+  <text x="834" y="499.5" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="11.5" fill="#b8c5c8">包元数据</text>
+  <rect x="816" y="508" width="320" height="44" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="816" y="508" width="4" height="44" fill="#394a51"/>
+  <text x="834" y="536" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">PyPI</text>
+  <text x="834" y="553.5" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="11.5" fill="#b8c5c8">包元数据</text>
+  <rect x="816" y="562" width="320" height="44" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="816" y="562" width="4" height="44" fill="#74b997"/>
+  <text x="834" y="590" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">OSV.dev</text>
+  <text x="834" y="607.5" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="11.5" fill="#b8c5c8">安全公告</text>
+  <path d="M780 515 L792 515" stroke="#74b997" stroke-width="1.6" fill="none" marker-end="url(#ov-arrow-green)"/>
+  <rect x="40" y="654" width="1120" height="62" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <text x="64" y="680" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" letter-spacing="2" fill="#91a1a6">规范报告</text>
+  <text x="64" y="702" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="15" font-weight="700" fill="#e5eceb">ScanReport v1 · JSON Schema 1.0.0</text>
+  <text x="560" y="702" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" fill="#b8c5c8">由 internal/contract.ValidateReport 校验</text>
+  <path d="M760 622 L760 646" stroke="#74b997" stroke-width="1.6" fill="none" marker-end="url(#ov-arrow-green)"/>
+  <rect x="40" y="726" width="1120" height="0.2" fill="none"/>
+  <line x1="40" y1="742" x2="1160" y2="742" stroke="#394a51" stroke-width="1"/>
+  <text x="40" y="768" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" fill="#91a1a6">离线演示 · 确定性 · 无网络请求</text>
+</svg>

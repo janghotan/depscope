@@ -5,10 +5,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"depscope/internal/app"
-	"depscope/internal/inventory"
-	"depscope/internal/model"
-	"depscope/internal/project"
+	"github.com/janghotan/depscope/internal/app"
+	"github.com/janghotan/depscope/internal/inventory"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/project"
 )
 
 type scanKind int

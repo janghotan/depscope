@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"depscope/internal/engine"
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/engine"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 // Format 标识本阶段支持的清单与锁文件组合。

@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"depscope/internal/api"
-	"depscope/internal/app"
+	"github.com/janghotan/depscope/internal/api"
+	"github.com/janghotan/depscope/internal/app"
 )
 
 func main() {

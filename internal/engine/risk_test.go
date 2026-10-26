@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"depscope/internal/engine"
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/engine"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 func TestConfirmedAdvisoryRiskScore(t *testing.T) {

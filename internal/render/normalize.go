@@ -1,6 +1,6 @@
 package render
 
-import "depscope/internal/model"
+import "github.com/janghotan/depscope/internal/model"
 
 // sanitizeDocument 复制并清理展示文档中的不可信文本，避免污染原始报告。
 func sanitizeDocument(document Document) Document {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 // RulesRiskEvaluator 使用固定、可解释的规则生成风险优先级分数。

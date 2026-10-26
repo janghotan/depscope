@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/engine"
-	"depscope/internal/fetch"
-	"depscope/internal/model"
-	"depscope/internal/sources/osv"
+	"github.com/janghotan/depscope/internal/engine"
+	"github.com/janghotan/depscope/internal/fetch"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/sources/osv"
 )
 
 const affectedFixture = `{

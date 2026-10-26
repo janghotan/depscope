@@ -1,50 +1,71 @@
-# DepScope
+<p align="center">
+  <picture>
+    <img src="assets/brand/depscope-wordmark.svg" alt="DepScope — dependency risk, explained" width="420" />
+  </picture>
+</p>
 
-**Dependency risk, explained.**
+<p align="center">
+  <strong>A dependency security scanner for npm and PyPI that shows its evidence, its heuristics, and its blind spots.</strong>
+</p>
 
-DepScope scans npm and PyPI package releases and presents vulnerability evidence, review heuristics, and missing coverage in a terminal, local HTTP API, and website. It reads package metadata and advisory data; it never installs or executes the packages it scans.
+<p align="center">
+  <a href="README.zh-CN.md">简体中文</a> · <strong>English</strong> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#offline-demo">Offline demo</a> ·
+  <a href="#security-model">Security model</a> ·
+  <a href="#limitations">Limitations</a> ·
+  <a href="docs/architecture.md">Architecture</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
-> **Project status:** The CLI, Go engine, local API, and website are implemented. Public releases and redistribution are blocked until a license and canonical Go module path are selected. No hosted service is provided.
+---
 
-![DepScope terminal demo showing a synthetic vulnerability report](docs/assets/terminal-demo.png)
+DepScope answers one narrow question well: *what is known about this exact package release, and what was this scan unable to check?*
 
-*Captured from `depscope demo vulnerable`. The report is deterministic synthetic demo data, not a live package scan.*
+It scans npm and PyPI package releases through version-matched OSV.dev advisories, npm lifecycle-script declarations, and package-name similarity heuristics. Every report separates **confirmed vulnerabilities** from **heuristic review signals**, records the **status of every check**, and refuses to report `clean` when anything was skipped, unavailable, or failed.
 
-## Try the offline demo
+DepScope reads package metadata and advisory data. It never installs, imports, or executes the packages it scans, and it never runs lifecycle scripts.
 
-Requirements: Go 1.26.10 or later.
+> **Project status:** the shared Go engine, Bubble Tea terminal app, non-interactive CLI, local HTTP API, and Next.js website are implemented and tested locally. No hosted service exists and no release has been published. The repository is being prepared for its first public launch; see [Project status](#project-status).
 
-```sh
-go run ./cmd/depscope demo vulnerable
-```
+![DepScope terminal report from the offline demo: a synthetic npm package with confirmed findings](docs/assets/terminal-demo.png)
 
-This command makes no network requests. Other scenarios are `clean` and `install-scripts`; list them with `go run ./cmd/depscope demo list`.
+*Real output of `depscope demo vulnerable`, captured offline. Package names, advisory IDs, and timestamps are synthetic demo data — not a live scan.*
 
-## Quick start
+## Why DepScope
 
-Build and run the terminal CLI from a checkout:
+Most dependency checks collapse into a single verdict. A missing advisory looks identical to a clean package, and heuristics get reported as if they were verified facts.
 
-```sh
-go build -o bin/depscope ./cmd/depscope
-./bin/depscope scan lodash@4.17.21
-```
+DepScope instead keeps three things visibly separate:
 
-Live scans contact the npm Registry or PyPI and OSV.dev. You can also start the interactive terminal app with `./bin/depscope`, scan the current project with `./bin/depscope project`, or inspect the full command list with `./bin/depscope help`.
+| Layer | What it means | Where it comes from |
+| --- | --- | --- |
+| **Confirmed findings** | A known advisory affects the resolved version | OSV.dev, matched to the exact version |
+| **Heuristic warnings** | A reason to review, not proof of wrongdoing | npm lifecycle-script declarations, package-name similarity |
+| **Coverage** | Which checks ran, failed, or could not run | Every report carries per-check status, sources, and limitations |
 
-The local API and website can be started in separate terminals:
+A scan that could not read OSV is not a scan that found nothing. DepScope reports it as `incomplete`.
 
-```sh
-go run ./cmd/depscope-api
-```
+## Features
 
-```sh
-cd web
-pnpm install --frozen-lockfile
-cp .env.example .env.local
-pnpm dev
-```
+- **Interactive terminal UI (Bubble Tea)** — menu-driven scans, comparisons, project scans, and global inventory, with real progress from the engine, cancellable scans, and keyboard-only navigation.
+- **Single-package scans** — `npm` and `PyPI` releases, optionally pinned to an exact version, from the CLI or TUI.
+- **Project dependency scans** — npm `package.json` + `package-lock.json` (lockfile version 2 or 3) resolved through the lockfile graph, and Python `requirements.txt` with exact `==`/`===` pins.
+- **Global inventory** — read-only listing of top-level global npm packages and the selected Python interpreter's pip environment.
+- **Comparison** — scan two packages side by side with independent side failures preserved.
+- **Local HTTP API** — `GET /healthz`, `POST /api/v1/scan`, and `POST /api/v1/compare`, returning canonical `ScanReport` v1 values validated before they leave the process.
+- **Website** — Next.js app for single scans, two-package comparison, and offline demo records that make no API requests.
+- **Offline demo** — deterministic, network-free scenarios that run entirely through the shared engine, clearly labelled on every surface.
+- **Shared report contract** — one JSON Schema (`schemas/scan-report.v1.schema.json`) drives Go validation and generated TypeScript types, so the terminal, API, and website interpret status the same way.
 
-Open <http://localhost:3000>. The API listens on `127.0.0.1:8080` by default; check it with `curl -fsS http://127.0.0.1:8080/healthz`. Website configuration is server-side and documented in [web/README.md](web/README.md). The offline web demo works without the API.
+## Requirements
+
+| Component | Requirement |
+| --- | --- |
+| Go CLI / API | Go 1.26.10 or later (matching `go.mod`) |
+| Website | Node.js 24.22.0 (`.nvmrc`) and pnpm 12.14.0 |
+| Live scans | Outbound HTTPS to the npm Registry, PyPI, and OSV.dev |
+| Browser tests | Playwright-managed Chromium |
 
 ## Installation
 
@@ -57,34 +78,106 @@ go build -trimpath -o bin/depscope ./cmd/depscope
 go build -trimpath -o bin/depscope-api ./cmd/depscope-api
 ```
 
-For source builds, use a Go-supported platform. DepScope's verified release matrix targets Linux, macOS, and Windows on `amd64` and `arm64`; CI cross-compiles each target. Cross-compilation verifies that binaries build, not that every target has been runtime-tested.
+Verify the build:
+
+```sh
+./bin/depscope version
+./bin/depscope help
+```
+
+The verified release matrix targets Linux, macOS, and Windows on `amd64` and `arm64`; CI cross-compiles each target. Cross-compilation proves the binaries build — it is not runtime testing on every platform.
+
+### Run without building
+
+```sh
+go run ./cmd/depscope help
+go run ./cmd/depscope-api
+```
 
 ### Release binaries
 
-When maintainers publish a tagged release, `checksums.txt` will contain SHA-256 checksums for separate `depscope_cli_<version>_<os>_<arch>` and `depscope_api_<version>_<os>_<arch>` archives. Choose the CLI archive for everyday use and the API archive only if you need the local HTTP service. Verify your downloaded archive before extracting it:
+No release has been published yet. When maintainers publish a tagged release, `checksums.txt` will contain SHA-256 checksums for separate `depscope_cli_<version>_<os>_<arch>` and `depscope_api_<version>_<os>_<arch>` archives. Verify your download before extracting:
 
 ```sh
 sha256sum --check checksums.txt --ignore-missing
 ```
 
-On macOS, use `shasum -a 256 --check checksums.txt`; on Windows PowerShell, compare `(Get-FileHash .\depscope_*.zip -Algorithm SHA256).Hash` with the corresponding entry in `checksums.txt`. Use only the archive for your operating system and architecture. No release is published yet; binary distribution must wait for the license and canonical module path decisions.
+On macOS use `shasum -a 256 --check checksums.txt`; on Windows PowerShell compare `(Get-FileHash .\depscope_*.zip -Algorithm SHA256).Hash` with the matching `checksums.txt` entry. Distribution steps are documented in [release engineering](docs/release.md).
 
-Extract a Linux or macOS archive with `tar -xzf <archive>.tar.gz`, then place the binary from its extracted folder on your `PATH` (for example, `install <folder>/depscope "$HOME/.local/bin/depscope"`). On Windows, use `Expand-Archive <archive>.zip <destination>` in PowerShell and add the extracted folder to `PATH`. The API is distributed separately from the CLI.
+## Quick start
 
-## What it scans
+```sh
+# Build the terminal binary
+go build -trimpath -o bin/depscope ./cmd/depscope
 
-- **Single releases:** npm and PyPI package names, optionally pinned to one exact version.
-- **Project dependencies:** npm `package.json` with `package-lock.json` version 2 or 3; Python `requirements.txt` with exact `==` or `===` pins. npm lockfiles provide a dependency graph. Python project scans cover direct pins only.
-- **Global inventory:** top-level global npm packages and the selected Python interpreter's default pip environment, read-only.
-- **Risk signals:** version-matched OSV advisories, npm lifecycle-script declarations, and similarity against a small versioned package-name reference dataset.
-- **Surfaces:** Go CLI and interactive terminal app, a local Go HTTP API, and a Next.js website for single-package scans and comparisons.
-- **Offline demo:** deterministic synthetic reports shared by the CLI and curated website examples.
+# Scan one npm release (contacts the npm Registry and OSV.dev)
+./bin/depscope scan lodash@4.17.21
 
-Unsupported formats and unavailable checks are reported as incomplete or failed; they are never silently treated as clean. Project and inventory results are not exposed through the API or website because they do not yet have an approved wire representation.
+# Scan a PyPI release with an exact version
+./bin/depscope scan pypi:requests==2.31.0
 
-## Example report
+# Scan the current project's supported manifest and lockfile
+./bin/depscope project
 
-The excerpt below is from the `vulnerable` **demo fixture**. Package names, advisory identifiers, findings, and timestamps are synthetic.
+# Compare two packages side by side
+./bin/depscope compare lodash@4.17.21 minimist@1.2.5
+
+# Open the interactive terminal app
+./bin/depscope
+```
+
+Package syntax:
+
+| Form | Example | Meaning |
+| --- | --- | --- |
+| npm, latest | `lodash` | Resolve the latest npm release |
+| npm, exact version | `lodash@4.17.21` | Scan that exact npm release |
+| scoped npm | `@scope/package@1.0.0` | Scoped npm package |
+| PyPI, latest | `pypi:requests` | Resolve the latest PyPI release |
+| PyPI, exact version | `pypi:requests==2.31.0` | Scan that exact PyPI release |
+| explicit ecosystem | `npm:lodash` | Force the npm ecosystem |
+
+Version ranges, URLs, paths, and expressions are rejected rather than approximated. Omitting the version asks the source for the latest published release.
+
+All commands and exit codes:
+
+| Command | Purpose |
+| --- | --- |
+| `depscope` | Open the interactive terminal app |
+| `depscope scan <package>` | Scan one npm or PyPI package |
+| `depscope project [path]` | Scan a project directory (default: `.`) |
+| `depscope compare <left> <right>` | Compare two packages side by side |
+| `depscope inventory` | List global npm and Python packages |
+| `depscope demo [scenario]` | Run an offline deterministic demo |
+| `depscope demo list` | List demo scenarios |
+| `depscope help` | Show usage |
+| `depscope version` | Show the version |
+
+Global flags go before the command: `--no-color`, `--color=auto|always|never`, `--help`, and `--version`. Without a terminal, `depscope` prints help instead of starting the interactive app.
+
+| Exit code | Meaning |
+| --- | --- |
+| `0` | Command completed; report status was not `failed` or `cancelled` (an `incomplete` report still exits `0`) |
+| `1` | Operational failure, including a `failed` or `cancelled` scan |
+| `2` | Usage error: unknown command or flag, missing argument, or unknown demo scenario |
+| `130` | Interactive app interrupted with `ctrl+c` |
+
+## Offline demo
+
+The demo makes **no network requests** and uses deterministic synthetic data:
+
+```sh
+go run ./cmd/depscope demo list
+go run ./cmd/depscope demo vulnerable      # confirmed critical + medium advisories
+go run ./cmd/depscope demo install-scripts # lifecycle-script heuristic + deprecation context
+go run ./cmd/depscope demo clean           # all checks succeeded, no findings
+```
+
+Demo output is stable across runs: fixed timestamps, `DEMO-` identifiers, `depscope-demo` package names, `provider: "demo"` sources, and a non-empty demo notice. The website's demo records are separate validated fixtures and make no scan or comparison API requests.
+
+### Example output
+
+The excerpt below is from the `vulnerable` **demo fixture**; it is demonstration output, not a live scan result:
 
 ```text
 PACKAGE REPORT
@@ -93,38 +186,105 @@ Resolved version 2.0.0
 
   Data mode            DEMO
   Scanned at           2026-01-01T00:00:00Z
+  Sources              3 recorded
+
+[DEMO DATA] DEMO DATA: Deterministic synthetic results. No network requests were made; this is not a
+            real security assessment.
 
 ASSESSMENT
   Status               [FINDINGS]
   Completed checks     6 of 6 succeeded
   Confirmed findings   2
   Heuristic warnings   0
-  Highest severity     critical
+  Highest severity     [CRITICAL]
 ```
 
-Run `go run ./cmd/depscope demo vulnerable` for the full synthetic output. No real scan response is included in this README.
+Run `go run ./cmd/depscope demo vulnerable` for the complete synthetic report.
 
-## Risk methodology
+## How a scan works
 
-DepScope separates **confirmed** vulnerability findings from **heuristic** review signals. Confirmed findings require a version match from OSV.dev plus advisory evidence and a reference. Heuristics include declared npm lifecycle scripts and close package-name matches against a small, versioned seed list. A heuristic is a reason to review, not proof of malicious behavior.
+![How one DepScope scan works: package identity, metadata and advisory checks, evidence-based risk, report](assets/readme/depscope-scan-flow-en.svg)
 
-Severity is normalized from advisory metadata and CVSS values where available. `unknown` is not safe. Numeric risk values are deterministic prioritization scores, not probabilities of exploitation or maliciousness. Findings retain evidence, source references, and remediation details when provided by the source.
+1. **Package identity** — the ecosystem, canonical name, and optional exact version are validated before any request.
+2. **Metadata and advisory checks** — the npm Registry or PyPI returns release metadata, and OSV.dev is queried with the resolved version. Each check records a status: `succeeded`, `failed`, `unavailable`, or `skipped`.
+3. **Evidence-based risk** — confirmed findings require advisory evidence with a reference; heuristics are separate and never presented as proof. Risk scores from 0 to 100 are prioritization values, not probabilities.
+4. **Report** — findings, evidence, checks, sources, limitations, and a final status are assembled deterministically and validated against the canonical schema.
 
-Every report includes per-check outcomes, sources, and limitations. A missing, skipped, unavailable, or failed check prevents a `clean` status. See [risk and evidence rules](docs/risk-rules.md) for the exact rules and coverage boundaries.
+## Confirmed findings vs. heuristic warnings
 
-## API
+| | Confirmed finding | Heuristic warning |
+| --- | --- | --- |
+| **Basis** | Resolved version matched to an OSV.dev advisory with a reference | A declared npm lifecycle script, or a close package-name match |
+| **Meaning** | A known advisory affects this version | A reason to review — not evidence of malicious behavior |
+| **Severity** | Normalized from advisory metadata and CVSS where available | Fixed per rule (`low` for lifecycle scripts, `medium` for name similarity) |
+| **Score band** | 35–95 | 15–50 |
+| **Never** | Suppressed because a package looks popular or maintained | Presented as proof of compromise |
 
-The unauthenticated API is intended for local use or a separately secured network boundary. It serves live reports from the shared Go engine and does not store scan history.
+A heuristic critical signal (50) never outranks a confirmed high finding (80). Unknown severity stays unknown — it is never converted into `clean` or `low`. Full rules: [risk and evidence rules](docs/risk-rules.md).
 
-```sh
-curl -sS http://127.0.0.1:8080/api/v1/scan \
-  -H 'Content-Type: application/json' \
-  -d '{"ecosystem":"npm","name":"lodash","version":"4.17.21"}'
-```
+## Risk model overview
 
-Endpoints are `GET /healthz`, `POST /api/v1/scan`, and `POST /api/v1/compare`. The API applies request and body limits, timeouts, bounded concurrency, process-local rate limiting, and optional exact-origin CORS. The website calls it through same-origin server routes. See [API configuration and response semantics](docs/api.md).
+| Status | Meaning |
+| --- | --- |
+| `clean` | Every check succeeded, no findings exist, and at least one source is recorded |
+| `findings` | The scan completed and produced confirmed findings and/or heuristic warnings |
+| `incomplete` | At least one check failed, was unavailable, or was skipped; findings found so far are still reported |
+| `failed` | The scan could not establish package identity or resolve a version |
+| `cancelled` | The scan was cancelled before a result was available |
+
+Severity levels: `critical`, `high`, `medium`, `low`, `unknown`. Findings are ordered confirmed-first, then by severity, then by ID. Source and evidence limitations are recorded in the report rather than discarded.
+
+### Data sources
+
+| Source | Used for | Terms |
+| --- | --- | --- |
+| [npm Registry](https://registry.npmjs.org/) | Package metadata, lifecycle-script declarations, publication data | See the npm public registry documentation |
+| [PyPI](https://pypi.org/) | Package metadata and release information | See the PyPI terms of use and JSON API documentation |
+| [OSV.dev](https://osv.dev/) | Version-matched vulnerability advisories | See the OSV.dev usage documentation |
+
+DepScope uses these public services only for package metadata and advisories. It does not upload your source code, file contents, or project paths.
+
+## Security model: what a clean scan does and does not mean
+
+**A `clean` result is not a guarantee that a package is safe.** It means every check DepScope performed came back successfully and produced no findings.
+
+A scan can be incomplete because:
+
+- a registry or advisory source was unreachable, rate limited, or returned malformed data;
+- the requested version could not be resolved from the supported input;
+- Python transitive dependencies were not resolved (direct pins only);
+- npm workspaces, peer dependencies, or unsupported lockfile versions were present;
+- a check was skipped for this target.
+
+In each case the report is `incomplete` (or `failed`), and the reason is listed in the report's checks and limitations. DepScope never substitutes the latest version for an unresolved one and never falls back from a failed live scan to demo data.
+
+DepScope does **not** provide:
+
+- comprehensive malware detection;
+- maintainer account-takeover detection;
+- exploitability analysis or proof-of-concept validation;
+- package code inspection — it never downloads or executes the packages it scans;
+- popularity or download-count data.
+
+## Supported ecosystems
+
+| Ecosystem | Single release | Project scan | Global inventory |
+| --- | --- | --- | --- |
+| **npm** | Any published release | `package.json` + `package-lock.json` lockfile v2/v3 graph | Top-level global packages |
+| **PyPI** | Any published release | `requirements.txt` with exact `==`/`===` pins only | Selected interpreter's default pip environment |
+
+Known format limitations:
+
+- npm workspaces, peer-dependency resolution, and lockfile versions other than 2 and 3 are not supported.
+- Python transitive resolution, Python lockfiles (`poetry.lock`, `Pipfile.lock`, `uv.lock`, `pdm.lock`), `pyproject.toml`, `Pipfile`, `setup.py`, `setup.cfg`, ranges, wildcards, unpinned, URL, editable, and marker-dependent requirements are not supported. These files are detected and reported as unsupported input.
+- Global inventory is read-only and covers top-level npm packages and one pip environment only; nested and symlinked npm entries are not scanned.
+- npm and PyPI are the only supported ecosystems.
+
+Unsupported or unresolved input is reported as `incomplete` — never approximated with the latest version.
 
 ## Architecture
+
+![DepScope architecture: terminal, HTTP API, and website over one shared Go engine and canonical report](assets/readme/depscope-overview-en.svg)
 
 ```text
 CLI / TUI ─┐
@@ -135,19 +295,86 @@ HTTP API ──┘                                  │
 Website ── same-origin server proxy ──────────────────┘
 ```
 
-The Go engine owns package resolution, source matching, risk evaluation, and report assembly. The API and terminal are adapters; the website consumes the canonical JSON Schema and generated TypeScript types. Demo mode uses a separate deterministic engine path and cannot fall back from a failed live scan. See [architecture](docs/architecture.md) and [contracts](docs/contracts.md).
+The Go engine owns package resolution, source matching, risk evaluation, and report assembly. The CLI/TUI and HTTP API are adapters over the same `app.Service`; the website consumes the canonical schema and generated types through same-origin server routes. Demo mode uses a separate deterministic engine path and cannot be reached from a live scan.
 
-## Local development and checks
+Further reading: [architecture](docs/architecture.md), [data contracts](docs/contracts.md), [risk rules](docs/risk-rules.md), [API reference](docs/api.md), [schema rules](schemas/README.md), [release engineering](docs/release.md).
 
-Requirements: Go 1.26.10, Node.js 24.22.0, pnpm 12.14.0, and a Chromium browser for browser tests.
+## HTTP API
+
+The API is a **local, unauthenticated** service intended for loopback use or a separately secured network boundary. It has no persistence, accounts, telemetry, or TLS termination.
 
 ```sh
-gofmt -l .
-go test -count=1 ./...
+go build -o depscope-api ./cmd/depscope-api
+./depscope-api
+```
+
+```sh
+curl -sS http://127.0.0.1:8080/healthz
+```
+
+```sh
+curl -sS http://127.0.0.1:8080/api/v1/scan \
+  -H 'Content-Type: application/json' \
+  -d '{"ecosystem":"npm","name":"lodash","version":"4.17.21"}'
+```
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /healthz` | Process liveness only; does not contact npm, PyPI, or OSV |
+| `POST /api/v1/scan` | One live package report, validated against schema v1 |
+| `POST /api/v1/compare` | Comparison envelope with independent side failures |
+
+A successful HTTP request returns `200` even when the embedded report status is `findings`, `incomplete`, or `failed`; those are report states, not transport errors. Request validation, the error envelope, and configuration variables (`DEPSCOPE_API_ADDR`, `DEPSCOPE_API_REQUEST_TIMEOUT`, `DEPSCOPE_API_MAX_BODY_BYTES`, `DEPSCOPE_API_MAX_CONCURRENCY`, `DEPSCOPE_API_RATE_PER_MINUTE`, `DEPSCOPE_API_RATE_BURST`, `DEPSCOPE_API_CORS_ORIGINS`, `DEPSCOPE_API_SHUTDOWN_TIMEOUT`) are documented in the [API reference](docs/api.md).
+
+The API serves live scans only. It does not expose demo data, project scans, or inventory results.
+
+## Website
+
+The website lives in `web/` and uses Next.js App Router, TypeScript, and Tailwind CSS. It proxies live scans through same-origin server routes, validates canonical reports, and keeps demo fixtures isolated from live mode. It does not call npm, PyPI, or OSV directly.
+
+```sh
+# Terminal 1: the Go API
+go run ./cmd/depscope-api
+
+# Terminal 2: the website
+cd web
+pnpm install --frozen-lockfile
+cp .env.example .env.local
+pnpm dev
+```
+
+Open <http://localhost:3000>. Server-side configuration:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DEPSCOPE_API_BASE_URL` | `http://127.0.0.1:8080` | Go API base URL used by server routes |
+| `DEPSCOPE_API_TIMEOUT_MS` | `100000` | Upstream request timeout in milliseconds |
+| `DEPSCOPE_SITE_URL` | `http://localhost:3000` | Canonical site URL for metadata and sharing |
+| `DEPSCOPE_REPOSITORY_URL` | unset | Optional source-repository link in the footer; unset hides the link |
+
+The offline web demo works without the API. Details: [website README](web/README.md).
+
+## Local development
+
+Run the complete Go checks from the repository root:
+
+```sh
+gofmt -l .              # must print nothing
 go vet ./...
 go build -trimpath ./...
-go test -race -count=1 ./...
+go test -count=1 ./...
+go mod verify
 ```
+
+Optional deeper checks:
+
+```sh
+go test -race -count=1 ./...
+go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+go test -tags live -run '^$' ./internal/live/   # compile live-tagged tests without contacting the network
+```
+
+Run the website checks:
 
 ```sh
 cd web
@@ -159,20 +386,58 @@ pnpm test
 pnpm build
 pnpm exec playwright install chromium
 pnpm test:e2e
+pnpm audit --prod --audit-level high
 ```
 
-See [contribution guidance](CONTRIBUTING.md) for the full local workflow and [release procedure](docs/release.md) for packaging and maintainer gates.
+The default test suite never contacts public package or vulnerability services. Live smoke tests are opt-in behind a build tag and environment variable:
 
-## Security limitations and reporting
+```sh
+DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
+```
 
-DepScope is not comprehensive malware detection, exploitability analysis, or a guarantee that a package is safe. Its results depend on supported manifests, metadata returned by npm/PyPI, OSV coverage, and a small heuristic reference dataset. It does not execute packages, inspect installed package code, or detect maintainer account takeover. The API has no authentication, and no hosted API or website deployment exists.
+## Project status
 
-Do not submit secrets or private source code. For suspected vulnerabilities in DepScope itself, avoid posting actionable exploit details publicly. The repository has no configured private security contact yet; see [SECURITY.md](SECURITY.md) for the maintainer action required before public launch.
+| Area | Status |
+| --- | --- |
+| Go engine, CLI, TUI, offline demo | Implemented and covered by tests |
+| Local HTTP API | Implemented; local, unauthenticated, process-local limits |
+| Website (single scan, comparison, demo records) | Implemented locally; not deployed |
+| CI and GoReleaser configuration | Configured; no release published |
+| Hosted API or hosted website | Not provided |
+| License | Apache License 2.0 text added; copyright holder placeholder pending maintainer confirmation |
+| Recursive Python resolution, more lockfiles, CLI JSON output, project/inventory API serialization | Not implemented |
+
+See [implementation plan](docs/implementation-plan.md) for phase history and [architecture decisions](docs/architecture.md) for open items.
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md), [architecture](docs/architecture.md), and [risk rules](docs/risk-rules.md) before changing behavior. Tests use synthetic fixtures and must not make public network requests by default. All newly written source-code comments and docstrings must be in Simplified Chinese; identifiers, UI text, and public documentation remain in English.
+Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), then read [architecture](docs/architecture.md) and [risk rules](docs/risk-rules.md) before changing behavior.
+
+- Add deterministic tests with synthetic fixtures; the default suite must not make public network requests.
+- Preserve incomplete results and evidence — a missing check must never become a clean result.
+- Never install, import, or execute scanned packages or run their lifecycle scripts.
+- All new source-code comments and docstrings are written in Simplified Chinese; identifiers, UI copy, and public documentation stay in English.
+- Describe the exact commands you ran in your pull request.
+
+## Security
+
+Please do not open a public issue for a vulnerability in DepScope itself. Read [SECURITY.md](SECURITY.md) for the current reporting path. GitHub private vulnerability reporting is not verified as enabled yet; the maintainer must confirm a private reporting channel before public launch.
+
+Do not include secrets, private source code, or personal data in any report.
+
+Reporting a *dependency* problem found with DepScope belongs in that package's own advisory channel, not in this repository.
 
 ## License
 
-No license has been selected or added. The project is not yet licensed for redistribution. A maintainer must choose and approve a license before publishing binaries or describing the project as legally open source. Do not add a license without that decision.
+Distributed under the [Apache License 2.0](LICENSE). Third-party components and their licenses are listed in [NOTICE](NOTICE).
+
+The copyright holder and year in `LICENSE` and `NOTICE` are placeholders that the maintainer must confirm before this repository is published or any release is distributed. Until then, the license has been prepared but not legally approved.
+
+## Try it, report it, improve it
+
+```sh
+go run ./cmd/depscope demo vulnerable
+go run ./cmd/depscope scan lodash@4.17.21
+```
+
+If DepScope shows you something your other tools missed — or misses something you think it should see — that is worth an issue. Bug reports, unsupported-format reports, and clearer explanations for findings are all welcome.

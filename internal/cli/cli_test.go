@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/app"
-	"depscope/internal/demo"
-	"depscope/internal/inventory"
-	domain "depscope/internal/model"
-	"depscope/internal/project"
+	"github.com/janghotan/depscope/internal/app"
+	"github.com/janghotan/depscope/internal/demo"
+	"github.com/janghotan/depscope/internal/inventory"
+	domain "github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/project"
 )
 
 var cliTime = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)

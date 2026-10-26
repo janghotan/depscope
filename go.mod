@@ -1,4 +1,4 @@
-module depscope
+module github.com/janghotan/depscope
 
 go 1.26.10
 

@@ -66,4 +66,6 @@ Vitest tests use deterministic fixtures and mocked fetches. Playwright starts th
 - The browser API is a same-origin server proxy. Its request and response bodies are bounded, reports are schema-validated, responses are not cached, and upstream failure is shown as an error rather than demo data.
 - Demo reports are deterministic synthetic fixtures, labelled as demo data, and isolated from live requests.
 - The Go API defaults to loopback and is unauthenticated. Public hosting and deployment security are not configured by this project.
-- There is no configured remote repository URL or selected license yet.
+- No remote repository is configured in this checkout and no public site has been deployed. Repository links appear only when `DEPSCOPE_REPOSITORY_URL` is set.
+- The project is distributed under the Apache License 2.0 (see the repository root `LICENSE`); the copyright holder placeholder still needs maintainer confirmation.
+- Brand and documentation assets shared with the repository READMEs live in `assets/` at the repository root; see `assets/README.md`.

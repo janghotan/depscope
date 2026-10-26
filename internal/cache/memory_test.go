@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/cache"
+	"github.com/janghotan/depscope/internal/cache"
 )
 
 func TestMemoryCacheExpiresEntries(t *testing.T) {

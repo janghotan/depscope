@@ -11,9 +11,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"depscope/internal/app"
-	"depscope/internal/model"
-	"depscope/internal/render"
+	"github.com/janghotan/depscope/internal/app"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/render"
 )
 
 const (

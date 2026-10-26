@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 // ErrReferenceUnavailable 表示当前生态系统的参考数据不可用。

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/engine"
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/engine"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 func TestDefaultConfigIsValid(t *testing.T) {

@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/cache"
-	"depscope/internal/contract"
-	"depscope/internal/engine"
-	"depscope/internal/fetch"
-	"depscope/internal/model"
-	"depscope/internal/sources/npm"
-	"depscope/internal/sources/osv"
-	"depscope/internal/sources/pypi"
+	"github.com/janghotan/depscope/internal/cache"
+	"github.com/janghotan/depscope/internal/contract"
+	"github.com/janghotan/depscope/internal/engine"
+	"github.com/janghotan/depscope/internal/fetch"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/sources/npm"
+	"github.com/janghotan/depscope/internal/sources/osv"
+	"github.com/janghotan/depscope/internal/sources/pypi"
 )
 
 const integrationNow = "2026-10-25T12:00:00Z"

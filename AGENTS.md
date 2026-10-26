@@ -21,7 +21,7 @@ If a phase instruction conflicts with these documents, stop and ask the project 
 
 As of Phase 8 verification (2026-10-26):
 
-- A Go module exists at the module path `depscope` (provisional; no remote URL has been chosen).
+- A Go module exists at the module path `github.com/janghotan/depscope` (selected during repository preparation; no remote is configured in this checkout).
 - Implemented: domain model, canonical report schema v1, schema-backed contract validation, engine interfaces, scan configuration and limiter, scan orchestrator, live npm/PyPI/OSV providers, explainable risk rules, typosquat heuristics, bounded cache and HTTP client, batch resolved-package scanning, project dependency scanning, read-only global package inventory, report rendering and comparison, shared application service, Bubble Tea interactive terminal app, non-interactive CLI and binary, deterministic offline demo runtime, production-oriented HTTP API and API binary, and tests.
 - Project scan scope is limited to npm `package.json` with `package-lock.json` lockfile version 2 or 3, and Python `requirements.txt` with exact `==`/`===` pins. npm workspaces and peer dependencies, Python transitive resolution, Python lockfiles, and other npm lockfile formats are not implemented. Unsupported or unresolved input is reported as incomplete, never approximated with the latest version.
 - Global inventory covers top-level npm global packages and the selected pip interpreter's default environment. It is read-only and never installs, imports, upgrades, or executes packages.
@@ -35,8 +35,8 @@ As of Phase 8 verification (2026-10-26):
 - Live web reports support one package at a time, with two-package comparison. Offline demo pages use validated synthetic fixtures and make no scan or comparison API requests; the shared header can check the local API health status.
 - Not implemented: recursive Python dependency resolution, broader lockfile support, project/inventory wire serialization, machine-readable CLI JSON output, and public deployment.
 - Git is initialized on `feature/phase-6-website`; no remote or default branch is configured. Phases 0–8 are committed locally on this branch.
-- There is no license file.
-- Phase 7 added CI, cross-platform build verification, and gated GoReleaser configuration. Tagged releases intentionally stop until the license and canonical module path decisions are resolved. No release or deployment has occurred.
+- `LICENSE` contains the unmodified Apache License 2.0 text and `NOTICE` records third-party licenses. The copyright holder and year are placeholders that the maintainer must confirm before public publication; the license choice is not yet legally approved.
+- Phase 7 added CI, cross-platform build verification, and gated GoReleaser configuration. Tagged releases intentionally stop until the maintainer confirms the copyright notices, approves the final repository identity, and authorizes publication. No release or deployment has occurred.
 - Direct runtime dependencies: `github.com/santhosh-tekuri/jsonschema/v6`, `github.com/charmbracelet/bubbletea`, and `github.com/charmbracelet/lipgloss`; their pinned indirect dependencies are recorded in `go.mod` and `go.sum`. The HTTP API uses only the Go standard library and existing internal packages.
 - The Go and website build/test commands are listed in `README.md` and `web/README.md`; report the exact commands actually run.
 - Do not assume planned directories, transports, or commands beyond those listed in `README.md` exist.

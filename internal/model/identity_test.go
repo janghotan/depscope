@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 func TestNewPackageIdentityCanonicalizesNames(t *testing.T) {

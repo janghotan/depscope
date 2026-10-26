@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 var fixtureTime = time.Date(2026, time.January, 15, 12, 0, 0, 0, time.UTC)

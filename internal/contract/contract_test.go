@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"depscope/internal/contract"
-	"depscope/internal/model"
-	"depscope/schemas"
+	"github.com/janghotan/depscope/internal/contract"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/schemas"
 )
 
 func fixtureDirectory() string {

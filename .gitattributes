@@ -1,0 +1,35 @@
+# 仓库级 .gitattributes：统一换行符并标记二进制与生成文件。
+* text=auto eol=lf
+
+# Windows 脚本保留 CRLF，避免 cmd.exe 解析问题。
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# 二进制资产：禁止换行符转换与文本差异。
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.zip binary
+*.gz binary
+
+# SVG 是文本资源，按文本处理以便审阅。
+*.svg text
+
+# 锁文件与规范文件：折叠在 GitHub 差异中，但参与文本比较。
+go.sum linguist-generated=true
+web/pnpm-lock.yaml linguist-generated=true
+web/src/generated/scan-report.v1.schema.json linguist-generated=true
+web/src/generated/report-types.ts linguist-generated=true
+web/src/generated/demo/*.json linguist-generated=true
+web/next-env.d.ts linguist-generated=true
+
+# 合成夹具：不计入仓库语言统计。
+testdata/fixtures/** linguist-vendored

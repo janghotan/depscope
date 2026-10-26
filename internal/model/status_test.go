@@ -3,7 +3,7 @@ package model_test
 import (
 	"testing"
 
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 func TestDeriveFinalStatusNeverTreatsMissingChecksAsClean(t *testing.T) {

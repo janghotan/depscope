@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"depscope/internal/engine"
+	"github.com/janghotan/depscope/internal/engine"
 )
 
 const (

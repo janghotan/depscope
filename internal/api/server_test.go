@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/api"
-	"depscope/internal/app"
-	"depscope/internal/contract"
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/api"
+	"github.com/janghotan/depscope/internal/app"
+	"github.com/janghotan/depscope/internal/contract"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 type fakeService struct {

@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" role="img" aria-labelledby="t d">
+  <title id="t">DepScope architecture — One Go security engine, three surfaces, one canonical report</title>
+  <desc id="d">DepScope architecture — One Go security engine, three surfaces, one canonical report</desc>
+  <defs>
+    <marker id="ov-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#394a51"/>
+    </marker>
+    <marker id="ov-arrow-green" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#74b997"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="800" fill="#0d1519"/>
+  <rect x="0" y="0" width="1200" height="800" fill="none" stroke="#33434a" stroke-width="1"/>
+  <g>
+
+  <g transform="translate(40,38) scale(2.1)">
+    <circle cx="12" cy="12" r="10.6" fill="none" stroke="#74b997" stroke-width="1.9"/>
+    <path d="M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2" stroke="#74b997" stroke-width="1.9" stroke-linecap="round"/>
+    <rect x="8.9" y="8.9" width="6.2" height="6.2" fill="none" stroke="#e5eceb" stroke-width="1.6"/>
+    <path d="M12 12v5.4" stroke="#f1855c" stroke-width="2.1" stroke-linecap="round"/>
+  </g>
+
+    <text x="112" y="62" font-family="'Inter','Noto Sans','Helvetica Neue',Arial,sans-serif" font-size="27" font-weight="700" fill="#e5eceb">DepScope architecture</text>
+    <text x="112" y="84" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13.5" fill="#91a1a6">One Go security engine, three surfaces, one canonical report</text>
+  </g>
+  <text x="40" y="128" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12.5" letter-spacing="2.2" fill="#91a1a6">SURFACES</text>
+  <rect x="40" y="142" width="358" height="82" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="40" y="142" width="4" height="82" fill="#74b997"/>
+  <text x="58" y="170" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" font-weight="700" fill="#e5eceb">Terminal CLI + TUI</text>
+  <text x="58" y="188.5" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12.5" fill="#b8c5c8">depscope · Bubble Tea</text>
+  <rect x="421" y="142" width="358" height="82" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="421" y="142" width="4" height="82" fill="#f0c46a"/>
+  <text x="439" y="170" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" font-weight="700" fill="#e5eceb">HTTP API</text>
+  <text x="439" y="188.5" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12.5" fill="#b8c5c8">depscope-api · local only</text>
+  <rect x="802" y="142" width="358" height="82" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="802" y="142" width="4" height="82" fill="#74b997"/>
+  <text x="820" y="170" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" font-weight="700" fill="#e5eceb">Website</text>
+  <text x="820" y="188.5" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12.5" fill="#b8c5c8">Next.js + TypeScript</text>
+  <path d="M140 224 L140 290" stroke="#74b997" stroke-width="1.6" fill="none" marker-end="url(#ov-arrow-green)"/>
+  <path d="M320 224 L320 290" stroke="#394a51" stroke-width="1.6" fill="none" marker-end="url(#ov-arrow-rule)"/>
+  <path d="M1030 224 L1030 290" stroke="#394a51" stroke-width="1.6" fill="none" marker-end="url(#ov-arrow-rule)"/>
+  <rect x="40" y="300" width="1120" height="66" rx="3" fill="#152229" stroke="#74b997" stroke-width="1.6"/>
+  <text x="72" y="328" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" letter-spacing="2" fill="#74b997">APPLICATION SERVICE</text>
+  <text x="72" y="350" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" font-weight="700" fill="#e5eceb">app.Service</text>
+  <text x="240" y="350" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" fill="#91a1a6">LiveService · Demo paths stay separate</text>
+  <rect x="40" y="408" width="720" height="214" rx="3" fill="#152229" stroke="#74b997" stroke-width="1.6"/>
+  <text x="64" y="438" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" letter-spacing="2" fill="#74b997">SHARED SECURITY ENGINE (Go)</text>
+  <circle cx="80" cy="455" r="4.5" fill="#74b997"/>
+  <text x="100" y="460" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="700" fill="#e5eceb">Package resolution</text>
+  <text x="330" y="460" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12.5" fill="#91a1a6">Registry metadata read only</text>
+  <circle cx="80" cy="493" r="4.5" fill="#74b997"/>
+  <text x="100" y="498" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="700" fill="#e5eceb">Check assembly</text>
+  <text x="330" y="498" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12.5" fill="#91a1a6">succeeded · failed · unavailable</text>
+  <circle cx="80" cy="531" r="4.5" fill="#74b997"/>
+  <text x="100" y="536" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="700" fill="#e5eceb">Risk evaluation</text>
+  <text x="330" y="536" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12.5" fill="#91a1a6">confirmed vs heuristic</text>
+  <circle cx="80" cy="569" r="4.5" fill="#74b997"/>
+  <text x="100" y="574" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="700" fill="#e5eceb">Report assembly</text>
+  <text x="330" y="574" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12.5" fill="#91a1a6">deterministic ordering</text>
+  <rect x="792" y="408" width="368" height="214" rx="3" fill="#152229" stroke="#33434a" stroke-width="1.5"/>
+  <text x="816" y="438" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" letter-spacing="2" fill="#91a1a6">APPROVED SOURCES</text>
+  <rect x="816" y="454" width="320" height="44" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="816" y="454" width="4" height="44" fill="#394a51"/>
+  <text x="834" y="482" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="700" fill="#e5eceb">npm Registry</text>
+  <text x="834" y="499.5" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11.5" fill="#b8c5c8">package metadata</text>
+  <rect x="816" y="508" width="320" height="44" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="816" y="508" width="4" height="44" fill="#394a51"/>
+  <text x="834" y="536" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="700" fill="#e5eceb">PyPI</text>
+  <text x="834" y="553.5" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11.5" fill="#b8c5c8">package metadata</text>
+  <rect x="816" y="562" width="320" height="44" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="816" y="562" width="4" height="44" fill="#74b997"/>
+  <text x="834" y="590" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="700" fill="#e5eceb">OSV.dev</text>
+  <text x="834" y="607.5" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11.5" fill="#b8c5c8">advisories</text>
+  <path d="M780 515 L792 515" stroke="#74b997" stroke-width="1.6" fill="none" marker-end="url(#ov-arrow-green)"/>
+  <rect x="40" y="654" width="1120" height="62" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <text x="64" y="680" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" letter-spacing="2" fill="#91a1a6">CANONICAL REPORT</text>
+  <text x="64" y="702" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" font-weight="700" fill="#e5eceb">ScanReport v1 · JSON Schema 1.0.0</text>
+  <text x="560" y="702" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12.5" fill="#b8c5c8">validated by internal/contract.ValidateReport</text>
+  <path d="M760 622 L760 646" stroke="#74b997" stroke-width="1.6" fill="none" marker-end="url(#ov-arrow-green)"/>
+  <rect x="40" y="726" width="1120" height="0.2" fill="none"/>
+  <line x1="40" y1="742" x2="1160" y2="742" stroke="#394a51" stroke-width="1"/>
+  <text x="40" y="768" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12.5" fill="#91a1a6">Offline demo · deterministic · no network</text>
+</svg>

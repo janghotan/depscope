@@ -1,0 +1,59 @@
+name: Feature request
+description: Suggest a capability, ecosystem, or report improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        DepScope deliberately keeps a narrow scope: npm and PyPI, OSV.dev, the npm Registry, and PyPI as sources, and no package execution. Requests that extend coverage are welcome, but they must keep unsupported or unavailable checks visible as `incomplete` instead of approximating them.
+
+        Before filing, check [supported ecosystems and limitations](https://github.com/janghotan/depscope/blob/main/README.md#supported-ecosystems) and the open decisions in [architecture decisions](https://github.com/janghotan/depscope/blob/main/docs/architecture.md).
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Terminal CLI or TUI
+        - HTTP API
+        - Website
+        - Scan coverage (ecosystem, manifest, or lockfile)
+        - Risk rules or evidence
+        - Report contract or schema
+        - Documentation
+        - Build, tests, or tooling
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what makes it hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you would like. If it changes scan status semantics or the report contract, say how missing data should be represented.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other tools or workarounds you tried, if any.
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and honesty considerations
+      description: Could this feature imply coverage or safety that DepScope cannot verify? What should the documentation say about its limits?
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: I understand that DepScope never executes scanned packages or lifecycle scripts.
+          required: true
+        - label: I have not included secrets, private source code, or personal data in this request.
+          required: true

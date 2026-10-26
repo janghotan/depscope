@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="t d">
+  <title id="t">DepScope — Dependency risk, explained.</title>
+  <desc id="d">DepScope — Dependency risk, explained.</desc>
+  <rect width="1280" height="640" fill="#0d1519"/>
+  <rect x="0.75" y="0.75" width="1278.5" height="638.5" fill="none" stroke="#33434a" stroke-width="1.5"/>
+
+  <g transform="translate(64,56) scale(2.6)">
+    <circle cx="12" cy="12" r="10.6" fill="none" stroke="#74b997" stroke-width="1.9"/>
+    <path d="M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2" stroke="#74b997" stroke-width="1.9" stroke-linecap="round"/>
+    <rect x="8.9" y="8.9" width="6.2" height="6.2" fill="none" stroke="#e5eceb" stroke-width="1.6"/>
+    <path d="M12 12v5.4" stroke="#f1855c" stroke-width="2.1" stroke-linecap="round"/>
+  </g>
+
+  <text x="138" y="92" font-family="'Inter','Noto Sans','Helvetica Neue',Arial,sans-serif" font-size="38" font-weight="700" letter-spacing="0.5" fill="#e5eceb">DepScope</text>
+  <text x="64" y="196" font-family="'Inter','Noto Sans','Helvetica Neue',Arial,sans-serif" font-size="56" font-weight="700" fill="#e5eceb">Dependency risk,</text>
+  <text x="64" y="262" font-family="'Inter','Noto Sans','Helvetica Neue',Arial,sans-serif" font-size="56" font-weight="700" fill="#74b997">explained.</text>
+  <text x="64" y="316" font-family="'Inter','Noto Sans','Helvetica Neue',Arial,sans-serif" font-size="22" fill="#b8c5c8">Scan npm and PyPI packages without executing them.</text>
+  <text x="64" y="352" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" fill="#91a1a6">Confirmed advisories · review heuristics · coverage gaps</text>
+  <rect x="64" y="392" width="121" height="38" rx="2" fill="#17252c" stroke="#33434a" stroke-width="1.4"/>
+  <text x="75" y="417" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" fill="#e5eceb">Go engine</text>
+  <rect x="199" y="392" width="55" height="38" rx="2" fill="#17252c" stroke="#33434a" stroke-width="1.4"/>
+  <text x="210" y="417" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" fill="#e5eceb">TUI</text>
+  <rect x="268" y="392" width="110" height="38" rx="2" fill="#17252c" stroke="#33434a" stroke-width="1.4"/>
+  <text x="279" y="417" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" fill="#e5eceb">HTTP API</text>
+  <rect x="392" y="392" width="99" height="38" rx="2" fill="#17252c" stroke="#33434a" stroke-width="1.4"/>
+  <text x="403" y="417" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" fill="#e5eceb">Website</text>
+  <rect x="716" y="96" width="500" height="448" rx="8" fill="#0b1114" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="716" y="96" width="500" height="40" rx="8" fill="#17252c"/>
+  <rect x="716" y="126" width="500" height="10" fill="#17252c"/>
+  <circle cx="738" cy="116" r="5.5" fill="#f1855c"/>
+  <circle cx="758" cy="116" r="5.5" fill="#f0c46a"/>
+  <circle cx="778" cy="116" r="5.5" fill="#74b997"/>
+  <text x="808" y="121" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" fill="#91a1a6">$ depscope demo vulnerable</text>
+  <text x="742" y="162" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" font-weight="700" fill="#e5eceb">PACKAGE REPORT</text>
+  <text x="742" y="189" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" font-weight="400" fill="#b8c5c8">npm:@depscope-demo/vulnerable-package</text>
+  <text x="742" y="216" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" font-weight="400" fill="#b8c5c8">Resolved version 2.0.0</text>
+  <text x="742" y="270" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" font-weight="400" fill="#f0c46a">[DEMO DATA] synthetic, offline report</text>
+  <text x="742" y="324" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" font-weight="700" fill="#e5eceb">ASSESSMENT</text>
+  <text x="742" y="351" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" font-weight="400" fill="#b8c5c8">  Status               [FINDINGS]</text>
+  <text x="742" y="378" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" font-weight="400" fill="#b8c5c8">  Completed checks     6 of 6 succeeded</text>
+  <text x="742" y="405" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" font-weight="400" fill="#b8c5c8">  Confirmed findings   2</text>
+  <text x="742" y="432" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" font-weight="400" fill="#b8c5c8">  Heuristic warnings   0</text>
+  <text x="742" y="459" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" font-weight="400" fill="#f1855c">  Highest severity     [CRITICAL]</text>
+  <line x1="732" y1="498" x2="1200" y2="498" stroke="#394a51" stroke-width="1"/>
+  <text x="742" y="526" font-family="'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12.5" letter-spacing="0.6" fill="#91a1a6">SYNTHETIC DEMO DATA · NOT A LIVE SCAN</text>
+</svg>

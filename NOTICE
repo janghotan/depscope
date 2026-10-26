@@ -1,0 +1,77 @@
+DepScope
+========
+
+Copyright [yyyy] [name of copyright owner]
+
+This product is licensed under the Apache License, Version 2.0 (the
+"License"). You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+The copyright holder and year are intentionally left as placeholders in
+LICENSE and NOTICE. The maintainer must replace both placeholders with the
+verified holder identity and first-publication year before the repository is
+made public or any release is published. See "License" in README.md.
+
+Third-party components
+----------------------
+
+DepScope is distributed with third-party software, each under its own
+license. These components remain the property of their respective copyright
+holders; the Apache License 2.0 applied to DepScope does not replace, restrict,
+or relicense them. The authoritative license text for every component is
+distributed with that component in its module or package source, and the
+complete dependency graph is pinned in go.mod/go.sum and web/pnpm-lock.yaml.
+
+Go module dependencies (see go.mod for the pinned versions):
+
+  - github.com/charmbracelet/bubbletea                      MIT License
+  - github.com/charmbracelet/lipgloss                       MIT License
+  - github.com/santhosh-tekuri/jsonschema/v6                Apache License 2.0
+  - github.com/aymanbagabas/go-osc52/v2                     MIT License
+  - github.com/charmbracelet/colorprofile                   MIT License
+  - github.com/charmbracelet/x/ansi                         MIT License
+  - github.com/charmbracelet/x/cellbuf                      MIT License
+  - github.com/charmbracelet/x/term                         MIT License
+  - github.com/erikgeiser/coninput                          MIT License
+  - github.com/lucasb-eyer/go-colorful                      MIT License
+  - github.com/mattn/go-isatty                              MIT License
+  - github.com/mattn/go-localereader                        MIT License
+  - github.com/mattn/go-runewidth                           MIT License
+  - github.com/muesli/ansi                                  MIT License
+  - github.com/muesli/cancelreader                          MIT License
+  - github.com/muesli/termenv                               MIT License
+  - github.com/rivo/uniseg                                  MIT License
+  - github.com/xo/terminfo                                  MIT License
+  - golang.org/x/sys                                        BSD 3-Clause License
+  - golang.org/x/text                                       BSD 3-Clause License
+
+Website dependencies (see web/pnpm-lock.yaml; application dependencies are
+Next.js, React, React DOM, ajv, ajv-formats, and the Overpass and Overpass
+Mono font packages):
+
+  - next, react, react-dom                                MIT License
+  - ajv, ajv-formats                                      MIT License
+  - @fontsource-variable/overpass                         SIL Open Font License 1.1
+  - @fontsource-variable/overpass-mono                    SIL Open Font License 1.1
+  - Overpass and Overpass Mono typefaces, Copyright 2021
+    The Overpass Project Authors (https://github.com/RedHatOfficial/Overpass),
+    SIL Open Font License 1.1
+  - Development-only tooling (Playwright, Vitest, ESLint, TypeScript,
+    Tailwind CSS, Testing Library, and their transitive packages) keeps the
+    licenses recorded by their authors; it is not part of the distributed
+    application.
+
+Test fixtures
+-------------
+
+Files under testdata/fixtures/ are synthetic and authored for this project.
+They do not contain third-party data.
+
+Unlicensed continuity
+---------------------
+
+Before the Apache License 2.0 was added, the project had no license file and
+was therefore not licensed for redistribution. If the repository history is
+published, every commit in that history was authored by the maintainer; other
+contributors must only contribute under the terms in CONTRIBUTING.md.

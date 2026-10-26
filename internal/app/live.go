@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"depscope/internal/demo"
-	"depscope/internal/engine"
-	"depscope/internal/inventory"
-	"depscope/internal/live"
-	"depscope/internal/model"
-	"depscope/internal/project"
+	"github.com/janghotan/depscope/internal/demo"
+	"github.com/janghotan/depscope/internal/engine"
+	"github.com/janghotan/depscope/internal/inventory"
+	"github.com/janghotan/depscope/internal/live"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/project"
 )
 
 // LiveOptions 配置共享服务；未指定的扫描器会通过 live 包装配真实来源。

@@ -14,7 +14,7 @@ Phase 5 adds the HTTP transport (`internal/api`, `cmd/depscope-api`). It consume
 
 Phases 1–6 do **not** implement recursive npm or Python dependency resolution outside a supported lockfile graph or machine-readable terminal JSON output. Scan scope and evidence rules are documented in `docs/risk-rules.md`.
 
-The Go module path is provisionally `depscope`. It contains no remote host and must be replaced with the canonical module path before publication. The Phase 7 tagged-release workflow blocks publication while this value remains provisional or no `LICENSE` file exists.
+The Go module path is `github.com/janghotan/depscope`, matching the authenticated GitHub account `janghotan` and the intended repository name `depscope` as recorded during repository preparation (2026-10-26). The repository has not been published; if the owner, name, or hosting changes before publication, replace the module path and every import, then rerun the Go checks. The Phase 7 tagged-release workflow still blocks publication while `go.mod` uses the old provisional `depscope` path or no `LICENSE` file exists.
 
 ## 2. Contract source of truth
 
@@ -523,12 +523,11 @@ Phase 5 narrows:
 
 Still open:
 
-- Canonical Go module path and repository URL.
-- License and Git initialization.
+- Verified copyright holder and year in `LICENSE` and `NOTICE`. The Apache License 2.0 text is present; the holder placeholders need maintainer confirmation.
+- Public repository creation and remote URL.
 - Live source terms, rate limits, and connectivity verification.
 - Recursive Python resolution and additional npm/Python lockfile formats.
 - API authentication, trusted-proxy handling, shared multi-instance limits, and deployment.
-- Website implementation, JavaScript package manager/toolchain, and TypeScript type generation.
 - Machine-readable CLI output.
 - Project and inventory result serialization.
 - Dependency graph and comparison wire contracts beyond the Phase 3 project graph and terminal/API package comparison.

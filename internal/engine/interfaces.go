@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 // ScanRequest 描述一次扫描请求；本阶段只固定最小字段，完整扫描语义仍待后续阶段确认。

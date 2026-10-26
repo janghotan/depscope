@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/engine"
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/engine"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 var testNow = time.Date(2026, 10, 25, 12, 0, 0, 0, time.UTC)

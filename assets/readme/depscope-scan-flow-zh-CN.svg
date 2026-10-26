@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" role="img" aria-labelledby="t d">
+  <title id="t">一次 DepScope 扫描的流程 — depscope scan &lt;package&gt;  ·  实时 npm 或 PyPI 发布版本</title>
+  <desc id="d">一次 DepScope 扫描的流程 — depscope scan &lt;package&gt;  ·  实时 npm 或 PyPI 发布版本</desc>
+  <defs>
+    <marker id="sf-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#394a51"/>
+    </marker>
+    <marker id="sf-arrow-green" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#74b997"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="800" fill="#0d1519"/>
+  <rect x="0" y="0" width="1200" height="800" fill="none" stroke="#33434a" stroke-width="1"/>
+  <g>
+
+  <g transform="translate(40,38) scale(2.1)">
+    <circle cx="12" cy="12" r="10.6" fill="none" stroke="#74b997" stroke-width="1.9"/>
+    <path d="M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2" stroke="#74b997" stroke-width="1.9" stroke-linecap="round"/>
+    <rect x="8.9" y="8.9" width="6.2" height="6.2" fill="none" stroke="#e5eceb" stroke-width="1.6"/>
+    <path d="M12 12v5.4" stroke="#f1855c" stroke-width="2.1" stroke-linecap="round"/>
+  </g>
+
+    <text x="112" y="62" font-family="'Inter','Noto Sans','Helvetica Neue',Arial,sans-serif" font-size="27" font-weight="700" fill="#e5eceb">一次 DepScope 扫描的流程</text>
+    <text x="112" y="84" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="13.5" fill="#91a1a6">depscope scan &lt;package&gt;  ·  实时 npm 或 PyPI 发布版本</text>
+  </g>
+  <text x="40" y="140.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" letter-spacing="1.4" fill="#91a1a6">步骤 1</text>
+  <text x="40" y="166.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="17" font-weight="700" fill="#e5eceb">包标识</text>
+  <rect x="40" y="180" width="540" height="222" rx="3" fill="#152229" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="40" y="180" width="540" height="3" fill="#74b997"/>
+  <rect x="54.0" y="196.0" width="512.0" height="48" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="54.0" y="196.0" width="4" height="48" fill="#394a51"/>
+  <text x="72.0" y="224.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">输入</text>
+  <text x="72.0" y="242.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" fill="#b8c5c8">npm:lodash@4.17.21</text>
+  <rect x="54.0" y="250.0" width="512.0" height="48" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="54.0" y="250.0" width="4" height="48" fill="#394a51"/>
+  <text x="72.0" y="278.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">校验</text>
+  <text x="72.0" y="296.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" fill="#b8c5c8">生态 · 包名 · 精确版本</text>
+  <rect x="54.0" y="304.0" width="512.0" height="48" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="54.0" y="304.0" width="4" height="48" fill="#394a51"/>
+  <text x="72.0" y="332.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">结果</text>
+  <text x="72.0" y="350.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" fill="#b8c5c8">已解析目标或标记为不完整</text>
+  <path d="M584.0 144.0 L614.0 144.0" stroke="#74b997" stroke-width="1.6" fill="none" marker-end="url(#sf-arrow-green)"/>
+  <path d="M64.0 406.0 L64.0 450.0" stroke="#74b997" stroke-width="1.6" fill="none" marker-end="url(#sf-arrow-green)"/>
+  <text x="620" y="140.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" letter-spacing="1.4" fill="#91a1a6">步骤 2</text>
+  <text x="620" y="166.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="17" font-weight="700" fill="#e5eceb">元数据与漏洞检查</text>
+  <rect x="620" y="180" width="540" height="222" rx="3" fill="#152229" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="620" y="180" width="540" height="3" fill="#f0c46a"/>
+  <rect x="634.0" y="196.0" width="512.0" height="48" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="634.0" y="196.0" width="4" height="48" fill="#394a51"/>
+  <text x="652.0" y="224.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">npm / PyPI</text>
+  <text x="652.0" y="242.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" fill="#b8c5c8">元数据、脚本声明与发布时间</text>
+  <rect x="634.0" y="250.0" width="512.0" height="48" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="634.0" y="250.0" width="4" height="48" fill="#394a51"/>
+  <text x="652.0" y="278.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">OSV.dev</text>
+  <text x="652.0" y="296.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" fill="#b8c5c8">按版本匹配安全公告</text>
+  <rect x="634.0" y="304.0" width="512.0" height="48" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="634.0" y="304.0" width="4" height="48" fill="#74b997"/>
+  <text x="652.0" y="332.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">检查状态</text>
+  <text x="652.0" y="350.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" fill="#b8c5c8">成功 · 失败 · 不可用</text>
+  <path d="M1136.0 406.0 L1136.0 450.0" stroke="#74b997" stroke-width="1.6" fill="none" marker-end="url(#sf-arrow-green)"/>
+  <text x="40" y="416.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" letter-spacing="1.4" fill="#91a1a6">步骤 3</text>
+  <text x="40" y="442.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="17" font-weight="700" fill="#e5eceb">基于证据的风险评估</text>
+  <rect x="40" y="456" width="540" height="222" rx="3" fill="#152229" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="40" y="456" width="540" height="3" fill="#74b997"/>
+  <rect x="54.0" y="472.0" width="512.0" height="48" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="54.0" y="472.0" width="4" height="48" fill="#394a51"/>
+  <text x="72.0" y="500.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">确认漏洞</text>
+  <text x="72.0" y="518.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" fill="#b8c5c8">需要公告证据与引用</text>
+  <rect x="54.0" y="526.0" width="512.0" height="48" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="54.0" y="526.0" width="4" height="48" fill="#394a51"/>
+  <text x="72.0" y="554.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">启发式</text>
+  <text x="72.0" y="572.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" fill="#b8c5c8">仅凭启发式匹配 · 仅供参考</text>
+  <rect x="54.0" y="580.0" width="512.0" height="48" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="54.0" y="580.0" width="4" height="48" fill="#74b997"/>
+  <text x="72.0" y="608.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">风险分值 0-100</text>
+  <text x="72.0" y="626.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" fill="#b8c5c8">用于排序，不是概率</text>
+  <path d="M584.0 420.0 L614.0 420.0" stroke="#74b997" stroke-width="1.6" fill="none" marker-end="url(#sf-arrow-green)"/>
+  <text x="620" y="416.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" letter-spacing="1.4" fill="#91a1a6">步骤 4</text>
+  <text x="620" y="442.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="17" font-weight="700" fill="#e5eceb">报告</text>
+  <rect x="620" y="456" width="540" height="222" rx="3" fill="#152229" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="620" y="456" width="540" height="3" fill="#74b997"/>
+  <rect x="634.0" y="472.0" width="512.0" height="48" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="634.0" y="472.0" width="4" height="48" fill="#394a51"/>
+  <text x="652.0" y="500.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">发现项</text>
+  <text x="652.0" y="518.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" fill="#b8c5c8">证据 · 严重程度 · 风险</text>
+  <rect x="634.0" y="526.0" width="512.0" height="48" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="634.0" y="526.0" width="4" height="48" fill="#394a51"/>
+  <text x="652.0" y="554.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">覆盖情况</text>
+  <text x="652.0" y="572.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" fill="#b8c5c8">检查 · 限制 · 数据源</text>
+  <rect x="634.0" y="580.0" width="512.0" height="48" rx="3" fill="#17252c" stroke="#33434a" stroke-width="1.5"/>
+  <rect x="634.0" y="580.0" width="4" height="48" fill="#74b997"/>
+  <text x="652.0" y="608.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#e5eceb">状态</text>
+  <text x="652.0" y="626.0" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12" fill="#b8c5c8">仅当全部检查成功才可能为 clean</text>
+  <rect x="40" y="642" width="1120" height="52" rx="3" fill="#17252c" stroke="#f0c46a" stroke-width="1.4"/>
+  <text x="64" y="675" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="14" fill="#f0c46a">不会执行：包代码、安装脚本与生命周期钩子</text>
+  <line x1="40" y1="742" x2="1160" y2="742" stroke="#394a51" stroke-width="1"/>
+  <text x="40" y="768" font-family="'Noto Sans CJK SC','Noto Sans SC','Source Han Sans SC','PingFang SC','Microsoft YaHei','Noto Sans',sans-serif" font-size="12.5" fill="#91a1a6">数据源适配器只读取注册表元数据与安全公告 · 不会上传源码</text>
+</svg>

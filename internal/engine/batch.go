@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 // ResolvedPackage 表示一个已知确切的包版本。

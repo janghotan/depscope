@@ -13,10 +13,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"depscope/internal/app"
-	"depscope/internal/model"
-	"depscope/internal/render"
-	"depscope/internal/tui"
+	"github.com/janghotan/depscope/internal/app"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/render"
+	"github.com/janghotan/depscope/internal/tui"
 )
 
 // IO 包含命令使用的输入输出流及其终端状态。

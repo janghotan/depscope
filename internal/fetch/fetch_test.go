@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/cache"
-	"depscope/internal/engine"
-	"depscope/internal/fetch"
+	"github.com/janghotan/depscope/internal/cache"
+	"github.com/janghotan/depscope/internal/engine"
+	"github.com/janghotan/depscope/internal/fetch"
 )
 
 type payload struct {

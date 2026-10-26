@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/contract"
-	"depscope/internal/engine"
-	"depscope/internal/live"
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/contract"
+	"github.com/janghotan/depscope/internal/engine"
+	"github.com/janghotan/depscope/internal/live"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 func TestNewScannerWiresProvidersAndCache(t *testing.T) {

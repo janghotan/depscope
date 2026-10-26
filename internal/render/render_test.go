@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"depscope/internal/demo"
-	"depscope/internal/inventory"
-	"depscope/internal/model"
-	"depscope/internal/project"
-	"depscope/internal/render"
+	"github.com/janghotan/depscope/internal/demo"
+	"github.com/janghotan/depscope/internal/inventory"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/project"
+	"github.com/janghotan/depscope/internal/render"
 )
 
 func TestOverviewDistinguishesStatusesAndSeverities(t *testing.T) {

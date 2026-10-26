@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"depscope/internal/inventory"
-	"depscope/internal/model"
-	"depscope/internal/project"
+	"github.com/janghotan/depscope/internal/inventory"
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/project"
 )
 
 const (

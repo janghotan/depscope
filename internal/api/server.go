@@ -11,9 +11,9 @@ import (
 	"strconv"
 	"time"
 
-	"depscope/internal/app"
-	"depscope/internal/contract"
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/app"
+	"github.com/janghotan/depscope/internal/contract"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 // ScanService 是 HTTP 层依赖的最小服务契约；真实实现为 app.LiveService。

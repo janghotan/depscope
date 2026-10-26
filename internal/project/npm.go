@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 type npmManifest struct {

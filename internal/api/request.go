@@ -11,8 +11,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"depscope/internal/app"
-	"depscope/internal/model"
+	"github.com/janghotan/depscope/internal/app"
+	"github.com/janghotan/depscope/internal/model"
 )
 
 const (
