@@ -49,6 +49,26 @@ The provider:
    - numeric CVSS score (`>= 9` critical, `>= 7` high, `>= 4` medium, `> 0` low)
    - otherwise `unknown` (a CVSS vector string alone is not converted)
 
+### 3.1 Alias deduplication
+
+OSV.dev indexes the same underlying vulnerability more than once: for PyPI it commonly returns both a `GHSA-…` record and a `PYSEC-…` record that list each other, and both list the same `CVE-…`, in `aliases`. A query for `pypi:urllib3@1.26.5` returns 20 records for 10 distinct vulnerabilities.
+
+Before findings are produced, records are grouped by identifier connectivity: each record contributes its `id` and every alias, and all records reachable from one another form a single group.
+
+- Comparison is case-insensitive and ignores surrounding whitespace.
+- One group produces exactly one `confirmed` finding. The representative keeps the ID of the first record in the source order, and the identifiers of the merged records are added to its alias set so the evidence remains traceable.
+- Distinct vulnerabilities never merge; only shared identifiers connect records.
+- The number of merged records is reported in an `OSV_ALIAS_MERGED` limitation, so a reduced count is disclosed rather than silent.
+- Merging is normalization, not a coverage gap. It never changes the `vulnerabilities` check status and never turns a complete scan into `incomplete`; the limitation is informational and is the only visible effect on the report.
+- The rule applies to both the single-package scan and the batch path used by project scans and global inventory.
+
+### 3.2 Result counts
+
+A finding is a **package-to-vulnerability match**, not a distinct vulnerability. One advisory can match several installed packages, and one package can match several advisories. Reports never present a single ambiguous total:
+
+- `summary.confirmedFindings` counts findings (matches), not distinct vulnerabilities.
+- The global inventory report adds an `OVERVIEW` section with three separate numbers: installed packages, affected packages, and advisory matches.
+
 Each matched advisory produces one `confirmed` finding:
 
 - ID: `VULN-<advisory ID>`

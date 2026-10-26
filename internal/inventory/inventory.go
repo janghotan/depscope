@@ -124,6 +124,23 @@ type Result struct {
 	Sources     []model.SourceReference
 	Limitations []model.Limitation
 	Summary     model.Summary
+	// Overview 汇总三类互不相同的数量：已安装包、受影响包、漏洞匹配。
+	Overview InventoryOverview
+}
+
+// InventoryOverview 用可区分的计数替代一个含义模糊的总数。
+//
+// 三类数量不可互换：
+//   - InstalledPackages：清单读到的已安装包总数（含无法解析版本的包）。
+//   - AffectedPackages：至少有一条发现项的已安装包数量。
+//   - AdvisoryMatches：受影响包与漏洞的配对数量，等于发现项数量；
+//     同一个漏洞影响多个包、或一个包命中多个漏洞都会分别计数。
+type InventoryOverview struct {
+	InstalledPackages int
+	AffectedPackages  int
+	AdvisoryMatches   int
+	// FindingsBySeverity 按严重程度统计发现项数量，仅包含出现过的等级。
+	FindingsBySeverity map[model.Severity]int
 }
 
 type managerOutcome struct {
@@ -1077,6 +1094,7 @@ func finalizeResult(result *Result, fatal bool) {
 		HeuristicWarnings: heuristic,
 		HighestSeverity:   model.HighestSeverity(result.Findings),
 	}
+	result.Overview = buildOverview(result.Packages, result.Findings)
 	if fatal {
 		result.Status = model.StatusFailed
 		return
@@ -1095,4 +1113,25 @@ func notify(progress func(Progress), event Progress) {
 	if progress != nil {
 		progress(event)
 	}
+}
+
+// buildOverview 统计已安装包、受影响包与漏洞匹配，并给出严重程度分布。
+// 受影响包按“生态 + 包名 + 已解析版本”去重，避免同一包多次计数。
+func buildOverview(packages []InstalledPackage, findings []model.Finding) InventoryOverview {
+	overview := InventoryOverview{
+		InstalledPackages:  len(packages),
+		FindingsBySeverity: make(map[model.Severity]int),
+	}
+	affected := make(map[string]struct{}, len(findings))
+	for _, finding := range findings {
+		key := finding.Package.String()
+		if finding.Version != nil && *finding.Version != "" {
+			key += "@" + *finding.Version
+		}
+		affected[key] = struct{}{}
+		overview.FindingsBySeverity[finding.Severity]++
+	}
+	overview.AffectedPackages = len(affected)
+	overview.AdvisoryMatches = len(findings)
+	return overview
 }

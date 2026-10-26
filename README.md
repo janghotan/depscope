@@ -51,7 +51,7 @@ A scan that could not read OSV is not a scan that found nothing. DepScope report
 - **Interactive terminal UI (Bubble Tea)** — menu-driven scans, comparisons, project scans, and global inventory, with real progress from the engine, cancellable scans, and keyboard-only navigation.
 - **Single-package scans** — `npm` and `PyPI` releases, optionally pinned to an exact version, from the CLI or TUI.
 - **Project dependency scans** — npm `package.json` + `package-lock.json` (lockfile version 2 or 3) resolved through the lockfile graph, and Python `requirements.txt` with exact `==`/`===` pins.
-- **Global inventory** — read-only listing of top-level global npm packages and the selected Python interpreter's pip environment.
+- **Global inventory** — read-only listing of top-level global npm packages and the selected Python interpreter's pip environment, with an overview that separates installed packages, affected packages, and advisory matches.
 - **Comparison** — scan two packages side by side with independent side failures preserved.
 - **Local HTTP API** — `GET /healthz`, `POST /api/v1/scan`, and `POST /api/v1/compare`, returning canonical `ScanReport` v1 values validated before they leave the process.
 - **Website** — Next.js app for single scans, two-package comparison, and offline demo records that make no API requests.

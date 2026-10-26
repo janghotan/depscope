@@ -337,3 +337,75 @@ func TestColorPolicy(t *testing.T) {
 		t.Fatal("invalid color mode was accepted")
 	}
 }
+
+// TestInventoryOverviewSeparatesCounts 验证清单报告把“已安装包”“受影响包”
+// 与“漏洞匹配”三类数量分开呈现，避免读者把它们当成同一个数字。
+func TestInventoryOverviewSeparatesCounts(t *testing.T) {
+	urllib3, err := model.NewPackageIdentity(model.EcosystemPyPI, "urllib3")
+	if err != nil {
+		t.Fatalf("identity: %v", err)
+	}
+	version := "1.26.5"
+	makeFinding := func(id string, severity model.Severity) model.Finding {
+		return model.Finding{
+			ID:       id,
+			Kind:     model.FindingConfirmed,
+			Title:    "Advisory " + id,
+			Severity: severity,
+			Package:  urllib3,
+			Version:  &version,
+			Evidence: []model.Evidence{},
+		}
+	}
+	result := inventory.Result{
+		ScannedAt: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+		Status:    model.StatusFindings,
+		// 这些条目刻意不设置 Ecosystem，验证渲染层能回退到包标识中的生态。
+		Packages: []inventory.InstalledPackage{
+			{Package: urllib3, Version: version, Manager: "pip"},
+			{Package: mustIdentity(t, "requests"), Version: "2.31.0", Manager: "pip"},
+			{Package: mustIdentity(t, "certifi"), Version: "2024.2.2", Manager: "pip"},
+		},
+		Findings: []model.Finding{
+			makeFinding("VULN-GHSA-qccp-gfcp-xxvc", model.SeverityHigh),
+			makeFinding("VULN-GHSA-34jh-p97f-mpxf", model.SeverityCritical),
+		},
+		Overview: inventory.InventoryOverview{
+			InstalledPackages: 3,
+			AffectedPackages:  1,
+			AdvisoryMatches:   2,
+			FindingsBySeverity: map[model.Severity]int{
+				model.SeverityCritical: 1,
+				model.SeverityHigh:     1,
+			},
+		},
+	}
+
+	text := render.FromInventory(result).Full(render.Theme{Width: 100})
+	for _, want := range []string{
+		"OVERVIEW",
+		"Installed packages      3",
+		"(npm 0, PyPI 3)",
+		"Affected packages       1",
+		"Advisory matches        2",
+		"critical 1 · high 1",
+		"Counts are pairs, not distinct vulnerabilities.",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("overview missing %q:\n%s", want, text)
+		}
+	}
+	// 三类数字必须可以区分，不能出现一个含义模糊的总数。
+	if strings.Contains(text, "total findings") {
+		t.Fatalf("overview uses an ambiguous total:\n%s", text)
+	}
+}
+
+func mustIdentity(t *testing.T, name string) model.PackageIdentity {
+	t.Helper()
+	identity, err := model.NewPackageIdentity(model.EcosystemPyPI, name)
+	if err != nil {
+		t.Fatalf("identity %q: %v", name, err)
+	}
+	return identity
+}

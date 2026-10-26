@@ -250,3 +250,68 @@ func TestScanResolvedBatchFiniteTimeout(t *testing.T) {
 		t.Fatalf("err = %v, want context.DeadlineExceeded", err)
 	}
 }
+
+// TestBatchScanMergesAliasDuplicates 验证批量路径（项目扫描与全局清单使用）
+// 同样按别名合并同一漏洞的多条记录，而不会为每条记录各生成一条发现。
+func TestBatchScanMergesAliasDuplicates(t *testing.T) {
+	t.Parallel()
+
+	pkg, err := model.NewPackageIdentity(model.EcosystemPyPI, "urllib3")
+	if err != nil {
+		t.Fatalf("identity: %v", err)
+	}
+	provider := &mappingVulnerabilityProvider{
+		results: map[string]engine.VulnerabilityResult{
+			"pypi:urllib3@1.26.5": {
+				Source: model.SourceReference{ID: "osv", Provider: model.SourceProviderOSV, Identifier: "pypi:urllib3@1.26.5", RetrievedAt: fixedNow},
+				Advisories: []engine.Advisory{
+					{ID: "GHSA-qccp-gfcp-xxvc", Aliases: []string{"CVE-2026-44431", "PYSEC-2026-141"}, Summary: "Redirect header leak", Severity: model.SeverityHigh},
+					{ID: "PYSEC-2026-141", Aliases: []string{"CVE-2026-44431", "GHSA-qccp-gfcp-xxvc"}, Summary: "Redirect header leak", Severity: model.SeverityHigh},
+					{ID: "GHSA-2xpw-w6gg-jr37", Aliases: []string{"CVE-2025-66471", "PYSEC-2026-1994"}, Summary: "Decompress bomb", Severity: model.SeverityMedium},
+				},
+			},
+		},
+	}
+	// 批量扫描仍需为已配置的生态提供注册表实现；PyPI 条目用于满足构造校验。
+	opts := scannerOptions(&fakeRegistry{ecosystem: model.EcosystemNPM}, provider)
+	opts.Registries[model.EcosystemPyPI] = &fakeRegistry{ecosystem: model.EcosystemPyPI}
+	scanner := buildScanner(t, opts)
+
+	results, err := scanner.ScanResolvedBatch(context.Background(), []engine.ResolvedPackage{{Package: pkg, Version: "1.26.5"}})
+	if err != nil {
+		t.Fatalf("ScanResolvedBatch: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("results = %d, want 1", len(results))
+	}
+	// 3 条记录，2 个不同漏洞。
+	if len(results[0].Findings) != 2 {
+		t.Fatalf("findings = %d, want 2: %+v", len(results[0].Findings), results[0].Findings)
+	}
+	if results[0].Version != "1.26.5" {
+		t.Fatalf("result version = %q, want the scanned version", results[0].Version)
+	}
+	merged := false
+	for _, limitation := range results[0].Limitations {
+		if limitation.Code == "OSV_ALIAS_MERGED" {
+			merged = true
+		}
+	}
+	if !merged {
+		t.Fatalf("missing OSV_ALIAS_MERGED limitation: %+v", results[0].Limitations)
+	}
+	// 别名合并只是同一漏洞的规范化，不构成覆盖缺口；
+	// 漏洞检查必须仍为 succeeded，否则清单/项目扫描会被错误降级为 incomplete。
+	sawVulnerabilityCheck := false
+	for _, check := range results[0].Checks {
+		if check.ID == "vulnerabilities" {
+			sawVulnerabilityCheck = true
+			if check.Status != model.CheckSucceeded {
+				t.Fatalf("vulnerabilities check = %q, want succeeded: alias merging must not mark coverage incomplete", check.Status)
+			}
+		}
+	}
+	if !sawVulnerabilityCheck {
+		t.Fatalf("missing vulnerabilities check: %+v", results[0].Checks)
+	}
+}

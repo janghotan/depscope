@@ -641,22 +641,28 @@ func (st *scanState) queryVulnerabilities(pkg model.PackageIdentity, version str
 	st.addLimitations(result.Limitations)
 	sourceIDs := st.sourceIDList(result.Source.ID)
 
+	// 与批量路径保持一致：先按别名合并，再报告合并后的条数，
+	// 使检查消息里的数字与实际产生的发现项数量一致。
+	deduped, duplicates := dedupeAdvisoriesByAlias(result.Advisories)
+
 	status := model.CheckSucceeded
 	message := fmt.Sprintf("%s returned no known advisories affecting %s@%s.", st.scanner.vulnerabilitySourceName(), pkg.String(), version)
-	if len(result.Advisories) > 0 {
-		message = fmt.Sprintf("%s returned %d advisory(ies) affecting %s@%s.", st.scanner.vulnerabilitySourceName(), len(result.Advisories), pkg.String(), version)
+	if len(deduped) > 0 {
+		message = fmt.Sprintf("%s returned %d advisory(ies) affecting %s@%s.", st.scanner.vulnerabilitySourceName(), len(deduped), pkg.String(), version)
 	}
 	if len(result.Limitations) > 0 {
 		status = model.CheckUnavailable
-		message = fmt.Sprintf("%s returned %d advisory(ies) for %s@%s, but part of the response could not be interpreted; coverage is incomplete.", st.scanner.vulnerabilitySourceName(), len(result.Advisories), pkg.String(), version)
+		message = fmt.Sprintf("%s returned %d advisory(ies) for %s@%s, but part of the response could not be interpreted; coverage is incomplete.", st.scanner.vulnerabilitySourceName(), len(deduped), pkg.String(), version)
 	}
 
-	seen := make(map[string]struct{}, len(result.Advisories))
-	for _, advisory := range result.Advisories {
-		if _, exists := seen[advisory.ID]; exists {
-			continue
-		}
-		seen[advisory.ID] = struct{}{}
+	if duplicates > 0 {
+		// 记录别名去重结果，使报告说明“条数已按同一漏洞合并”，而不是静默减少。
+		st.addLimitation("OSV_ALIAS_MERGED",
+			fmt.Sprintf("Merged %d duplicate advisory record(s) for %s@%s that shared CVE/GHSA/PYSEC aliases with another record for the same vulnerability.",
+				duplicates, pkg.String(), version))
+	}
+
+	for _, advisory := range deduped {
 		finding := vulnerabilityFinding(pkg, version, advisory, result.Source.ID, st.scanner.advisoryFallbackReference(advisory.ID))
 		if err := st.evaluateRisk(&finding); err != nil {
 			return

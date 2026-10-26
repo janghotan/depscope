@@ -143,23 +143,27 @@ func (s *Scanner) scanResolved(ctx context.Context, item ResolvedPackage) Packag
 	}
 	result.Limitations = append(result.Limitations, vulnerability.Limitations...)
 
+	// 批量路径与单包路径必须采用相同的别名去重，否则项目与清单扫描会重复计数。
+	advisories, duplicates := dedupeAdvisoriesByAlias(vulnerability.Advisories)
 	status := model.CheckSucceeded
 	message := fmt.Sprintf("OSV returned no known advisories affecting %s@%s.", item.Package, item.Version)
-	if len(vulnerability.Advisories) > 0 {
-		message = fmt.Sprintf("OSV returned %d advisory(ies) affecting %s@%s.", len(vulnerability.Advisories), item.Package, item.Version)
+	if len(advisories) > 0 {
+		message = fmt.Sprintf("OSV returned %d advisory(ies) affecting %s@%s.", len(advisories), item.Package, item.Version)
 	}
 	if len(vulnerability.Limitations) > 0 {
 		status = model.CheckUnavailable
-		message = fmt.Sprintf("OSV returned %d advisory(ies) for %s@%s, but part of the response could not be interpreted; coverage is incomplete.", len(vulnerability.Advisories), item.Package, item.Version)
+		message = fmt.Sprintf("OSV returned %d advisory(ies) for %s@%s, but part of the response could not be interpreted; coverage is incomplete.", len(advisories), item.Package, item.Version)
+	}
+	if duplicates > 0 {
+		result.Limitations = append(result.Limitations, model.Limitation{
+			Code: "OSV_ALIAS_MERGED",
+			Message: fmt.Sprintf("Merged %d duplicate advisory record(s) for %s@%s that shared CVE/GHSA/PYSEC aliases with another record for the same vulnerability.",
+				duplicates, item.Package, item.Version),
+		})
 	}
 
-	seen := make(map[string]struct{}, len(vulnerability.Advisories))
 	riskFailed := false
-	for _, advisory := range vulnerability.Advisories {
-		if _, exists := seen[advisory.ID]; exists {
-			continue
-		}
-		seen[advisory.ID] = struct{}{}
+	for _, advisory := range advisories {
 		finding := vulnerabilityFinding(item.Package, item.Version, advisory, vulnerability.Source.ID, s.advisoryFallbackReference(advisory.ID))
 		assessment, riskErr := s.risk.Evaluate(ctx, RiskInput{Finding: finding})
 		if riskErr != nil {

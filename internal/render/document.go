@@ -116,7 +116,13 @@ func FromInventory(result inventory.Result) Document {
 	lines := []string{}
 	byEcosystem := map[model.Ecosystem]int{}
 	for _, pkg := range result.Packages {
-		byEcosystem[pkg.Ecosystem]++
+		// InstalledPackage.Ecosystem 由包管理器填充，缺失时回退到包标识中的生态，
+		// 避免在概览中出现“已安装 5 个包，但 npm 0、PyPI 0”的自相矛盾数字。
+		ecosystem := pkg.Ecosystem
+		if ecosystem == "" {
+			ecosystem = pkg.Package.Ecosystem
+		}
+		byEcosystem[ecosystem]++
 	}
 	ecosystems := make([]string, 0, len(byEcosystem))
 	for ecosystem := range byEcosystem {
@@ -142,6 +148,7 @@ func FromInventory(result inventory.Result) Document {
 			lines = append(lines, fmt.Sprintf("  … %d more package(s) omitted from this view.", len(result.Packages)-limit))
 		}
 	}
+	sections := []Section{inventoryOverviewSection(result, byEcosystem), {Title: "INSTALLED PACKAGES", Lines: lines}}
 	return sanitizeDocument(Document{
 		Title:       "GLOBAL INVENTORY",
 		Target:      "Local npm and PyPI installations",
@@ -154,8 +161,56 @@ func FromInventory(result inventory.Result) Document {
 		Checks:      result.Checks,
 		Sources:     result.Sources,
 		Limitations: result.Limitations,
-		Sections:    []Section{{Title: "INSTALLED PACKAGES", Lines: lines}},
+		Sections:    sections,
 	})
+}
+
+// inventoryOverviewSection 汇总三类不同含义的数量，避免把漏洞、配对与包数混为一谈。
+// 行文本使用等宽标签，保证在纯文本与终端中都能对齐阅读。
+func inventoryOverviewSection(result inventory.Result, byEcosystem map[model.Ecosystem]int) Section {
+	overview := result.Overview
+	if overview.InstalledPackages == 0 && overview.AdvisoryMatches == 0 {
+		overview.InstalledPackages = len(result.Packages)
+		overview.AffectedPackages = 0
+		overview.AdvisoryMatches = len(result.Findings)
+	}
+
+	lines := []string{
+		fmt.Sprintf("Installed packages      %d  (npm %d, PyPI %d)",
+			overview.InstalledPackages,
+			byEcosystem[model.EcosystemNPM],
+			byEcosystem[model.EcosystemPyPI]),
+		fmt.Sprintf("Affected packages       %d  packages with at least one matching advisory",
+			overview.AffectedPackages),
+		fmt.Sprintf("Advisory matches        %d  package-to-vulnerability pairs (the findings listed below)",
+			overview.AdvisoryMatches),
+	}
+
+	if overview.AdvisoryMatches > 0 {
+		order := []model.Severity{
+			model.SeverityCritical,
+			model.SeverityHigh,
+			model.SeverityMedium,
+			model.SeverityLow,
+			model.SeverityUnknown,
+		}
+		parts := make([]string, 0, len(order))
+		for _, severity := range order {
+			if count := overview.FindingsBySeverity[severity]; count > 0 {
+				parts = append(parts, fmt.Sprintf("%s %d", severity, count))
+			}
+		}
+		if len(parts) > 0 {
+			lines = append(lines, "", "Matches by severity     "+strings.Join(parts, " · "))
+		}
+	}
+
+	lines = append(lines, "",
+		"One vulnerability can match several installed packages, and one package can",
+		"match several vulnerabilities. Counts are pairs, not distinct vulnerabilities.",
+		"Advisory records that share CVE/GHSA/PYSEC aliases are merged into one finding.")
+
+	return Section{Title: "OVERVIEW", Lines: lines}
 }
 
 func treeFromGraph(graph model.DependencyGraph) *Tree {

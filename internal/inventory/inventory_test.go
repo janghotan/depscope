@@ -605,3 +605,141 @@ func sourceIDs(sources []model.SourceReference) []string {
 	}
 	return ids
 }
+
+// aliasAdvisory 构造一条带真实别名的 PyPI 公告，用于验证别名去重。
+func aliasAdvisory(id string, aliases []string, severity model.Severity, fixed string) engine.Advisory {
+	return engine.Advisory{
+		ID:             id,
+		Aliases:        aliases,
+		Summary:        "Advisory " + id,
+		Details:        "Advisory used by deterministic inventory tests.",
+		Severity:       severity,
+		FixedVersions:  []string{fixed},
+		AffectedRanges: []string{">=1.24.3, <2.6.3"},
+	}
+}
+
+// TestScanCountsAliasDuplicatesOnce 复现真实 OSV 行为：同一个漏洞以 GHSA 与 PYSEC
+// 两条互为别名的记录返回时，清单只能为它产生一条发现项，并如实说明合并数量。
+func TestScanCountsAliasDuplicatesOnce(t *testing.T) {
+	urllib3, err := model.NewPackageIdentity(model.EcosystemPyPI, "urllib3")
+	if err != nil {
+		t.Fatalf("identity: %v", err)
+	}
+	vulnerabilities := &testVulnerabilities{
+		results: map[string]engine.VulnerabilityResult{
+			"pypi:urllib3@1.26.5": {
+				Source: model.SourceReference{ID: "osv", Provider: model.SourceProviderOSV, Identifier: "pypi:urllib3@1.26.5", RetrievedAt: testNow},
+				Advisories: []engine.Advisory{
+					// CVE-2026-44431 同时存在于 GHSA 与 PYSEC 记录。
+					aliasAdvisory("GHSA-qccp-gfcp-xxvc", []string{"CVE-2026-44431", "PYSEC-2026-141"}, model.SeverityHigh, "2.6.3"),
+					aliasAdvisory("PYSEC-2026-141", []string{"CVE-2026-44431", "GHSA-qccp-gfcp-xxvc"}, model.SeverityHigh, "2.6.3"),
+					// CVE-2024-37891 是另一个独立漏洞，必须保留。
+					aliasAdvisory("GHSA-34jh-p97f-mpxf", []string{"CVE-2024-37891", "PYSEC-2026-1995"}, model.SeverityMedium, "2.2.2"),
+				},
+			},
+		},
+	}
+	// 同时配置 npm，避免 NPM_NOT_CONFIGURED 让结果本身成为 incomplete，
+	// 从而单独验证“别名合并”不会影响状态。
+	result := scanInventory(t, Options{
+		Scanner: newTestScanner(t, vulnerabilities),
+		NPM:     fakeNPMRoot{root: npmFixtureRoot()},
+		Python:  fakePythonLister{packages: []Package{{Name: "urllib3", Version: "1.26.5"}}},
+	})
+
+	if len(result.Findings) != 2 {
+		t.Fatalf("findings = %d, want 2 for 2 distinct vulnerabilities: %v", len(result.Findings), findingKeys(result.Findings))
+	}
+	if result.Summary.ConfirmedFindings != 2 {
+		t.Fatalf("confirmed findings = %d, want 2", result.Summary.ConfirmedFindings)
+	}
+	for _, finding := range result.Findings {
+		if finding.ID == "VULN-PYSEC-2026-141" {
+			t.Fatalf("alias duplicate was counted as a separate finding: %v", findingKeys(result.Findings))
+		}
+		if finding.Version == nil || *finding.Version != "1.26.5" {
+			t.Fatalf("finding %s attached to version %v, want the installed 1.26.5", finding.ID, finding.Version)
+		}
+		if finding.Package != urllib3 {
+			t.Fatalf("finding %s attached to %s, want pypi:urllib3", finding.ID, finding.Package.String())
+		}
+	}
+	merged := false
+	for _, limitation := range result.Limitations {
+		if limitation.Code == "OSV_ALIAS_MERGED" && strings.Contains(limitation.Message, "1 duplicate") {
+			merged = true
+		}
+	}
+	if !merged {
+		t.Fatalf("missing OSV_ALIAS_MERGED limitation: %+v", result.Limitations)
+	}
+	// 别名规范化不构成覆盖缺口：清单必须仍为 findings，不能变成 incomplete。
+	if result.Status != model.StatusFindings {
+		t.Fatalf("status = %q, want %q: alias merging must not make a complete inventory incomplete", result.Status, model.StatusFindings)
+	}
+	for _, check := range result.Checks {
+		if check.ID == "python:vulnerabilities" && check.Status != model.CheckSucceeded {
+			t.Fatalf("python vulnerabilities check = %+v, want succeeded", check)
+		}
+	}
+	if result.Overview.AdvisoryMatches != 2 || result.Overview.AffectedPackages != 1 {
+		t.Fatalf("overview = %+v, want 2 matches on 1 affected package", result.Overview)
+	}
+}
+
+// TestOverviewSeparatesCounts 验证概览区分“已安装包”“受影响包”“漏洞匹配”三类计数。
+func TestOverviewSeparatesCounts(t *testing.T) {
+	requests, err := model.NewPackageIdentity(model.EcosystemPyPI, "requests")
+	if err != nil {
+		t.Fatalf("identity: %v", err)
+	}
+	urllib3, err := model.NewPackageIdentity(model.EcosystemPyPI, "urllib3")
+	if err != nil {
+		t.Fatalf("identity: %v", err)
+	}
+	vulnerabilities := &testVulnerabilities{
+		results: map[string]engine.VulnerabilityResult{
+			"pypi:urllib3@1.26.5": {
+				Source: model.SourceReference{ID: "osv", Provider: model.SourceProviderOSV, Identifier: "pypi:urllib3@1.26.5", RetrievedAt: testNow},
+				Advisories: []engine.Advisory{
+					testAdvisory("GHSA-aaaa-1", model.SeverityHigh),
+					testAdvisory("GHSA-bbbb-2", model.SeverityCritical),
+				},
+			},
+			"pypi:requests@2.31.0": {
+				Source: model.SourceReference{ID: "osv", Provider: model.SourceProviderOSV, Identifier: "pypi:requests@2.31.0", RetrievedAt: testNow},
+				Advisories: []engine.Advisory{
+					testAdvisory("GHSA-cccc-3", model.SeverityLow),
+				},
+			},
+		},
+	}
+	result := scanInventory(t, Options{
+		Scanner: newTestScanner(t, vulnerabilities),
+		Python: fakePythonLister{packages: []Package{
+			{Name: "urllib3", Version: "1.26.5"},
+			{Name: "requests", Version: "2.31.0"},
+			{Name: "certifi", Version: "2024.2.2"},
+		}},
+	})
+
+	overview := result.Overview
+	if overview.InstalledPackages != 3 {
+		t.Fatalf("InstalledPackages = %d, want 3", overview.InstalledPackages)
+	}
+	if overview.AffectedPackages != 2 {
+		t.Fatalf("AffectedPackages = %d, want 2 (urllib3 and requests)", overview.AffectedPackages)
+	}
+	if overview.AdvisoryMatches != 3 {
+		t.Fatalf("AdvisoryMatches = %d, want 3 package-advisory pairs", overview.AdvisoryMatches)
+	}
+	if overview.FindingsBySeverity[model.SeverityCritical] != 1 ||
+		overview.FindingsBySeverity[model.SeverityHigh] != 1 ||
+		overview.FindingsBySeverity[model.SeverityLow] != 1 {
+		t.Fatalf("FindingsBySeverity = %v, want one finding per severity", overview.FindingsBySeverity)
+	}
+	if requests.String() == "" || urllib3.String() == "" {
+		t.Fatal("identities unexpectedly empty")
+	}
+}

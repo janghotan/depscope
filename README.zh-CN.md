@@ -51,7 +51,7 @@ DepScope 把下面三类信息始终保持可见的区分：
 - **交互式终端界面（Bubble Tea）**——菜单式扫描、比较、项目扫描与全局清单，进度来自引擎的真实工作，扫描可随时取消，支持纯键盘操作。
 - **单包扫描**——在 CLI 或 TUI 中扫描 `npm` 与 `PyPI` 发布版本，可指定精确版本。
 - **项目依赖扫描**——依据 `package-lock.json`（lockfile 版本 2 或 3）依赖图解析 npm `package.json`；Python 支持精确 `==`/`===` 锁定的 `requirements.txt`。
-- **全局清单**——只读列出全局安装的顶层 npm 包，以及所选 Python 解释器的 pip 环境。
+- **全局清单**——只读列出全局安装的顶层 npm 包，以及所选 Python 解释器的 pip 环境；概览分别给出已安装包数、受影响包数与漏洞匹配数。
 - **包比较**——并排扫描两个包，并保留各自独立的失败信息。
 - **本地 HTTP API**——`GET /healthz`、`POST /api/v1/scan` 与 `POST /api/v1/compare`，返回响应前会校验规范 `ScanReport` v1。
 - **网站**——基于 Next.js，支持单包扫描、双包比较，以及完全离线、不发起扫描请求的演示记录。

@@ -563,3 +563,128 @@ func TestInvalidRequestRejected(t *testing.T) {
 		t.Fatal("expected invalid request error")
 	}
 }
+
+// TestAliasDuplicatesAreCountedOnce 复现真实 OSV 行为：同一个漏洞同时返回
+// GHSA 与 PYSEC 两条互为别名的记录时，报告只能产生一条确认发现。
+func TestAliasDuplicatesAreCountedOnce(t *testing.T) {
+	pkg := testPackage()
+	registry := &fakeRegistry{
+		ecosystem: model.EcosystemNPM,
+		metadata:  testMetadata(pkg, "1.0.0"),
+		version:   testVersion(pkg, "1.0.0"),
+	}
+	// 标识与受影响范围取自 PyPI 上真实的别名记录结构。
+	vulnerabilities := &fakeVulnerabilityProvider{result: engine.VulnerabilityResult{
+		Source: model.SourceReference{ID: "osv", Provider: model.SourceProviderOSV, Identifier: "npm:safe-pkg@1.0.0", RetrievedAt: fixedNow},
+		Advisories: []engine.Advisory{
+			{
+				ID:             "GHSA-qccp-gfcp-xxvc",
+				Aliases:        []string{"CVE-2026-44431", "PYSEC-2026-141"},
+				Summary:        "Redirect handling leaks headers across hosts",
+				Severity:       model.SeverityHigh,
+				FixedVersions:  []string{"2.6.3"},
+				AffectedRanges: []string{">=1.26.5, <2.6.3"},
+			},
+			{
+				ID:             "PYSEC-2026-141",
+				Aliases:        []string{"CVE-2026-44431", "GHSA-qccp-gfcp-xxvc"},
+				Summary:        "Redirect handling leaks headers across hosts",
+				Severity:       model.SeverityHigh,
+				FixedVersions:  []string{"2.6.3"},
+				AffectedRanges: []string{">=1.26.5, <2.6.3"},
+			},
+			{
+				ID:             "GHSA-34jh-p97f-mpxf",
+				Aliases:        []string{"CVE-2024-37891", "PYSEC-2026-1995"},
+				Summary:        "Proxy-Authorization header leaks on redirect",
+				Severity:       model.SeverityMedium,
+				FixedVersions:  []string{"2.2.2"},
+				AffectedRanges: []string{">=1.26.0, <2.2.2"},
+			},
+		},
+	}}
+	scanner := buildScanner(t, scannerOptions(registry, vulnerabilities))
+
+	report, err := scanner.Scan(context.Background(), scanRequest(pkg, nil))
+	if err != nil {
+		t.Fatalf("Scan: %v", err)
+	}
+	// 3 条记录，但只有 2 个不同漏洞。
+	if len(report.Findings) != 2 {
+		t.Fatalf("Findings = %d, want 2 (alias duplicates must be merged): %+v", len(report.Findings), findingIDs(report))
+	}
+	if report.Summary.ConfirmedFindings != 2 {
+		t.Fatalf("Summary.ConfirmedFindings = %d, want 2", report.Summary.ConfirmedFindings)
+	}
+	found := false
+	for _, limitation := range report.Limitations {
+		if limitation.Code == "OSV_ALIAS_MERGED" {
+			found = true
+			if !strings.Contains(limitation.Message, "1 duplicate") {
+				t.Fatalf("limitation message = %q, want it to report 1 merged duplicate", limitation.Message)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("missing OSV_ALIAS_MERGED limitation: %+v", report.Limitations)
+	}
+	// 别名合并只是同一漏洞的规范化，不是覆盖缺口：所有检查成功时必须仍为 findings，
+	// 不能因为记录了一条 limitation 就降级为 incomplete。
+	if report.Status != model.StatusFindings {
+		t.Fatalf("Status = %q, want %q: alias normalization must not mark a complete scan incomplete", report.Status, model.StatusFindings)
+	}
+	for _, check := range report.Checks {
+		if check.ID == "vulnerabilities" {
+			if check.Status != model.CheckSucceeded {
+				t.Fatalf("vulnerabilities check = %+v, want succeeded", check)
+			}
+			// 检查消息中的条数必须与合并后的发现数量一致（3 条记录 -> 2 个漏洞）。
+			if !strings.Contains(check.Message, "returned 2 advisory(ies)") {
+				t.Fatalf("check message = %q, want the merged count of 2", check.Message)
+			}
+		}
+	}
+	validateReport(t, report)
+}
+
+// TestAliasMergePreservesEvidence 确认合并后仍保留全部标识，便于追溯原始记录。
+func TestAliasMergePreservesEvidence(t *testing.T) {
+	pkg := testPackage()
+	registry := &fakeRegistry{
+		ecosystem: model.EcosystemNPM,
+		metadata:  testMetadata(pkg, "1.0.0"),
+		version:   testVersion(pkg, "1.0.0"),
+	}
+	vulnerabilities := &fakeVulnerabilityProvider{result: engine.VulnerabilityResult{
+		Source: model.SourceReference{ID: "osv", Provider: model.SourceProviderOSV, Identifier: "npm:safe-pkg@1.0.0", RetrievedAt: fixedNow},
+		Advisories: []engine.Advisory{
+			{ID: "GHSA-g4mx-q9vg-27p4", Aliases: []string{"CVE-2023-45803", "PYSEC-2023-212"}, Summary: "Suppressed body disclosure", Severity: model.SeverityMedium},
+			{ID: "PYSEC-2023-212", Aliases: []string{"CVE-2023-45803", "GHSA-g4mx-q9vg-27p4"}, Summary: "Suppressed body disclosure", Severity: model.SeverityMedium},
+		},
+	}}
+	scanner := buildScanner(t, scannerOptions(registry, vulnerabilities))
+
+	report, err := scanner.Scan(context.Background(), scanRequest(pkg, nil))
+	if err != nil {
+		t.Fatalf("Scan: %v", err)
+	}
+	if len(report.Findings) != 1 {
+		t.Fatalf("Findings = %d, want 1", len(report.Findings))
+	}
+	if got := report.Findings[0].ID; got != "VULN-GHSA-g4mx-q9vg-27p4" {
+		t.Fatalf("finding id = %q, want the representative record", got)
+	}
+	// 证据中的引用必须指向真实记录，而不是被合并掉的重复项。
+	if len(report.Findings[0].Evidence) == 0 {
+		t.Fatal("finding has no evidence")
+	}
+	validateReport(t, report)
+}
+
+func findingIDs(report model.ScanReport) []string {
+	ids := make([]string, 0, len(report.Findings))
+	for _, finding := range report.Findings {
+		ids = append(ids, finding.ID)
+	}
+	return ids
+}
