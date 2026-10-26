@@ -1,0 +1,4 @@
+conflict-pkg==1.0.0
+conflict-pkg==2.0.0
+range-pkg>=1.0
+range-pkg==1.5.0

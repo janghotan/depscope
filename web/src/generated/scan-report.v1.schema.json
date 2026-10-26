@@ -1,0 +1,619 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:depscope:schema:scan-report:1.0.0",
+  "title": "DepScope Scan Report v1",
+  "description": "Canonical API response for a DepScope scan report. Synthetic fixtures must use dataMode=demo and provider=demo sources.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "dataMode",
+    "demoNotice",
+    "scannedAt",
+    "status",
+    "target",
+    "summary",
+    "findings",
+    "checks",
+    "dependencies",
+    "sources",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "dataMode": {
+      "$ref": "#/$defs/dataMode"
+    },
+    "demoNotice": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "scannedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "$ref": "#/$defs/scanStatus"
+    },
+    "target": {
+      "$ref": "#/$defs/scanTarget"
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/checkResult"
+      }
+    },
+    "dependencies": {
+      "$ref": "#/$defs/dependencyGraph"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sourceReference"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/limitation"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "clean"
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "findings": {
+            "maxItems": 0
+          },
+          "checks": {
+            "minItems": 1,
+            "not": {
+              "contains": {
+                "properties": {
+                  "status": {
+                    "enum": ["unavailable", "skipped", "failed"]
+                  }
+                },
+                "required": ["status"]
+              }
+            }
+          },
+          "sources": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "findings"
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "findings": {
+            "minItems": 1
+          },
+          "checks": {
+            "minItems": 1,
+            "not": {
+              "contains": {
+                "properties": {
+                  "status": {
+                    "enum": ["unavailable", "skipped", "failed"]
+                  }
+                },
+                "required": ["status"]
+              }
+            }
+          },
+          "sources": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "incomplete"
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "properties": {
+              "checks": {
+                "maxItems": 0
+              }
+            }
+          },
+          {
+            "properties": {
+              "checks": {
+                "contains": {
+                  "properties": {
+                    "status": {
+                      "enum": ["unavailable", "skipped", "failed"]
+                    }
+                  },
+                  "required": ["status"]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "failed"
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "properties": {
+              "checks": {
+                "contains": {
+                  "properties": {
+                    "status": {
+                      "const": "failed"
+                    }
+                  },
+                  "required": ["status"]
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "limitations": {
+                "minItems": 1
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "dataMode": {
+            "const": "demo"
+          }
+        },
+        "required": ["dataMode"]
+      },
+      "then": {
+        "properties": {
+          "demoNotice": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sources": {
+            "items": {
+              "properties": {
+                "provider": {
+                  "const": "demo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "dataMode": {
+            "const": "live"
+          }
+        },
+        "required": ["dataMode"]
+      },
+      "then": {
+        "properties": {
+          "demoNotice": {
+            "type": "null"
+          },
+          "sources": {
+            "items": {
+              "properties": {
+                "provider": {
+                  "enum": ["osv", "npm", "pypi"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "ecosystem": {
+      "type": "string",
+      "enum": ["npm", "pypi"]
+    },
+    "packageIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ecosystem", "name"],
+      "properties": {
+        "ecosystem": {
+          "$ref": "#/$defs/ecosystem"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "dataMode": {
+      "type": "string",
+      "enum": ["live", "demo"]
+    },
+    "scanStatus": {
+      "type": "string",
+      "enum": ["clean", "findings", "incomplete", "failed", "cancelled"]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low", "unknown"]
+    },
+    "nullableSeverity": {
+      "type": ["string", "null"],
+      "enum": [null, "critical", "high", "medium", "low", "unknown"]
+    },
+    "findingKind": {
+      "type": "string",
+      "enum": ["confirmed", "heuristic"]
+    },
+    "checkStatus": {
+      "type": "string",
+      "enum": ["succeeded", "unavailable", "skipped", "failed"]
+    },
+    "evidenceKind": {
+      "type": "string",
+      "enum": ["advisory", "heuristic", "registry", "dependency-path"]
+    },
+    "dependencyRelationship": {
+      "type": "string",
+      "enum": ["root", "direct", "transitive"]
+    },
+    "sourceProvider": {
+      "type": "string",
+      "enum": ["osv", "npm", "pypi", "demo"]
+    },
+    "scanTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["package", "resolvedVersion"],
+      "properties": {
+        "package": {
+          "$ref": "#/$defs/packageIdentity"
+        },
+        "resolvedVersion": {
+          "type": ["string", "null"],
+          "minLength": 1
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["confirmedFindings", "heuristicWarnings", "highestSeverity"],
+      "properties": {
+        "confirmedFindings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "heuristicWarnings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "highestSeverity": {
+          "$ref": "#/$defs/nullableSeverity"
+        }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "rationale"],
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "summary", "sourceId"],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/evidenceKind"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "title",
+        "description",
+        "severity",
+        "package",
+        "version",
+        "evidence",
+        "risk"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "$ref": "#/$defs/findingKind"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "$ref": "#/$defs/severity"
+        },
+        "package": {
+          "$ref": "#/$defs/packageIdentity"
+        },
+        "version": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        },
+        "risk": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/risk"
+            }
+          ]
+        },
+        "remediation": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "confirmed"
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "version": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence": {
+                "contains": {
+                  "properties": {
+                    "kind": {
+                      "const": "advisory"
+                    }
+                  },
+                  "required": ["kind"]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "checkResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "status", "message", "sourceIds"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/checkStatus"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "dependencyNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "package",
+        "version",
+        "relationship",
+        "dependencyPath",
+        "dependencies"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "package": {
+          "$ref": "#/$defs/packageIdentity"
+        },
+        "version": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "relationship": {
+          "$ref": "#/$defs/dependencyRelationship"
+        },
+        "dependencyPath": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "dependencyGraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rootNodeId", "nodes"],
+      "properties": {
+        "rootNodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/dependencyNode"
+          }
+        }
+      }
+    },
+    "sourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "provider", "identifier", "retrievedAt"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provider": {
+          "$ref": "#/$defs/sourceProvider"
+        },
+        "identifier": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "minLength": 1
+        },
+        "retrievedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "limitation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "nested-app",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "a-pkg": "^1.0.0",
+    "b-pkg": "^1.0.0"
+  }
+}

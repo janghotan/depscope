@@ -1,0 +1,7 @@
+# Entries below exercise unsupported syntax; none are fetched or installed.
+-e ./local-package
+git+https://example.invalid/repo.git#egg=private-lib
+https://example.invalid/archive.tar.gz
+marked-pkg==1.0.0 ; python_version < "3.12"
+-r nested-requirements.txt
+--extra-index-url https://example.invalid/simple

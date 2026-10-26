@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0.0",
+  "dataMode": "demo",
+  "demoNotice": "DEMO DATA - synthetic fixture; not a real security result.",
+  "scannedAt": "2026-01-15T12:00:00Z",
+  "status": "incomplete",
+  "target": {
+    "package": {
+      "ecosystem": "pypi",
+      "name": "depscope-demo-pypi-package"
+    },
+    "resolvedVersion": null
+  },
+  "summary": {
+    "confirmedFindings": 0,
+    "heuristicWarnings": 1,
+    "highestSeverity": "unknown"
+  },
+  "findings": [
+    {
+      "id": "demo-finding-heuristic-1",
+      "kind": "heuristic",
+      "title": "DEMO DATA: synthetic unresolved-dependency warning",
+      "description": "DEMO DATA: the synthetic package version could not be resolved, so this warning remains heuristic.",
+      "severity": "unknown",
+      "package": {
+        "ecosystem": "pypi",
+        "name": "depscope-demo-pypi-package"
+      },
+      "version": null,
+      "evidence": [
+        {
+          "kind": "heuristic",
+          "summary": "DEMO DATA: synthetic metadata suggests a review is needed.",
+          "sourceId": "demo-source-registry"
+        }
+      ],
+      "risk": null
+    }
+  ],
+  "checks": [
+    {
+      "id": "demo-check-dependency-resolution",
+      "name": "Dependency resolution",
+      "status": "failed",
+      "message": "DEMO DATA: dependency resolution intentionally failed for this fixture.",
+      "sourceIds": ["demo-source-registry"]
+    },
+    {
+      "id": "demo-check-registry-metadata",
+      "name": "Registry metadata",
+      "status": "succeeded",
+      "message": "DEMO DATA: synthetic registry metadata was available.",
+      "sourceIds": ["demo-source-registry"]
+    },
+    {
+      "id": "demo-check-vulnerability-lookup",
+      "name": "Vulnerability lookup",
+      "status": "unavailable",
+      "message": "DEMO DATA: vulnerability lookup is intentionally unavailable.",
+      "sourceIds": []
+    },
+    {
+      "id": "demo-check-risk-evaluation",
+      "name": "Risk evaluation",
+      "status": "skipped",
+      "message": "DEMO DATA: risk evaluation was intentionally skipped.",
+      "sourceIds": []
+    }
+  ],
+  "dependencies": {
+    "rootNodeId": "demo-node-root",
+    "nodes": [
+      {
+        "id": "demo-node-root",
+        "package": {
+          "ecosystem": "pypi",
+          "name": "depscope-demo-pypi-package"
+        },
+        "version": null,
+        "relationship": "root",
+        "dependencyPath": ["demo-node-root"],
+        "dependencies": []
+      }
+    ]
+  },
+  "sources": [
+    {
+      "id": "demo-source-registry",
+      "provider": "demo",
+      "identifier": "DEMO-REGISTRY-SNAPSHOT-3",
+      "retrievedAt": "2026-01-15T12:00:00Z"
+    }
+  ],
+  "limitations": [
+    {
+      "code": "DEMO_DATA",
+      "message": "All package, advisory, and source data in this report is synthetic."
+    },
+    {
+      "code": "DEPENDENCY_RESOLUTION_FAILED",
+      "message": "The synthetic package version could not be resolved."
+    },
+    {
+      "code": "VULNERABILITY_LOOKUP_UNAVAILABLE",
+      "message": "Vulnerability data was not available, so this report must not be treated as clean."
+    }
+  ]
+}

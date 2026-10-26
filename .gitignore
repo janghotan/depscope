@@ -1,0 +1,26 @@
+# Go 构建与测试产物
+/bin/
+/dist/
+*.test
+*.out
+coverage.*
+
+# Node.js 与 Next.js 产物（后续阶段使用）
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# 合成 npm 库存夹具属于源码数据，而非已安装依赖。
+!testdata/fixtures/inventory/npm/node_modules/
+!testdata/fixtures/inventory/npm/node_modules/**
+
+# 本地环境与密钥
+.env
+.env.*
+!.env.example
+
+# 编辑器与操作系统文件
+.DS_Store
+.idea/
+.vscode/

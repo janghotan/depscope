@@ -1,0 +1,8 @@
+{
+  "name": "vulnerable-app",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "app-pkg": "^1.0.0"
+  }
+}

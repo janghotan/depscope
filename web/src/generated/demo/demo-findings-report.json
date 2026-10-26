@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "1.0.0",
+  "dataMode": "demo",
+  "demoNotice": "DEMO DATA - synthetic fixture; not a real security result.",
+  "scannedAt": "2026-01-15T12:00:00Z",
+  "status": "findings",
+  "target": {
+    "package": {
+      "ecosystem": "npm",
+      "name": "depscope-demo-vulnerable-package"
+    },
+    "resolvedVersion": "2.0.0"
+  },
+  "summary": {
+    "confirmedFindings": 1,
+    "heuristicWarnings": 1,
+    "highestSeverity": "high"
+  },
+  "findings": [
+    {
+      "id": "demo-finding-confirmed-1",
+      "kind": "confirmed",
+      "title": "DEMO DATA: synthetic vulnerable dependency",
+      "description": "DEMO DATA: this finding exists only to exercise the report contract.",
+      "severity": "high",
+      "package": {
+        "ecosystem": "npm",
+        "name": "depscope-demo-vulnerable-package"
+      },
+      "version": "2.0.0",
+      "evidence": [
+        {
+          "kind": "advisory",
+          "summary": "DEMO DATA: synthetic advisory DEMO-ADVISORY-0001 matches this version.",
+          "sourceId": "demo-source-osv",
+          "reference": "DEMO-ADVISORY-0001"
+        },
+        {
+          "kind": "dependency-path",
+          "summary": "DEMO DATA: the synthetic root package is directly affected.",
+          "sourceId": "demo-source-registry"
+        }
+      ],
+      "risk": {
+        "score": 80,
+        "rationale": "DEMO DATA: synthetic risk rationale used for contract testing."
+      },
+      "remediation": "DEMO DATA: upgrade to 2.1.0 in this synthetic scenario."
+    },
+    {
+      "id": "demo-finding-heuristic-1",
+      "kind": "heuristic",
+      "title": "DEMO DATA: synthetic heuristic warning",
+      "description": "DEMO DATA: this warning has unknown severity and is not a confirmed vulnerability.",
+      "severity": "unknown",
+      "package": {
+        "ecosystem": "npm",
+        "name": "@depscope-demo/transitive-package"
+      },
+      "version": "3.0.0",
+      "evidence": [
+        {
+          "kind": "heuristic",
+          "summary": "DEMO DATA: synthetic heuristic signal from the registry snapshot.",
+          "sourceId": "demo-source-registry"
+        }
+      ],
+      "risk": null
+    }
+  ],
+  "checks": [
+    {
+      "id": "demo-check-dependency-resolution",
+      "name": "Dependency resolution",
+      "status": "succeeded",
+      "message": "DEMO DATA: resolved the synthetic dependency graph.",
+      "sourceIds": ["demo-source-registry"]
+    },
+    {
+      "id": "demo-check-registry-metadata",
+      "name": "Registry metadata",
+      "status": "succeeded",
+      "message": "DEMO DATA: synthetic registry metadata was available.",
+      "sourceIds": ["demo-source-registry"]
+    },
+    {
+      "id": "demo-check-vulnerability-lookup",
+      "name": "Vulnerability lookup",
+      "status": "succeeded",
+      "message": "DEMO DATA: synthetic vulnerability lookup completed.",
+      "sourceIds": ["demo-source-osv"]
+    },
+    {
+      "id": "demo-check-risk-evaluation",
+      "name": "Risk evaluation",
+      "status": "succeeded",
+      "message": "DEMO DATA: synthetic risk evaluation completed.",
+      "sourceIds": []
+    }
+  ],
+  "dependencies": {
+    "rootNodeId": "demo-node-root",
+    "nodes": [
+      {
+        "id": "demo-node-root",
+        "package": {
+          "ecosystem": "npm",
+          "name": "depscope-demo-vulnerable-package"
+        },
+        "version": "2.0.0",
+        "relationship": "root",
+        "dependencyPath": ["demo-node-root"],
+        "dependencies": ["demo-node-transitive"]
+      },
+      {
+        "id": "demo-node-transitive",
+        "package": {
+          "ecosystem": "npm",
+          "name": "@depscope-demo/transitive-package"
+        },
+        "version": "3.0.0",
+        "relationship": "direct",
+        "dependencyPath": ["demo-node-root", "demo-node-transitive"],
+        "dependencies": []
+      }
+    ]
+  },
+  "sources": [
+    {
+      "id": "demo-source-registry",
+      "provider": "demo",
+      "identifier": "DEMO-REGISTRY-SNAPSHOT-2",
+      "retrievedAt": "2026-01-15T12:00:00Z"
+    },
+    {
+      "id": "demo-source-osv",
+      "provider": "demo",
+      "identifier": "DEMO-OSV-SNAPSHOT-2",
+      "retrievedAt": "2026-01-15T12:00:00Z"
+    }
+  ],
+  "limitations": [
+    {
+      "code": "DEMO_DATA",
+      "message": "All package, advisory, and source data in this report is synthetic."
+    }
+  ]
+}

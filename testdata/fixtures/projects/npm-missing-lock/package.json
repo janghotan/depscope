@@ -1,0 +1,9 @@
+{
+  "name": "missing-lock-app",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "parent-pkg": "^1.0.0",
+    "safe-pkg": "~1.2.0"
+  }
+}

@@ -1,0 +1,3 @@
+# Synthetic pinned requirements for deterministic tests.
+Safe_Pkg==1.0.0  # normalized to safe-pkg
+parent-pkg[cli]==2.0.0 --hash=sha256:0123456789abcdef

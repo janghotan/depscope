@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Safe_Pkg",
+    "version": "1.0.0"
+  },
+  {
+    "name": "vulnerable-pkg",
+    "version": "2.3.4"
+  },
+  {
+    "name": "pip",
+    "version": "24.0"
+  }
+]

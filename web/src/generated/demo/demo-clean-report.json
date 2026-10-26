@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "1.0.0",
+  "dataMode": "demo",
+  "demoNotice": "DEMO DATA - synthetic fixture; not a real security result.",
+  "scannedAt": "2026-01-15T12:00:00Z",
+  "status": "clean",
+  "target": {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@depscope-demo/clean-package"
+    },
+    "resolvedVersion": "1.0.0"
+  },
+  "summary": {
+    "confirmedFindings": 0,
+    "heuristicWarnings": 0,
+    "highestSeverity": null
+  },
+  "findings": [],
+  "checks": [
+    {
+      "id": "demo-check-dependency-resolution",
+      "name": "Dependency resolution",
+      "status": "succeeded",
+      "message": "DEMO DATA: resolved the synthetic root package.",
+      "sourceIds": ["demo-source-registry"]
+    },
+    {
+      "id": "demo-check-registry-metadata",
+      "name": "Registry metadata",
+      "status": "succeeded",
+      "message": "DEMO DATA: synthetic registry metadata was available.",
+      "sourceIds": ["demo-source-registry"]
+    },
+    {
+      "id": "demo-check-vulnerability-lookup",
+      "name": "Vulnerability lookup",
+      "status": "succeeded",
+      "message": "DEMO DATA: synthetic vulnerability lookup completed.",
+      "sourceIds": ["demo-source-osv"]
+    },
+    {
+      "id": "demo-check-risk-evaluation",
+      "name": "Risk evaluation",
+      "status": "succeeded",
+      "message": "DEMO DATA: synthetic risk evaluation completed with no findings.",
+      "sourceIds": []
+    }
+  ],
+  "dependencies": {
+    "rootNodeId": "demo-node-root",
+    "nodes": [
+      {
+        "id": "demo-node-root",
+        "package": {
+          "ecosystem": "npm",
+          "name": "@depscope-demo/clean-package"
+        },
+        "version": "1.0.0",
+        "relationship": "root",
+        "dependencyPath": ["demo-node-root"],
+        "dependencies": []
+      }
+    ]
+  },
+  "sources": [
+    {
+      "id": "demo-source-registry",
+      "provider": "demo",
+      "identifier": "DEMO-REGISTRY-SNAPSHOT-1",
+      "retrievedAt": "2026-01-15T12:00:00Z"
+    },
+    {
+      "id": "demo-source-osv",
+      "provider": "demo",
+      "identifier": "DEMO-OSV-SNAPSHOT-1",
+      "retrievedAt": "2026-01-15T12:00:00Z"
+    }
+  ],
+  "limitations": [
+    {
+      "code": "DEMO_DATA",
+      "message": "All package, advisory, and source data in this report is synthetic."
+    }
+  ]
+}
