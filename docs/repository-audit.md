@@ -486,18 +486,18 @@ The following items block or constrain future phases. Full context is in `docs/a
 
 | Blocker or decision | Why it matters |
 | --- | --- |
-| Git is not initialized; no remote URL or default branch is defined (D1) | Required before history, review, CI, or release work |
-| No license has been selected (D2) | Required before public distribution |
-| Go module path is provisional `depscope` (D3) | A canonical remote path is required before publishing or external imports |
-| No JavaScript package manager or Next.js/Tailwind/Node version policy has been chosen (D4) | Website scaffolding would otherwise encode an unapproved choice |
-| Report schema source of truth is resolved (D7) | Implemented and enforced; TypeScript generation is still needed in Phase 6 |
+| Git has no configured remote URL or default branch (D1) | GoReleaser's full `check` requires the actual SCM origin; no repository URL is inferred |
+| No license has been selected (D2) | Tagged release workflow blocks public binary distribution until an approved license is added |
+| Go module path is provisional `depscope` (D3) | Tagged release workflow blocks publication until a canonical module path is selected |
+| JavaScript toolchain decision (D4) | Resolved: Node 24.22.0, pnpm 12.14.0, Next.js 16.4.3, and Tailwind CSS 4.3.3 are pinned |
+| Report schema source of truth (D7) | Resolved and enforced; website TypeScript types are generated and checked against the canonical schema |
 | Scan semantics are limited (D8) | Phase 3 covers npm lockfile v2/v3 graphs and exact-pinned Python requirements; Python transitives, workspaces, peer dependencies, and other formats remain open |
 | Risk rules are defined but conventional and unvalidated (D9) | Scores are prioritization values, not probabilities; calibrating them is still open |
 | API contract, CORS, and request limits are implemented locally; authentication and public deployment are still undefined (D10) | The API is a local, unauthenticated service; safe public operation still requires an authentication and deployment decision |
-| Hosting and deployment targets are undefined (D13) | Required before launch |
+| Hosting and deployment targets are undefined (D13) | No hosted API or website is configured; public deployment requires a separate decision |
 | Project and inventory result integration is undefined (D16) | Results use separate Go types and are not yet schema-valid wire reports; the API deliberately does not expose them, and the website must not expose hand-built JSON for them |
 | Machine-readable CLI output is undefined (D14) | The CLI is human-readable text only; scripting against JSON requires a future format decision |
-| Live source connectivity, terms, and rate limits are unverified | The opt-in smoke test was not executed; live operation cannot be claimed |
+| Source terms and provider-specific rate-limit policies remain unverified | Bounded Phase 8 live scans confirmed connectivity for the exercised paths; the opt-in recurring smoke test was not run |
 | Typosquat reference coverage is a small curated seed | It is not a live top-N dataset; expanding or replacing it requires provenance review |
 
 ## 11. Phase boundaries
@@ -577,4 +577,32 @@ The website now exists under `web/`. The earlier audit entries above are histori
 - A local request through the website's `/api/health` route returned `{"status":"ok"}` from the running Go API. Both local servers were stopped after this check.
 - Git is initialized on `feature/phase-6-website`. The initial repository state is committed; no remote or default branch is configured. The Phase 6 changes are recorded in the current branch history.
 
-Phase 7 recursive resolution and public-source live verification remain deferred. No CI, deployment, authentication, persistence, or telemetry was added.
+## Phase 7 update (2026-10-26)
+
+Phase 7 changed the active phase scope to open-source launch and release engineering. Earlier audit entries remain historical snapshots; this section describes the current checkout.
+
+- Updated the Go toolchain baseline from 1.26.8 to 1.26.10 after `govulncheck` identified standard-library advisories fixed in 1.26.9 and 1.26.10. Updated `golang.org/x/sys` to 0.44.0 and `golang.org/x/text` to 0.41.0 to address three module advisories.
+- Added `.github/workflows/ci.yml` for Go formatting/tests/vet/build and govulncheck, frontend contract/lint/typecheck/tests/audit/build/browser checks, and Linux/macOS/Windows `amd64`/`arm64` cross-builds.
+- Added `.goreleaser.yaml` and `.github/workflows/release.yml` for CLI/API archives and SHA-256 checksums. The tagged release workflow blocks unless an approved `LICENSE` file and canonical module path exist.
+- Added English contributor, security-reporting, and release instructions. Added a terminal-output capture generated from the actual offline synthetic demo command.
+- Go `go test -count=1 ./...`, `go test -race -count=1 ./...`, `go vet ./...`, `go build -trimpath ./...`, and `gofmt -l .` pass with Go 1.26.10. `govulncheck` reports no code-reachable or required-module vulnerabilities after the updates.
+- Website contract check, lint, typecheck, 106 unit/integration tests, production dependency audit, production build, and 3 Playwright browser tests pass. Browser tests use Playwright-managed Chromium.
+- `actionlint .github/workflows/*.yml` passes. Local API health and the website's same-origin `/api/health` proxy both returned `{"status":"ok"}`.
+- GoReleaser snapshot packaging builds separate CLI and API archives for all six release targets. SHA-256 checks validated, and two consecutive snapshot builds produced byte-identical checksum manifests for all 12 archives. Full `goreleaser check` reports that no remote is configured; no URL was invented.
+- Docker is installed, but `docker info` cannot connect to `/var/run/docker.sock` (permission denied). No Dockerfile or orchestration config was added; the verified local workflow runs the API and website as separate processes.
+- No public package scan, release, website deployment, or API deployment was performed. D2 (license), D3 (canonical module path), D1 (remote/default branch), and D13 (hosting) remain unresolved.
+- Recursive dependency resolution and public-source live verification remain deferred and unassigned; they were not part of the owner-approved Phase 7 scope.
+
+## Phase 8 update (2026-10-26)
+
+The final integration review ran the documented suites and exercised live and offline user journeys. It also found and fixed one cache-freshness reporting defect: provider source timestamps previously advanced on an HTTP-cache hit even though the cached upstream bytes had not been fetched again. The fetch cache now stores the original retrieval timestamp with successful JSON, and npm, PyPI, and OSV source references use that timestamp. A cache regression test and an npm-provider cache-hit test cover the behavior.
+
+- `gofmt -l .`, `go test -count=1 ./...`, `go test -race -count=1 ./...`, `go vet ./...`, `go build -trimpath ./...`, and `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...` passed after the fix.
+- Website `pnpm install --frozen-lockfile`, `pnpm check:contract`, `pnpm lint`, `pnpm typecheck`, `pnpm test` (106 tests), `pnpm audit --prod --audit-level high`, `pnpm build`, `pnpm exec playwright install chromium`, and `pnpm test:e2e` passed (3 browser tests).
+- Live npm and PyPI scans ran through the CLI, including from the interactive TUI. npm `lodash@4.17.21` returned OSV-backed findings; PyPI `requests==2.32.4` remained explicitly incomplete because transitive resolution is unsupported. A real package comparison preserved both independent outcomes.
+- Live API scan and comparison requests returned schema-validated live reports. Malformed JSON returned `400 invalid_json`, invalid package input returned `400 invalid_request`, and an oversized body returned `413 request_too_large`. A configured CORS allowlist returned `204` for an allowed preflight and `403` for a disallowed origin; a one-request rate-limit burst returned `429 rate_limited` with `Retry-After` on the next scan.
+- A repeated API scan kept the original `npm-registry` and `osv` retrieval timestamps across cache hits while advancing `scannedAt`. The local typosquat reference timestamp advances per scan because it is evaluated locally.
+- Production-browser checks exercised a real live scan, comparison, graph-node keyboard activation, summary copy, JSON export, demo/live isolation, invalid input, and a safe API-unavailable error state. The offline CLI demo produced byte-identical output on repeated runs. A synthetic supported npm project fixture was inspected read-only; the machine inventory command was also run read-only.
+- API `GET /healthz` returned only `{"status":"ok"}` with security headers. Sending `SIGTERM` to the running API logged graceful shutdown and the process exited with status 0. Local browser/API processes were stopped afterward.
+- No Dockerfile or container workflow is configured, so no container build applies. Docker daemon access remains unavailable in this environment (socket permission denied). GitHub Actions could not be run because no remote is configured. No public release or deployment occurred.
+- Release gates remain blocked by the missing approved license and canonical Go module path. No install-from-release procedure could be exercised because no release artifacts have been published.

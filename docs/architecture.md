@@ -4,7 +4,7 @@
 
 This document records the **approved architecture** for DepScope and the boundaries that future phases must preserve.
 
-**Implementation status (2026-10-26):** Phases 1–6 are complete. The repository contains a working engine, live provider adapters, project dependency scanning, read-only global package inventory, terminal surfaces, an HTTP API, and a website over the shared report contract:
+**Implementation status (2026-10-26):** Phases 1–7 are complete. The repository contains a working engine, live provider adapters, project dependency scanning, read-only global package inventory, terminal surfaces, an HTTP API, a website over the shared report contract, and local CI/release configuration:
 
 - Go domain model for package identity, scan status, severity, findings, evidence, checks, dependency graph, sources, limitations, and the complete scan report.
 - Canonical JSON Schema `1.0.0` for the report, embedded in Go and enforced by schema plus semantic validation.
@@ -23,7 +23,7 @@ This document records the **approved architecture** for DepScope and the boundar
 - A Next.js website (`web/`) that proxies live requests to the Go API, validates canonical reports, presents findings and comparisons, and keeps offline demo fixtures isolated from live mode.
 - Deterministic, clearly labelled demo fixtures and tests, plus sanitized `httptest` provider tests, full-path engine integration tests, and synthetic project/inventory fixtures.
 
-Coverage remains deliberately limited. npm project scans follow the lockfile graph but do not resolve workspaces or peer dependencies; Python project scans cover exact pins only and cannot resolve transitives; global inventory covers top-level npm packages and one pip environment. Project and inventory results are separate Go types built from the shared model and are not yet the v1 wire `ScanReport`, so neither API nor website exposes them. CI and deployment do not exist. See `docs/contracts.md`, `docs/api.md`, `docs/risk-rules.md`, and `web/README.md` for implemented behavior.
+Coverage remains deliberately limited. npm project scans follow the lockfile graph but do not resolve workspaces or peer dependencies; Python project scans cover exact pins only and cannot resolve transitives; global inventory covers top-level npm packages and one pip environment. Project and inventory results are separate Go types built from the shared model and are not yet the v1 wire `ScanReport`, so neither API nor website exposes them. CI and tagged-release packaging are configured; public deployment does not exist. See `docs/contracts.md`, `docs/api.md`, `docs/risk-rules.md`, and `web/README.md` for implemented behavior.
 
 The approved product scope is:
 
@@ -90,7 +90,7 @@ The engine is a library, not a process. It owns:
 
 The engine does **not** parse command-line flags, render terminal views, serve HTTP, or contain web presentation logic.
 
-**Project boundary (Phases 1–5):** packages are scanned through the engine. Phase 3 moved local project parsing into the engine layer: `internal/project` detects supported manifests and lockfiles, builds the project graph, and batches packages through the scanner. The Phase 4 CLI/TUI pass a project root or installed-inventory request through `app.Service` and render the returned result; they do not implement their own local parsing or dependency resolution. The Phase 5 API follows the same boundary: it calls `app.Service` for package scans and comparisons and does not expose project or inventory results.
+**Project boundary (Phases 1–6):** packages are scanned through the engine. Phase 3 moved local project parsing into the engine layer: `internal/project` detects supported manifests and lockfiles, builds the project graph, and batches packages through the scanner. The Phase 4 CLI/TUI pass a project root or installed-inventory request through `app.Service` and render the returned result; they do not implement their own local parsing or dependency resolution. The Phase 5 API follows the same boundary: it calls `app.Service` for package scans and comparisons and does not expose project or inventory results. The Phase 6 website consumes canonical reports through its server-side proxy.
 
 **Phase 2 implementation:** `internal/engine/scanner.go` orchestrates the live providers. `internal/sources/npm`, `internal/sources/pypi`, and `internal/sources/osv` implement the source interfaces. `internal/fetch` provides the shared JSON client, and `internal/cache` provides a bounded TTL cache. `internal/live` wires the default providers together. Risk and evidence rules are normative in `docs/risk-rules.md`.
 
@@ -285,21 +285,21 @@ The following are not approved for the initial implementation and require separa
 - Ecosystems other than npm and PyPI.
 - Private registries or authenticated package sources.
 - User accounts, stored scan history, or multi-tenant persistence.
-- Deployment infrastructure, hosted service operation, and CI/CD pipelines.
+- Public deployment infrastructure and hosted service operation.
 - Telemetry, analytics, and crash reporting.
 - A finalized risk-scoring methodology, dependency-graph specification, or comparison-feature specification.
 
 ## 11. Open decisions
 
-Status reflects Phase 5. "Resolved" means the decision is recorded and enforced by the current contracts; "Partial" means only the implemented slice is fixed.
+Status reflects the Phase 8 final integration review (2026-10-26). "Resolved" means the decision is recorded and enforced by the current contracts; "Partial" means only the implemented slice is fixed.
 
 | ID | Decision | Status and impact |
 | --- | --- | --- |
-| D1 | Initialize Git; choose default branch and remote repository URL | **Partial.** Git was initialized on `feature/phase-6-website` and the initial project state was committed. No remote URL or default branch is configured; none is inferred. |
-| D2 | Choose an open-source license | **Open.** Required before publishing or distributing. |
-| D3 | Choose the Go module path | **Partial.** `go.mod` uses provisional `depscope`; a canonical remote path is still required before publishing. |
+| D1 | Initialize Git; choose default branch and remote repository URL | **Partial.** Phases 0–8 are committed locally on `feature/phase-6-website`. No remote URL or default branch is configured; none is inferred. |
+| D2 | Choose an open-source license | **Open.** The tagged-release workflow blocks publishing until the maintainer adds an approved license. |
+| D3 | Choose the Go module path | **Partial.** `go.mod` uses provisional `depscope`; the tagged-release workflow blocks publishing until a canonical path is selected. |
 | D4 | Choose the JavaScript package manager and Next.js, Tailwind CSS, and Node version policy | **Resolved for Phase 6.** The website uses pnpm 12.14.0, Node 24, Next.js 16.4.3, and Tailwind CSS 4.3.3. Exact dependency versions and package manager policy are declared in `web/package.json` and `web/pnpm-lock.yaml`. |
-| D5 | Choose the minimum Go version and supported operating systems/architectures | **Partial.** `go.mod` declares Go 1.26.8; release targets are still open. |
+| D5 | Choose the minimum Go version and supported operating systems/architectures | **Resolved for Phase 7 builds.** Go 1.26.10 is the validated minimum; binary targets are Linux, macOS, and Windows on amd64 and arm64. CI cross-compiles these targets; runtime support has not been tested on every platform. |
 | D6 | Confirm the repository layout and whether Go and web code share one repository root | **Partial.** Go code lives under `internal/`, the schema under `schemas/`, fixtures under `testdata/`, and the Next.js application under `web/` in the same repository. Final layout remains revisitable. |
 | D7 | Choose the report schema source of truth and type-generation/contract-test strategy | **Resolved.** `schemas/scan-report.v1.schema.json` is canonical; Go mirrors it; TypeScript must be generated from it. Contract tests enforce alignment. |
 | D8 | Define scan semantics: manifest vs lockfile vs installed environment, dependency depth, development dependencies, and version resolution | **Partial.** Phase 2 resolves one target package. Phase 3 adds npm project graphs from `package-lock.json` v2/v3 and direct Python dependencies from exact-pinned `requirements.txt`, plus read-only installed inventory. npm workspaces, peer dependencies, Python transitive resolution, other lockfile formats, development-dependency policy, and broader installed-environment scanning remain open. Unsupported or unresolved input always yields `incomplete`, never `clean`. |
@@ -307,7 +307,7 @@ Status reflects Phase 5. "Resolved" means the decision is recorded and enforced 
 | D10 | Define API endpoints, authentication, CORS, rate limits, and request size limits | **Partial.** Phase 5 fixes `GET /healthz`, `POST /api/v1/scan`, and `POST /api/v1/compare`; strict field validation; body, concurrency, timeout, and per-client rate limits; exact-origin CORS; and the stable error envelope in `docs/api.md`. Authentication, authorization, trusted-proxy handling, shared multi-instance limits, and deployment topology remain open. |
 | D11 | Decide offline demo placement and activation | **Resolved.** Go demo scenarios live in `internal/demo` and use deterministic demo providers; website examples use validated synthetic report fixtures, are labelled on every surface, and make no scan or comparison API requests. The shared site header may check local API health. Live and demo data paths stay separate. |
 | D12 | Define caching, timeout, retry, and partial-failure policy | **Resolved for Phase 2.** Bounded TTL cache, provider and scan timeouts, bounded `429`/`5xx` retries with capped `Retry-After`, body limits, and visible partial failures are implemented and documented in `docs/contracts.md`. Source-specific tuning may follow live verification. |
-| D13 | Choose hosting/deployment targets | **Open.** Needed before launch. |
+| D13 | Choose hosting/deployment targets | **Open.** No public website or API deployment is configured or implied by release artifacts. |
 | D14 | Decide whether the CLI emits machine-readable JSON in addition to human-readable output | **Open.** Phase 4 implements human-readable text only. The command surface and exit codes are fixed, but no JSON mode or schema for command envelopes exists. |
 | D15 | Specify dependency graph and comparison features | **Partial.** The website renders the report dependency graph as a keyboard-operable textual tree with direct/transitive relationships, vulnerable-path markers, and node details. Website comparison consumes the documented API envelope and preserves independent side failures. Project scan wire representation remains unspecified. |
 | D16 | Choose how project and global-inventory results integrate with the report contract | **Open.** `internal/project` and `internal/inventory` return separate Go result types built from shared model types. The v1 `ScanReport` requires exactly one target package, so these results are not yet schema-valid reports. The terminal renders them through the shared `Document` model. Phase 5 deliberately does not expose them through the HTTP API; the website must not expose hand-built JSON before this is decided. |

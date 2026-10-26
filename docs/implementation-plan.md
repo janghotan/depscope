@@ -11,8 +11,10 @@ This is a provisional, dependency-ordered plan derived from the approved archite
 - **Phase 4 is complete:** the shared application service, report renderer, Bubble Tea terminal interface, non-interactive CLI, and deterministic offline demo exist.
 - **Phase 5 is complete:** the production-oriented Go HTTP API, its strict transport contract, process-local limits, tests, and operational documentation exist.
 - **Phase 6 is complete (2026-10-26):** the Next.js website uses the resolved pnpm/Node/Next/Tailwind toolchain. It includes the live scan proxy, schema-validated reports, comparison, an isolated offline demo, and browser verification.
-- **Phase 7 remains deferred:** recursive dependency resolution, broader lockfile coverage, and opt-in live verification require an agreed D8 resolution semantics and a separate explicit instruction.
-- Phase numbering and scope are provisional. The project owner's Phase 2 instruction implemented the engine and live adapters together, Phase 3 implemented project scanning and inventory, Phase 4 implemented the terminal experience, and Phase 5 implemented the HTTP API ahead of recursive resolution. This document records the revised sequence: the prior Phase 5 (recursive resolution) is now Phase 7, the prior Phase 6 (HTTP API) is Phase 5, and the prior Phase 7 (website) is Phase 6. Phases 8 and 9 are unchanged.
+- **Phase 7 — Open-source launch and release engineering:** owner-approved replacement scope; CI, supported-platform build checks, GoReleaser configuration, documentation, and distribution hygiene are described below.
+- **Phase 8 — Final end-to-end verification:** complete on 2026-10-26. The final review reran Go and frontend checks, exercised live CLI/API/website paths where available, checked offline and partial-result behavior, and fixed cached source timestamps that had been presented as current retrieval times.
+- Recursive dependency resolution and broader lockfile coverage remain deferred and unassigned; they require agreed D8 semantics and a separate explicit instruction. The build-tagged recurring live smoke test was not run; Phase 8 instead performed bounded manual live scans of representative npm and PyPI packages.
+- The owner assigned Phase 7 release engineering and Phase 8 final verification explicitly. Earlier unstarted Phase 7–9 feature proposals are superseded by those assignments and do not grant authority for later feature work.
 
 Each phase has a gate: work does not begin until the previous phase's exit criteria are met and the project owner approves the next phase.
 
@@ -23,7 +25,7 @@ Each phase has a gate: work does not begin until the previous phase's exit crite
 3. Keep the shared engine as the only place where dependency analysis and risk logic live.
 4. Build against deterministic fixtures first; live network integration comes after the fixture path is stable.
 5. Add tests in the phase that introduces behavior, not in a later cleanup phase.
-6. Do not add CI, deployment, or release automation until the hardening phase is explicitly approved.
+6. CI and tagged-release automation were explicitly approved for Phase 7; public deployment still requires a separate decision and instruction.
 7. Do not commit, push, publish, or deploy without explicit authorization.
 
 ## 3. Phase sequence
@@ -180,7 +182,7 @@ Each phase has a gate: work does not begin until the previous phase's exit crite
 **Deliberately deferred:**
 
 - Machine-readable JSON output and any command-envelope schema (D14).
-- Recursive dependency resolution, broader lockfile coverage, and live verification (Phase 7).
+- Recursive dependency resolution, broader lockfile coverage, and live verification (deferred; no phase assignment).
 - HTTP API (delivered in Phase 5) and website integration (Phase 6).
 - Project and inventory wire serialization (D16).
 - Git initialization, license, CI, release, and deployment.
@@ -219,7 +221,7 @@ Each phase has a gate: work does not begin until the previous phase's exit crite
 - Project and inventory wire serialization and API exposure (D16 remains open).
 - Response caching, scan-history persistence, telemetry, and a demo endpoint.
 - Website implementation (Phase 6).
-- Recursive dependency resolution and live verification (Phase 7).
+- Recursive dependency resolution and live verification (deferred; no phase assignment).
 
 **Exit criteria met:**
 
@@ -255,73 +257,48 @@ Each phase has a gate: work does not begin until the previous phase's exit crite
 - The production build, lint, typecheck, and unit tests pass.
 - Browser tests cover the package scan journey, demo/live separation, and mobile layout.
 
-### Phase 7 — Recursive dependency resolution and live verification
+### Phase 7 — Open-source launch and release engineering
 
-**Objective:** extend scanning beyond the supported lockfile graph to broader dependency closures, and verify the live adapters against real public services under controlled, opt-in conditions.
+**Objective:** prepare a credible local release process without publishing or deploying.
 
-**Status:** deferred. Requires a separate explicit instruction and an agreed D8 resolution semantics.
+**Status:** complete under the project owner's explicit instruction. Public binary publication remains blocked on D2 (license) and D3 (canonical Go module path); deployment remains out of scope.
 
-**Dependencies:** Phase 3 complete; D8 resolution semantics must be agreed before implementation. Confirmed source terms, client identification, and rate limits are required before live verification is treated as available. D16 should be resolved before recursive project results are exposed through transport surfaces. Any new wire fields require an explicit schema decision.
+**Deliverables:**
 
-**Proposed deliverables:**
-
-- Agreed resolution semantics for npm and Python, including additional lockfile/manifest inputs, workspace and peer dependency policy, transitive depth, and development-dependency policy.
-- Recursive Python resolution and vulnerability queries for every resolved node, with dependency-path evidence.
-- Broader npm lockfile support only where semantics are agreed and testable.
-- Cycle, duplicate, conflict, and unresolved-node handling across the full graph.
-- Partial-failure behavior for mixed registry and OSV results across the graph.
-- Recorded fixtures derived from representative live responses with retained provenance.
-- Opt-in live verification results and documented source terms/rate-limit observations.
+- English README with verified quick start, real terminal capture, supported scope, a clearly synthetic example, methodology, architecture, API, security limits, contribution guidance, and license status.
+- CI for Go formatting/tests/vet/build, schema and API contract tests, frontend lint/typecheck/unit tests/production build/browser journey, static security checks, and Linux/macOS/Windows amd64/arm64 cross-builds.
+- GoReleaser snapshot packaging with deterministic build metadata, SHA-256 checksums, and a tagged-release workflow blocked until license and canonical module path decisions are made.
+- Verified local startup instructions for the Go API and website; no public deployment or assumed hosting configuration.
+- Contribution, security reporting, and release procedures that identify unresolved maintainer decisions.
 
 **Exit criteria:**
 
-- A project with Python dependencies can complete a resolved scan, or clearly reports which nodes remain unresolved.
-- Transitive findings carry dependency-path evidence and appear in the graph.
-- Fixture tests remain deterministic and network-free.
-- Live verification is opt-in, documented, and does not gate the default test suite.
-- No source failure, unresolved node, or skipped check can produce `clean`.
+- The README quick start, offline demo, local API/website setup, and documented test/build commands are run and verified.
+- Release configuration is validated locally in snapshot mode; no release is triggered.
+- Every check failure, platform limitation, unresolved decision, and environment blocker is reported accurately.
+- D2 and D3 remain explicit gates if unresolved; no license is invented.
 
-### Phase 8 — Cross-surface integration and demonstration
+### Phase 8 — Final end-to-end verification (complete)
 
-**Objective:** prove that terminal and website results agree and that the offline demo is reproducible.
+**Objective:** independently verify the current implementation and reconcile the repository checklist with observed behavior.
 
-**Dependencies:** Phases 4–7; D11 (demo placement); D15 if graph or comparison features are approved.
+**Delivered:**
 
-**Proposed deliverables:**
-
-- End-to-end offline demo for both surfaces.
-- Cross-surface consistency checks on the same fixture scan.
-- Dependency graph and comparison features only if separately specified and approved.
-- Accessibility, performance, and error-state review.
-- Updated user-facing documentation.
+- Re-ran Go formatting, tests, race tests, vet, build, vulnerability analysis, and the website contract, lint, typecheck, test, audit, build, and browser checks.
+- Exercised live npm and PyPI CLI scans, terminal scans, package comparison, project scanning, global inventory, API and website proxy requests, and offline demo determinism without installing or executing scanned packages.
+- Verified API validation, oversized-body handling, CORS allowlists, rate limiting, safe errors, partial results, health response, source cache timestamps, and graceful shutdown.
+- Fixed cache-hit provenance so the source retrieval time continues to identify the original upstream fetch.
+- Recorded release and deployment gates that remain unresolved; no release or deployment was triggered.
 
 **Exit criteria:**
 
-- The same scan input produces consistent report content across surfaces.
-- Demo output is deterministic and clearly labelled.
-- Unapproved features remain out of scope.
+- Each requirement is marked pass, blocked, or not implemented based on a named check or observed environment limit.
+- Fixes have focused regression tests and the final relevant suites pass.
+- Remaining release, platform-runtime, and deployment limitations are explicit.
 
-### Phase 9 — Hardening, release, and operations
+### Deferred scope without phase assignment
 
-**Objective:** prepare the project for distribution and operation.
-
-**Dependencies:** Phase 8 complete; D1, D2, D13, and deployment decisions resolved.
-
-**Proposed deliverables:**
-
-- CI pipelines and required checks.
-- Release packaging for the CLI and API.
-- Website deployment configuration.
-- Security review, dependency pinning, and vulnerability response process.
-- Operational documentation and rollback plan.
-- Final license, contribution, and security-policy documents.
-
-**Exit criteria:**
-
-- CI verifies build, tests, schema contract, and website build.
-- Release artifacts are reproducible and documented.
-- Deployment requires separate explicit approval.
-- All known blockers are either resolved or documented as accepted risks.
+Recursive dependency resolution, broader lockfile support, public-source live verification, additional cross-surface integration, and public deployment remain future decisions. They require explicit owner instructions; D8 resolution semantics and D13 hosting decisions remain open where applicable.
 
 ## 4. Dependency summary
 
@@ -333,15 +310,13 @@ Phase 0 (context, complete)
                             ├─> Phase 4 (terminal experience, complete)
                             ├─> Phase 5 (HTTP API, complete)
                             │       └─> Phase 6 (website)
-                            └─> Phase 7 (recursive resolution and live verification, deferred)
-Phase 1 ─────────────────────────> Phase 6 (may start against fixtures)
+                            └─> Phase 6 (website)
 Phase 5 ─────────────────────────> Phase 6
-Phase 6 ─────────────────────────> Phase 8 (integration and demo)
-Phase 7 ─────────────────────────> Phase 8 (if approved)
-                                        └─> Phase 9 (hardening and release)
+Phases 0–6 ──────────────────────> Phase 7 (release engineering, complete)
+Phase 7 ─────────────────────────> Phase 8 (final verification, complete)
 ```
 
-Phases 4, 5, and 6 are complete. The website uses a same-origin server proxy; the Go API CORS allowlist is not used by browser requests in this deployment shape. Phase 7 is deferred and requires agreed D8 semantics before code is written. Phase 7 can proceed independently of the website only when explicitly authorized. D16 must be resolved before project or inventory results are served by the API or rendered by the website.
+Phases 0–6 are complete. The website uses a same-origin server proxy; the Go API CORS allowlist is not used by browser requests in this local setup. Phase 7 covers CI and local release engineering only. Recursive resolution remains deferred and requires agreed D8 semantics before code is written. D16 must be resolved before project or inventory results are served by the API or rendered by the website.
 
 ## 5. Verification strategy
 
@@ -449,14 +424,14 @@ These commands must not be reported as passing until the corresponding component
 | Web type check | Chosen type-check script | Phase 6 |
 | Web production build | Chosen build script | Phase 6 |
 | Browser verification | Manual or chosen browser automation | Phase 6 |
-| End-to-end checks | Command to be chosen | Phase 8 |
-| CI | Pipeline to be defined | Phase 9 |
+| Browser end-to-end checks | `cd web && pnpm test:e2e` | Phase 6; rerun in Phase 7 CI |
+| CI | `.github/workflows/ci.yml` | Phase 7 |
 
 ## 6. Risks and mitigations
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| Undefined scan semantics | Results may not mean what users expect | Phase 3 limits support to npm lockfile v2/v3 and exact-pinned Python requirements and reports everything else as incomplete; resolve D8 before Phase 7 recursion |
+| Undefined scan semantics | Results may not mean what users expect | Phase 3 limits support to npm lockfile v2/v3 and exact-pinned Python requirements and reports everything else as incomplete; resolve D8 before any recursive-resolution work |
 | Unsupported or missing lockfiles | Users may overestimate coverage | Report supported formats precisely, never substitute latest versions, and force `incomplete` with explicit limitations |
 | Local project scans read unintended files | Unwanted filesystem access or misleading results | Fixed filenames in the project root, bounded file count and size, include escape checks, no symlink traversal, and no recursion into dependency or build directories |
 | Inventory detection fails silently | Empty results look secure | Represent detection failures as unavailable checks and limitations; return `failed` when every configured manager fails |

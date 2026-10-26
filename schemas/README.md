@@ -1,6 +1,6 @@
 # Scan report schema
 
-`scan-report.v1.schema.json` is the canonical, versioned contract for a DepScope scan report and for the public API response body. It is shared by the Go backend and the future TypeScript frontend.
+`scan-report.v1.schema.json` is the canonical, versioned contract for a DepScope scan report and for the public API response body. It is shared by the Go backend and the TypeScript website.
 
 - Schema ID: `urn:depscope:schema:scan-report:1.0.0`
 - Report version: `1.0.0`
@@ -11,7 +11,7 @@
 
 1. This file is the source of truth. Do not hand-copy field definitions into Go or TypeScript.
 2. Go types live in `internal/model/report.go` and are validated against this schema by `internal/contract`.
-3. The TypeScript frontend does not exist yet. When it is scaffolded, its types must be generated from this schema, or generated types must be checked against it in CI.
+3. Website types live in `../web/src/generated/report-types.ts`, are generated from this schema, and are checked with `cd ../web && pnpm check:contract`.
 4. Any field addition, removal, or semantic change requires a schema version decision. `additionalProperties` is false, so schema changes are breaking by default.
 5. A `clean` status is valid only when at least one check exists, every check succeeded, there are no findings, and at least one source is referenced. Missing checks or unavailable, skipped, or failed checks require `incomplete` or another non-clean status.
 6. Reports with `dataMode: demo` require a non-empty `demoNotice` and may reference only `provider: demo` sources.

@@ -19,7 +19,7 @@ If a phase instruction conflicts with these documents, stop and ask the project 
 
 ## Current repository state
 
-As of Phase 6 (2026-10-26):
+As of Phase 8 verification (2026-10-26):
 
 - A Go module exists at the module path `depscope` (provisional; no remote URL has been chosen).
 - Implemented: domain model, canonical report schema v1, schema-backed contract validation, engine interfaces, scan configuration and limiter, scan orchestrator, live npm/PyPI/OSV providers, explainable risk rules, typosquat heuristics, bounded cache and HTTP client, batch resolved-package scanning, project dependency scanning, read-only global package inventory, report rendering and comparison, shared application service, Bubble Tea interactive terminal app, non-interactive CLI and binary, deterministic offline demo runtime, production-oriented HTTP API and API binary, and tests.
@@ -33,9 +33,10 @@ As of Phase 6 (2026-10-26):
 - The Phase 6 website lives under `web/`; it uses Next.js App Router, TypeScript, Tailwind CSS, and pnpm as recorded in `web/package.json` and `web/pnpm-lock.yaml`.
 - The website consumes generated report types and the canonical schema, uses same-origin server routes to proxy the Go API, and does not call registry or vulnerability sources directly.
 - Live web reports support one package at a time, with two-package comparison. Offline demo pages use validated synthetic fixtures and make no scan or comparison API requests; the shared header can check the local API health status.
-- Not implemented: recursive Python dependency resolution, broader lockfile support, project/inventory wire serialization, machine-readable CLI JSON output, CI, release, or deployment.
-- Git is initialized on `feature/phase-6-website`; no remote or default branch is configured. Phase 6 implementation and documentation are committed on this branch.
+- Not implemented: recursive Python dependency resolution, broader lockfile support, project/inventory wire serialization, machine-readable CLI JSON output, and public deployment.
+- Git is initialized on `feature/phase-6-website`; no remote or default branch is configured. Phases 0–8 are committed locally on this branch.
 - There is no license file.
+- Phase 7 added CI, cross-platform build verification, and gated GoReleaser configuration. Tagged releases intentionally stop until the license and canonical module path decisions are resolved. No release or deployment has occurred.
 - Direct runtime dependencies: `github.com/santhosh-tekuri/jsonschema/v6`, `github.com/charmbracelet/bubbletea`, and `github.com/charmbracelet/lipgloss`; their pinned indirect dependencies are recorded in `go.mod` and `go.sum`. The HTTP API uses only the Go standard library and existing internal packages.
 - The Go and website build/test commands are listed in `README.md` and `web/README.md`; report the exact commands actually run.
 - Do not assume planned directories, transports, or commands beyond those listed in `README.md` exist.
@@ -97,7 +98,7 @@ As of Phase 6 (2026-10-26):
 - Do not install dependencies merely to prepare for future work.
 - Install dependencies only when the current approved phase requires them.
 - Use the package manager chosen for the project; do not introduce a second package manager.
-- Keep the validated toolchain baseline aligned with `go.mod` (`go 1.26.8`) unless a phase explicitly updates it.
+- Keep the validated toolchain baseline aligned with `go.mod` (`go 1.26.10`) unless a phase explicitly updates it.
 - Pin versions and commit lockfiles once manifests exist.
 - Do not add CI pipelines, release workflows, deployment infrastructure, or production integrations unless the phase explicitly authorizes them.
 - Verify a tool exists before documenting or using it. Distinguish commands actually run from anticipated commands.
@@ -145,4 +146,4 @@ Phase 1 established contracts only. Phase 2 implemented the engine and live sour
 
 Phase 5 does not authorize implementing the website, recursive Python resolution, additional lockfile or manifest formats, npm workspace or peer dependency scanning, project/inventory wire serialization, machine-readable CLI JSON output, authentication, persistence, telemetry, CI, release workflows, deployment, or live verification runs. Each later phase requires a separate, explicit instruction.
 
-Phase 6 (the Next.js website) is complete. Work on Phase 7 or any other feature requires a separate, explicit instruction. Recursive dependency resolution and live verification remain deferred and require agreed D8 semantics before code is written.
+Phase 6 (the Next.js website) is complete. Phase 7 is the owner-approved open-source launch and release-engineering scope. Recursive dependency resolution and live verification remain deferred and require agreed D8 semantics and a separate explicit instruction before code is written.
