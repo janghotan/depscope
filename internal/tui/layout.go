@@ -2,9 +2,25 @@ package tui
 
 import (
 	"strings"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 // 布局辅助：把不同宽度下面板的排列方式集中在一处，便于测试与维护。
+
+// visibleWidth 返回文本的终端显示宽度，忽略 ANSI 转义序列。
+func visibleWidth(value string) int {
+	return lipgloss.Width(value)
+}
+
+// padVisible 按可见宽度补齐文本；已满足宽度时原样返回，避免截断样式序列。
+func padVisible(value string, width int) string {
+	missing := width - visibleWidth(value)
+	if missing <= 0 {
+		return value
+	}
+	return value + strings.Repeat(" ", missing)
+}
 
 // layoutMode 表示主菜单的排列方式。
 type layoutMode int
@@ -65,7 +81,7 @@ func joinColumns(left, right []string, leftWidth int) []string {
 			out = append(out, strings.TrimRight(leftLine, " "))
 			continue
 		}
-		out = append(out, padPlain(leftLine, leftWidth)+strings.Repeat(" ", columnGap)+rightLine)
+		out = append(out, padVisible(leftLine, leftWidth)+strings.Repeat(" ", columnGap)+rightLine)
 	}
 	return out
 }

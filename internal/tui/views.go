@@ -33,7 +33,7 @@ func (m *Model) smallTerminalView() string {
 func (m *Model) header() string {
 	title := m.screenTitle()
 	brand := m.headerBrand()
-	brandWidth := runeLen(brand)
+	brandWidth := visibleWidth(brand)
 	available := m.width - brandWidth - 2
 	if available < 1 {
 		available = 1
@@ -236,7 +236,7 @@ func (m *Model) menuView() string {
 // brandedLogo 渲染带入场动画的品牌标识；动画结束后完全静态。
 func (m *Model) brandedLogo(size logoSize) string {
 	if size != logoFull && m.brandVisible() && size == logoInline {
-		return m.styles.brandAccentText(shieldMark) + " " + m.styles.brandWordText(m.revealWord("DEPSCOPE"))
+		return m.styles.brandAccentText(shieldMark) + " " + m.styles.brandWordText(m.revealWord(brandName))
 	}
 	return renderLogo(m.styles, size)
 }
@@ -247,20 +247,29 @@ func (m *Model) menuNavLines(width int) []string {
 	for index, entry := range menuEntries {
 		selected := index == m.menuIndex
 		marker := "  "
-		title := entry.title
-		shortcut := fmt.Sprintf("%d", index+1)
 		if selected {
-			marker = m.styles.accentText("› ")
+			marker = "› "
+		}
+		shortcut := fmt.Sprintf("%d", index+1)
+		focus := ""
+		if selected && m.anim.focus > 0 && m.anim.enabled {
+			focus = " ◂"
+		}
+		// 先按可见文本截断标题，再应用样式；否则 ANSI 序列会被计入宽度并截掉标题。
+		titleWidth := width - runeLen(marker) - runeLen(shortcut) - 2 - runeLen(focus)
+		title := truncatePlain(entry.title, titleWidth)
+		if selected {
+			marker = m.styles.accentText(marker)
 			title = m.styles.selectedText(title)
 		} else {
 			title = m.styles.boldText(title)
 		}
-		line := fmt.Sprintf("%s%s  %s", marker, m.styles.subtleText(shortcut), title)
+		line := marker + m.styles.subtleText(shortcut) + "  " + title
 		// 选中行附带焦点指示，保证在无色环境下也一眼可辨。
-		if selected && m.anim.focus > 0 && m.anim.enabled {
-			line += m.styles.accentText(" ◂")
+		if focus != "" {
+			line += m.styles.accentText(focus)
 		}
-		lines = append(lines, truncatePlain(line, width))
+		lines = append(lines, line)
 	}
 	return lines
 }

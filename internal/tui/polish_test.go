@@ -117,6 +117,155 @@ func TestLogoRendererSizesAndFallback(t *testing.T) {
 	}
 }
 
+// goldenWordmark 是完整词标的独立基准位图，字面量拼写为 DEPSCOPE。
+// 它不通过 letterGlyphs 推导，因此漏字、错序或替换字形都会导致测试失败。
+var goldenWordmark = []string{
+	"██████╗ ███████╗██████╗ ███████╗ ██████╗ ██████╗ ██████╗ ███████╗",
+	"██╔══██╗██╔════╝██╔══██╗██╔════╝██╔════╝██╔═══██╗██╔══██╗██╔════╝",
+	"██║  ██║█████╗  ██████╔╝███████╗██║     ██║   ██║██████╔╝█████╗  ",
+	"██║  ██║██╔══╝  ██╔═══╝ ╚════██║██║     ██║   ██║██╔═══╝ ██╔══╝  ",
+	"██████╔╝███████╗██║     ███████║╚██████╗╚██████╔╝██║     ███████╗",
+	"╚═════╝ ╚══════╝╚═╝     ╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚══════╝",
+}
+
+func TestWordmarkSpellsBrandInEveryVariant(t *testing.T) {
+	const want = "DEPSCOPE"
+	if brandName != want {
+		t.Fatalf("brandName = %q, want %q", brandName, want)
+	}
+	if compactName != "DS" {
+		t.Fatalf("compactName = %q, want %q", compactName, "DS")
+	}
+	if !wordmarkComplete(brandName) {
+		t.Fatalf("%q has missing or malformed glyphs", brandName)
+	}
+
+	// 逐行比对独立基准位图，验证字母顺序与字形本身。
+	rows := renderWordmark(brandName)
+	if len(rows) != len(goldenWordmark) {
+		t.Fatalf("wordmark has %d rows, want %d", len(rows), len(goldenWordmark))
+	}
+	if got := wordmarkWidth(brandName); got != 65 {
+		t.Fatalf("wordmark width = %d, want 65", got)
+	}
+	for row := range goldenWordmark {
+		if rows[row] != goldenWordmark[row] {
+			t.Fatalf("wordmark row %d = %q, want %q", row, rows[row], goldenWordmark[row])
+		}
+		if got := runeLen(rows[row]); got != 65 {
+			t.Fatalf("wordmark row %d width = %d, want 65", row, got)
+		}
+	}
+	if got := shieldWidth(); got != 11 {
+		t.Fatalf("shield width = %d, want 11", got)
+	}
+	if got := logoWidth(logoFull); got != 76 {
+		t.Fatalf("full logo width = %d, want 76 (11 shield + 65 wordmark)", got)
+	}
+
+	// 大标识的每一行都必须以完整词标结尾，而不是缩写或残缺字母。
+	plain := newStyles(false)
+	fullLines := strings.Split(renderLogo(plain, logoFull), "\n")
+	if len(fullLines) < len(goldenWordmark) {
+		t.Fatalf("full logo has %d lines, want at least %d", len(fullLines), len(goldenWordmark))
+	}
+	for row := range goldenWordmark {
+		if !strings.HasSuffix(fullLines[row], goldenWordmark[row]) {
+			t.Fatalf("full logo row %d does not carry the wordmark:\n got %q\nwant suffix %q", row, fullLines[row], goldenWordmark[row])
+		}
+	}
+
+	// 其余档位逐一核对实际渲染文本；缩写档位只能使用约定的 DS。
+	for _, test := range []struct {
+		name string
+		size logoSize
+		want string
+	}{
+		{name: "inline", size: logoInline, want: shieldMark + " " + want},
+		{name: "compact", size: logoCompact, want: shieldMark + " " + compactName},
+		{name: "text", size: logoNone, want: want},
+	} {
+		if got := renderLogo(plain, test.size); got != test.want {
+			t.Fatalf("%s logo = %q, want %q", test.name, got, test.want)
+		}
+	}
+	if got := logoAccessibleText(logoCompact); got != want {
+		t.Fatalf("accessible text = %q, want %q", got, want)
+	}
+
+	// 入场动画的每一帧只能是完整词标的前缀，最后一帧必须完整显示。
+	model := newSizedModel(t, &fakeService{}, 100, 32)
+	model.anim.enabled = true
+	for frame := brandRevealFrames; frame >= 0; frame-- {
+		model.anim.brand = frame
+		got := strings.TrimPrefix(model.brandedLogo(logoInline), shieldMark+" ")
+		if got == "" || !strings.HasPrefix(want, got) {
+			t.Fatalf("reveal frame %d = %q, want a non-empty prefix of %q", frame, got, want)
+		}
+		if frame == 0 && got != want {
+			t.Fatalf("final frame = %q, want %q", got, want)
+		}
+	}
+
+	// 各档位不得超过声明宽度；代表性窗口尺寸下页面也不得折行。
+	for _, size := range []logoSize{logoFull, logoInline, logoCompact, logoNone} {
+		rendered := renderLogo(plain, size)
+		if size != logoNone {
+			assertLinesFit(t, rendered, logoWidth(size))
+		}
+	}
+	for _, dimensions := range [][2]int{{46, 14}, {80, 24}, {100, 32}, {140, 40}} {
+		view := newSizedModel(t, &fakeService{}, dimensions[0], dimensions[1]).View()
+		assertLinesFit(t, view, dimensions[0])
+		if !strings.Contains(view, brandName) && !strings.Contains(view, compactName) {
+			t.Fatalf("%dx%d: brand is missing from the view", dimensions[0], dimensions[1])
+		}
+		if dimensions[0] >= 80 && !strings.Contains(view, goldenWordmark[0]) {
+			t.Fatalf("%dx%d: full wordmark is missing from the start screen", dimensions[0], dimensions[1])
+		}
+	}
+}
+
+// stripANSI 返回去除 ANSI 序列后的可见文本，用于核对彩色布局。
+func stripANSI(value string) string {
+	return ansiPattern.ReplaceAllString(value, "")
+}
+
+func TestColorLayoutKeepsHeaderAndNavigationIntact(t *testing.T) {
+	// lipgloss 在非终端环境会自动去除颜色，这里显式强制色彩配置。
+	previousProfile := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	defer lipgloss.SetColorProfile(previousProfile)
+
+	options := testOptions()
+	options.ColorMode = "always"
+	options.Animations = "off"
+
+	for _, dimensions := range [][2]int{{46, 14}, {80, 24}, {100, 32}, {140, 40}} {
+		model := New(&fakeService{}, options)
+		model.Update(tea.WindowSizeMsg{Width: dimensions[0], Height: dimensions[1]})
+		view := model.View()
+		if !ansiPattern.MatchString(view) {
+			t.Fatalf("%dx%d: expected ANSI styling in color mode", dimensions[0], dimensions[1])
+		}
+
+		plain := stripANSI(view)
+		assertLinesFit(t, plain, dimensions[0])
+		lines := strings.Split(plain, "\n")
+		if !strings.HasSuffix(lines[0], "Start") {
+			t.Fatalf("%dx%d: header title is not right-aligned: %q", dimensions[0], dimensions[1], lines[0])
+		}
+		for _, entry := range menuEntries {
+			if !strings.Contains(plain, entry.title) {
+				t.Fatalf("%dx%d: navigation entry %q is clipped in color mode", dimensions[0], dimensions[1], entry.title)
+			}
+		}
+		if !strings.Contains(plain, "› 1  "+menuEntries[0].title) {
+			t.Fatalf("%dx%d: selected navigation row is clipped in color mode:\n%s", dimensions[0], dimensions[1], plain)
+		}
+	}
+}
+
 func TestStartScreenShowsBrandAndAllWorkflows(t *testing.T) {
 	for _, size := range [][2]int{{46, 14}, {80, 24}, {100, 32}, {140, 40}} {
 		model := newSizedModel(t, &fakeService{}, size[0], size[1])
