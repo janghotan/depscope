@@ -62,14 +62,99 @@ DepScope 把下面三类信息始终保持可见的区分：
 
 | 组件 | 要求 |
 | --- | --- |
-| Go CLI / API | Go 1.26.10 或更高版本（与 `go.mod` 一致） |
+| 预编译 CLI | Linux、macOS 或 Windows，架构为 `amd64` 或 `arm64`；Unix 上需要 `curl`、`tar` 与 `sha256sum`/`shasum` |
+| Go CLI / API（源码构建） | Go 1.26.10 或更高版本（与 `go.mod` 一致） |
 | 网站 | Node.js 24.22.0（见 `.nvmrc`）与 pnpm 12.14.0 |
 | 实时扫描 | 可访问 npm Registry、PyPI 与 OSV.dev 的 HTTPS 出站网络 |
 | 浏览器测试 | 由 Playwright 管理的 Chromium |
 
 ## 安装
 
-### 从源码构建
+安装脚本会下载最新发布的 DepScope CLI 版本，用发布附带的 `checksums.txt` 校验其 SHA-256 摘要，然后把 `depscope` 可执行文件安装到当前用户目录。整个过程不需要 root 或管理员权限。
+
+### Linux 与 macOS
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/janghotan/depscope/main/install.sh | sh
+```
+
+### Windows（PowerShell）
+
+```powershell
+irm https://raw.githubusercontent.com/janghotan/depscope/main/install.ps1 | iex
+```
+
+两个安装脚本都支持指定版本与安装目录：
+
+```sh
+# Unix：固定版本并指定目录
+curl -fsSL https://raw.githubusercontent.com/janghotan/depscope/main/install.sh | sh -s -- --version v0.1.0 --dir "$HOME/bin"
+```
+
+```powershell
+# Windows：固定版本并指定目录
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/janghotan/depscope/main/install.ps1))) -Version v0.1.0 -InstallDir "$HOME\bin"
+```
+
+| 配置项 | Unix | Windows |
+| --- | --- | --- |
+| 默认安装目录 | `$HOME/.local/bin` | `%LOCALAPPDATA%\Programs\DepScope\bin` |
+| 目录覆盖方式 | `--dir <path>` 或 `DEPSCOPE_INSTALL_DIR` | `-InstallDir <path>` 或 `DEPSCOPE_INSTALL_DIR` |
+| 版本覆盖方式 | `--version <tag>` 或 `DEPSCOPE_VERSION` | `-Version <tag>` 或 `DEPSCOPE_VERSION` |
+| 是否需要提权 | 否 | 否 |
+
+### 安装脚本会做什么校验
+
+- 拒绝明文 HTTP；下载一律使用 HTTPS 并执行常规证书校验。
+- 先下载 `checksums.txt`，所选归档必须登记在其中。如果某个版本没有为你的平台构建，安装会直接失败，而不会改装修其他文件。
+- 只有在**解压或执行之前**完成归档的 SHA-256 比对。校验失败即中止安装，不留下任何文件。
+- 只安装 `depscope` 可执行文件。独立的 `depscope-api` 归档不会被这些脚本安装。
+- 只有当新版本已下载、校验并暂存到目标目录之后，才会替换已有的 `depscope`。安装结束会打印安装路径，并说明该目录是否在 `PATH` 中。
+- 临时文件建立在系统临时目录下，并在退出时删除。
+
+`checksums.txt` 只能防止同一来源的下载被损坏或错配。这些校验值**没有**做加密签名，因此它本身不能证明发布内容出自维护者。
+
+### 配置 PATH
+
+如果安装目录不在 `PATH` 中，脚本会打印需要添加的那一行。以 Unix 默认目录为例，把它加入 shell 配置文件（`~/.profile`、`~/.zshrc` 或 `~/.bashrc`）：
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Windows 上把目录加入当前用户的 `PATH`，然后打开新的终端：
+
+```powershell
+[Environment]::SetEnvironmentVariable('Path', [Environment]::GetEnvironmentVariable('Path','User') + ";$([Environment]::GetFolderPath('LocalApplicationData'))\Programs\DepScope\bin", 'User')
+```
+
+### 卸载
+
+```sh
+# Unix
+rm -f "$HOME/.local/bin/depscope"
+```
+
+```powershell
+# Windows
+Remove-Item "$env:LOCALAPPDATA\Programs\DepScope" -Recurse -Force
+```
+
+离线演示（`depscope demo`）无需网络，安装后即可使用。
+
+### 发布格式
+
+每个版本都会发布独立的 CLI 与 API 归档：Linux 与 macOS 使用 `depscope_cli_<version>_<os>_<arch>.tar.gz`，Windows 使用 `depscope_cli_<version>_<os>_<arch>.zip`，并附带包含 SHA-256 校验值的 `checksums.txt`。手动下载后请先校验再解压：
+
+```sh
+sha256sum --check checksums.txt --ignore-missing
+```
+
+macOS 上使用 `shasum -a 256 --check checksums.txt`；Windows PowerShell 中用 `(Get-FileHash .\depscope_*.zip -Algorithm SHA256).Hash` 与 `checksums.txt` 中对应条目比对。归档内容与受控的发布流程见[发布工程说明](docs/release.md)。
+
+## 从源码构建
+
+从源码构建适用于开发场景，以及没有预编译二进制的平台。终端用户请使用上面的安装方式。
 
 安装 Go 1.26.10 或更高版本，检出本仓库后执行：
 
@@ -94,36 +179,25 @@ go run ./cmd/depscope help
 go run ./cmd/depscope-api
 ```
 
-### 发布二进制
-
-目前尚未发布任何版本。当维护者发布带标签的版本后，`checksums.txt` 会包含独立的 `depscope_cli_<version>_<os>_<arch>` 与 `depscope_api_<version>_<os>_<arch>` 归档文件的 SHA-256 校验值。解压前请先校验下载文件：
-
-```sh
-sha256sum --check checksums.txt --ignore-missing
-```
-
-macOS 上使用 `shasum -a 256 --check checksums.txt`；Windows PowerShell 中用 `(Get-FileHash .\depscope_*.zip -Algorithm SHA256).Hash` 与 `checksums.txt` 中对应条目比对。分发流程见[发布工程说明](docs/release.md)。
-
 ## 快速开始
 
-```sh
-# 构建终端二进制
-go build -trimpath -o bin/depscope ./cmd/depscope
+完成[安装](#安装)后，`depscope` 命令已经在 `PATH` 中。在源码检出中，用 `go run ./cmd/depscope` 代替 `depscope`，或先执行 `go build -trimpath -o bin/depscope ./cmd/depscope` 再运行 `./bin/depscope`。
 
+```sh
 # 扫描一个 npm 发布版本（会访问 npm Registry 与 OSV.dev）
-./bin/depscope scan lodash@4.17.21
+depscope scan lodash@4.17.21
 
 # 以精确版本扫描一个 PyPI 发布版本
-./bin/depscope scan pypi:requests==2.31.0
+depscope scan pypi:requests==2.31.0
 
 # 扫描当前项目受支持的清单与锁文件
-./bin/depscope project
+depscope project
 
 # 并排比较两个包
-./bin/depscope compare lodash@4.17.21 minimist@1.2.5
+depscope compare lodash@4.17.21 minimist@1.2.5
 
 # 打开交互式终端应用
-./bin/depscope
+depscope
 ```
 
 包语法：

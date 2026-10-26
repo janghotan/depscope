@@ -62,14 +62,99 @@ A scan that could not read OSV is not a scan that found nothing. DepScope report
 
 | Component | Requirement |
 | --- | --- |
-| Go CLI / API | Go 1.26.10 or later (matching `go.mod`) |
+| Prebuilt CLI | Linux, macOS, or Windows on `amd64` or `arm64`; `curl`, `tar`, and `sha256sum`/`shasum` on Unix |
+| Go CLI / API (source builds) | Go 1.26.10 or later (matching `go.mod`) |
 | Website | Node.js 24.22.0 (`.nvmrc`) and pnpm 12.14.0 |
 | Live scans | Outbound HTTPS to the npm Registry, PyPI, and OSV.dev |
 | Browser tests | Playwright-managed Chromium |
 
-## Installation
+## Install
 
-### Build from source
+The installer downloads the latest published DepScope CLI release, verifies its SHA-256 checksum against the release's `checksums.txt`, and installs the `depscope` binary for the current user. It does not require root or administrator privileges.
+
+### Linux and macOS
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/janghotan/depscope/main/install.sh | sh
+```
+
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/janghotan/depscope/main/install.ps1 | iex
+```
+
+Both installers accept an explicit version and an installation directory:
+
+```sh
+# Unix: pin a release and choose the directory
+curl -fsSL https://raw.githubusercontent.com/janghotan/depscope/main/install.sh | sh -s -- --version v0.1.0 --dir "$HOME/bin"
+```
+
+```powershell
+# Windows: pin a release and choose the directory
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/janghotan/depscope/main/install.ps1))) -Version v0.1.0 -InstallDir "$HOME\bin"
+```
+
+| Setting | Unix | Windows |
+| --- | --- | --- |
+| Default install directory | `$HOME/.local/bin` | `%LOCALAPPDATA%\Programs\DepScope\bin` |
+| Directory override | `--dir <path>` or `DEPSCOPE_INSTALL_DIR` | `-InstallDir <path>` or `DEPSCOPE_INSTALL_DIR` |
+| Version override | `--version <tag>` or `DEPSCOPE_VERSION` | `-Version <tag>` or `DEPSCOPE_VERSION` |
+| Requires elevation | No | No |
+
+### What the installers verify
+
+- Plain HTTP is refused; downloads use HTTPS with normal certificate validation.
+- `checksums.txt` is downloaded first, and the selected archive must be listed in it. A release without a build for your platform fails instead of installing something else.
+- The archive's SHA-256 is compared **before** anything is extracted or executed. A mismatch aborts the install and leaves nothing behind.
+- Only the `depscope` binary is installed. The separate `depscope-api` archive is never installed by these scripts.
+- An existing `depscope` binary is replaced only after the new one has been downloaded, verified, and staged in the target directory. The install prints where the binary went and whether that directory is on your `PATH`.
+- Temporary files are created under the system temporary directory and removed on exit.
+
+`checksums.txt` protects against corrupted or mismatched downloads from the same host. The checksums are **not** cryptographically signed, so they do not by themselves prove the release was authored by the maintainer.
+
+### PATH setup
+
+If the install directory is not on your `PATH`, the installer prints the line to add. For the default Unix directory, add this to your shell profile (`~/.profile`, `~/.zshrc`, or `~/.bashrc`):
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+On Windows, add the directory to your user `PATH` and open a new terminal:
+
+```powershell
+[Environment]::SetEnvironmentVariable('Path', [Environment]::GetEnvironmentVariable('Path','User') + ";$([Environment]::GetFolderPath('LocalApplicationData'))\Programs\DepScope\bin", 'User')
+```
+
+### Uninstall
+
+```sh
+# Unix
+rm -f "$HOME/.local/bin/depscope"
+```
+
+```powershell
+# Windows
+Remove-Item "$env:LOCALAPPDATA\Programs\DepScope" -Recurse -Force
+```
+
+The offline demo (`depscope demo`) needs no network and works immediately after installation.
+
+### Release formats
+
+Each release publishes separate CLI and API archives: `depscope_cli_<version>_<os>_<arch>.tar.gz` for Linux and macOS, `depscope_cli_<version>_<os>_<arch>.zip` for Windows, plus `checksums.txt` containing SHA-256 checksums. Verify a manual download before extracting:
+
+```sh
+sha256sum --check checksums.txt --ignore-missing
+```
+
+On macOS use `shasum -a 256 --check checksums.txt`; on Windows PowerShell compare `(Get-FileHash .\depscope_*.zip -Algorithm SHA256).Hash` with the matching `checksums.txt` entry. Release contents and the gated publishing procedure are documented in [release engineering](docs/release.md).
+
+## Build from source
+
+Building from source is the path for development and for platforms without a prebuilt binary. End users should use the installer above.
 
 Install Go 1.26.10 or later, check out this repository, then build:
 
@@ -94,36 +179,25 @@ go run ./cmd/depscope help
 go run ./cmd/depscope-api
 ```
 
-### Release binaries
-
-No release has been published yet. When maintainers publish a tagged release, `checksums.txt` will contain SHA-256 checksums for separate `depscope_cli_<version>_<os>_<arch>` and `depscope_api_<version>_<os>_<arch>` archives. Verify your download before extracting:
-
-```sh
-sha256sum --check checksums.txt --ignore-missing
-```
-
-On macOS use `shasum -a 256 --check checksums.txt`; on Windows PowerShell compare `(Get-FileHash .\depscope_*.zip -Algorithm SHA256).Hash` with the matching `checksums.txt` entry. Distribution steps are documented in [release engineering](docs/release.md).
-
 ## Quick start
 
-```sh
-# Build the terminal binary
-go build -trimpath -o bin/depscope ./cmd/depscope
+After [installing](#install), the `depscope` command is on your `PATH`. From a source checkout, use `go run ./cmd/depscope` instead of `depscope`, or build the binary first with `go build -trimpath -o bin/depscope ./cmd/depscope` and run `./bin/depscope`.
 
+```sh
 # Scan one npm release (contacts the npm Registry and OSV.dev)
-./bin/depscope scan lodash@4.17.21
+depscope scan lodash@4.17.21
 
 # Scan a PyPI release with an exact version
-./bin/depscope scan pypi:requests==2.31.0
+depscope scan pypi:requests==2.31.0
 
 # Scan the current project's supported manifest and lockfile
-./bin/depscope project
+depscope project
 
 # Compare two packages side by side
-./bin/depscope compare lodash@4.17.21 minimist@1.2.5
+depscope compare lodash@4.17.21 minimist@1.2.5
 
 # Open the interactive terminal app
-./bin/depscope
+depscope
 ```
 
 Package syntax:

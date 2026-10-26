@@ -17,7 +17,22 @@ GoReleaser's `check` command also expects an SCM origin from which it can determ
 
 GoReleaser builds `depscope` and `depscope-api` for Linux, macOS, and Windows on `amd64` and `arm64`, with CGO disabled. It creates separate CLI and API archives: `.tar.gz` for Unix targets, `.zip` for Windows, plus a `checksums.txt` file containing SHA-256 checksums. Build paths are trimmed, module timestamps use the source commit timestamp, and packaged file timestamps use a fixed value for reproducible artifacts.
 
-Each archive contains the `depscope` or `depscope-api` binary, `README.md`, `LICENSE`, `NOTICE`, `docs/*.md`, and `schemas/scan-report.v1.schema.json`. `NOTICE` is included because Apache License 2.0 section 4(d) asks a distributor that ships a `NOTICE` file to carry its attribution notices along; omitting it from an archive would make that obligation unmet.
+Each archive contains the `depscope` or `depscope-api` binary, `README.md`, `LICENSE`, `NOTICE`, `docs/*.md`, and `schemas/scan-report.v1.schema.json`.
+
+## Installers
+
+`install.sh` (POSIX sh, Linux and macOS) and `install.ps1` (Windows PowerShell) install the CLI from the latest published release. They are part of the release contract: if an asset is renamed, the installers must change in the same commit.
+
+| Rule | Detail |
+| --- | --- |
+| Asset selection | `depscope_cli_<version>_<os>_<arch>.tar.gz`, or `.zip` on Windows. `<version>` is the tag without its leading `v`, matching GoReleaser's default `Version`. |
+| Checksum order | `checksums.txt` is fetched first; the archive must be listed before it is downloaded. The SHA-256 is verified before extraction or execution. |
+| Transport | HTTPS only. Plain HTTP is refused, and certificate verification cannot be disabled. `DEPSCOPE_CA_BUNDLE` (Unix) only adds a trusted CA for the test suite. |
+| Installation | Only the `depscope` binary; `depscope-api` is never installed. The existing binary is replaced only after the new one is verified and staged. |
+| Privileges | Never root, never `sudo`, never administrator. |
+| Rollback | There is none: the previous binary is overwritten in place. Re-run the installer with `--version`/`-Version` to move between releases. |
+
+Automated coverage lives in `scripts/test_installers.py`. It serves a local HTTPS release built from real archives and covers OS/architecture detection, asset and checksum selection, checksum mismatch, missing assets, HTTP errors, unsupported targets, missing tools, existing-install replacement, and temporary-file cleanup. Those tests exercise simulated network responses; they do not prove that the published assets download. Verify a real install after every release. `NOTICE` is included because Apache License 2.0 section 4(d) asks a distributor that ships a `NOTICE` file to carry its attribution notices along; omitting it from an archive would make that obligation unmet.
 
 CI cross-compiles both command entry points for all six OS/architecture combinations. This proves the binaries compile for those targets; it is not runtime testing on each platform. Users should verify the archive checksum before extracting or running the binaries.
 
