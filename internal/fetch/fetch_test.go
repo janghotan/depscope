@@ -61,6 +61,36 @@ func TestGetJSONCachesSuccessfulResponses(t *testing.T) {
 	}
 }
 
+func TestGetJSONCachePreservesOriginalRetrievedAt(t *testing.T) {
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	var calls atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		_, _ = w.Write([]byte(`{"value":"ok"}`))
+	}))
+	defer server.Close()
+
+	client := newClient(t, &now)
+	var first payload
+	firstRetrievedAt, err := client.GetJSONWithRetrievedAt(context.Background(), "test", server.URL, &first)
+	if err != nil {
+		t.Fatalf("first GetJSONWithRetrievedAt: %v", err)
+	}
+
+	now = now.Add(30 * time.Second)
+	var cached payload
+	cachedRetrievedAt, err := client.GetJSONWithRetrievedAt(context.Background(), "test", server.URL, &cached)
+	if err != nil {
+		t.Fatalf("cached GetJSONWithRetrievedAt: %v", err)
+	}
+	if !cachedRetrievedAt.Equal(firstRetrievedAt) {
+		t.Fatalf("cached RetrievedAt = %v, want original fetch time %v", cachedRetrievedAt, firstRetrievedAt)
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("server calls = %d, want 1 cache hit", got)
+	}
+}
+
 func TestGetJSONRefetchesAfterExpiry(t *testing.T) {
 	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	var calls atomic.Int32

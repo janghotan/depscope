@@ -119,7 +119,7 @@ Rules:
 
 - Every external call uses the scan context plus a provider-specific timeout.
 - Provider concurrency is bounded by the engine limiter.
-- HTTP success responses may be cached with a bounded TTL and a bounded number of entries. Error responses are not cached.
+- HTTP success responses may be cached with a bounded TTL and a bounded number of entries. Error responses are not cached. Cache hits preserve the original upstream retrieval timestamp in the report.
 - Transient HTTP statuses (`429`, `5xx`) are retried a bounded number of times with bounded backoff; `Retry-After` is honored but capped at two seconds.
 - Non-200 responses, malformed JSON, oversized bodies, timeouts, rate limits, and cancellation are classified as `not_found`, `unavailable`, `rate_limited`, `invalid_response`, or `timeout`.
 - A registry failure that prevents version resolution produces `failed`.

@@ -12,9 +12,9 @@ Phase 4 adds the terminal surface and the offline demo runtime. `internal/app` d
 
 Phase 5 adds the HTTP transport (`internal/api`, `cmd/depscope-api`). It consumes `app.Service` and returns canonical `model.ScanReport` values validated through `internal/contract`; the report schema remains `1.0.0`. The API adds its own request contract, comparison envelope, stable error codes, and process-local limits. Project and inventory results are not exposed, and no report wire fields were added. The full HTTP contract is in `docs/api.md`.
 
-Phases 1–5 do **not** implement recursive npm or Python dependency resolution outside a supported lockfile graph, machine-readable terminal JSON output, or the website. Scan scope and evidence rules are documented in `docs/risk-rules.md`.
+Phases 1–6 do **not** implement recursive npm or Python dependency resolution outside a supported lockfile graph or machine-readable terminal JSON output. Scan scope and evidence rules are documented in `docs/risk-rules.md`.
 
-The Go module path is provisionally `depscope`. It contains no remote host and must be replaced with the canonical module path before publication.
+The Go module path is provisionally `depscope`. It contains no remote host and must be replaced with the canonical module path before publication. The Phase 7 tagged-release workflow blocks publication while this value remains provisional or no `LICENSE` file exists.
 
 ## 2. Contract source of truth
 
@@ -204,7 +204,7 @@ Get(ctx context.Context, key string) ([]byte, bool, error)
 Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
 ```
 
-`NoopCache` disables caching. Cache implementations must honor context cancellation and document expiry semantics. The Phase 2 HTTP client uses cache keys containing the HTTP method, full request URL, and a SHA-256 hash of the request body, namespaced under `depscope:fetch:v1`. Successful responses are cached; error responses are not.
+`NoopCache` disables caching. Cache implementations must honor context cancellation and document expiry semantics. The Phase 2 HTTP client uses cache keys containing the HTTP method, full request URL, and a SHA-256 hash of the request body, namespaced under `depscope:fetch:v1`. Successful responses are cached; error responses are not. Cached JSON retains the original upstream retrieval timestamp, so a cache hit cannot make old provider data appear newly retrieved.
 
 ### Provider failures
 

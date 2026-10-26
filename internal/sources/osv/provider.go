@@ -30,7 +30,6 @@ type Options struct {
 type Provider struct {
 	baseURL string
 	client  *fetch.Client
-	now     func() time.Time
 }
 
 // NewProvider 创建 OSV 提供者。
@@ -38,16 +37,15 @@ func NewProvider(opts Options) *Provider {
 	if opts.BaseURL == "" {
 		opts.BaseURL = defaultBaseURL
 	}
-	if opts.Client == nil {
-		opts.Client = fetch.New(fetch.Config{})
-	}
 	if opts.Now == nil {
 		opts.Now = time.Now
+	}
+	if opts.Client == nil {
+		opts.Client = fetch.New(fetch.Config{Now: opts.Now})
 	}
 	return &Provider{
 		baseURL: strings.TrimRight(opts.BaseURL, "/"),
 		client:  opts.Client,
-		now:     opts.Now,
 	}
 }
 
@@ -70,7 +68,8 @@ func (p *Provider) Query(ctx context.Context, pkg model.PackageIdentity, version
 		},
 	}
 	var document queryDocument
-	if err := p.client.PostJSON(ctx, "osv", endpoint, request, &document); err != nil {
+	retrievedAt, err := p.client.PostJSONWithRetrievedAt(ctx, "osv", endpoint, request, &document)
+	if err != nil {
 		return engine.VulnerabilityResult{}, err
 	}
 
@@ -79,7 +78,7 @@ func (p *Provider) Query(ctx context.Context, pkg model.PackageIdentity, version
 		Provider:    model.SourceProviderOSV,
 		Identifier:  pkg.String() + "@" + version,
 		URL:         &endpoint,
-		RetrievedAt: p.now().UTC(),
+		RetrievedAt: retrievedAt,
 	}
 
 	advisories := make([]engine.Advisory, 0, len(document.Vulns))

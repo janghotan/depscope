@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"depscope/internal/cache"
 	"depscope/internal/engine"
 	"depscope/internal/fetch"
 	"depscope/internal/model"
@@ -87,6 +88,44 @@ func TestPackageMetadata(t *testing.T) {
 	}
 	if !metadata.Source.RetrievedAt.Equal(now) {
 		t.Fatalf("RetrievedAt = %v", metadata.Source.RetrievedAt)
+	}
+}
+
+func TestPackageMetadataCachePreservesOriginalRetrievedAt(t *testing.T) {
+	now := time.Date(2026, 10, 25, 12, 0, 0, 0, time.UTC)
+	var calls int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		_, _ = w.Write([]byte(registryFixture))
+	}))
+	defer server.Close()
+
+	client := fetch.New(fetch.Config{
+		Cache:        cache.NewMemoryCache(8, func() time.Time { return now }),
+		CacheEnabled: true,
+		CacheTTL:     time.Minute,
+		Now:          func() time.Time { return now },
+	})
+	provider := npm.NewProvider(npm.Options{BaseURL: server.URL, Client: client})
+	pkg, err := model.NewPackageIdentity(model.EcosystemNPM, "example-pkg")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	first, err := provider.PackageMetadata(context.Background(), pkg)
+	if err != nil {
+		t.Fatalf("first PackageMetadata: %v", err)
+	}
+	now = now.Add(30 * time.Second)
+	second, err := provider.PackageMetadata(context.Background(), pkg)
+	if err != nil {
+		t.Fatalf("cached PackageMetadata: %v", err)
+	}
+	if !second.Source.RetrievedAt.Equal(first.Source.RetrievedAt) {
+		t.Fatalf("cached RetrievedAt = %v, want original fetch time %v", second.Source.RetrievedAt, first.Source.RetrievedAt)
+	}
+	if calls != 1 {
+		t.Fatalf("registry calls = %d, want 1", calls)
 	}
 }
 

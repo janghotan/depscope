@@ -52,6 +52,11 @@ type Client struct {
 	sleep        func(context.Context, time.Duration) error
 }
 
+type cachedJSON struct {
+	RetrievedAt time.Time       `json:"retrievedAt"`
+	Data        json.RawMessage `json:"data"`
+}
+
 // New 创建客户端；未提供的配置使用保守默认值。
 func New(cfg Config) *Client {
 	if cfg.HTTPClient == nil {
@@ -91,30 +96,45 @@ func New(cfg Config) *Client {
 
 // GetJSON 发起 GET 请求并解码 JSON。
 func (c *Client) GetJSON(ctx context.Context, provider, url string, out any) error {
+	_, err := c.GetJSONWithRetrievedAt(ctx, provider, url, out)
+	return err
+}
+
+// GetJSONWithRetrievedAt 发起 GET 请求，并返回该数据最近一次从上游获取的时间。
+func (c *Client) GetJSONWithRetrievedAt(ctx context.Context, provider, url string, out any) (time.Time, error) {
 	return c.doJSON(ctx, provider, http.MethodGet, url, nil, out)
 }
 
 // PostJSON 发起 POST 请求并解码 JSON 响应。
 func (c *Client) PostJSON(ctx context.Context, provider, url string, body, out any) error {
+	_, err := c.PostJSONWithRetrievedAt(ctx, provider, url, body, out)
+	return err
+}
+
+// PostJSONWithRetrievedAt 发起 POST 请求，并返回该数据最近一次从上游获取的时间。
+func (c *Client) PostJSONWithRetrievedAt(ctx context.Context, provider, url string, body, out any) (time.Time, error) {
 	data, err := json.Marshal(body)
 	if err != nil {
-		return &engine.ProviderError{Provider: provider, Kind: engine.ProviderErrorInvalidResponse, Err: fmt.Errorf("encode request: %w", err)}
+		return time.Time{}, &engine.ProviderError{Provider: provider, Kind: engine.ProviderErrorInvalidResponse, Err: fmt.Errorf("encode request: %w", err)}
 	}
 	return c.doJSON(ctx, provider, http.MethodPost, url, data, out)
 }
 
-func (c *Client) doJSON(ctx context.Context, provider, method, url string, body []byte, out any) error {
+func (c *Client) doJSON(ctx context.Context, provider, method, url string, body []byte, out any) (time.Time, error) {
 	if err := ctx.Err(); err != nil {
-		return classifyContextError(provider, err)
+		return time.Time{}, classifyContextError(provider, err)
 	}
 	cacheKey := c.cacheKey(method, url, body)
 	if c.cacheEnabled {
 		if data, found, err := c.cache.Get(ctx, cacheKey); err == nil && found {
-			if err := json.Unmarshal(data, out); err == nil {
-				return nil
+			var cached cachedJSON
+			if err := json.Unmarshal(data, &cached); err == nil && !cached.RetrievedAt.IsZero() && json.Valid(cached.Data) {
+				if err := json.Unmarshal(cached.Data, out); err == nil {
+					return cached.RetrievedAt, nil
+				}
 			}
 		} else if err != nil {
-			return classifyContextError(provider, err)
+			return time.Time{}, classifyContextError(provider, err)
 		}
 	}
 
@@ -122,33 +142,37 @@ func (c *Client) doJSON(ctx context.Context, provider, method, url string, body 
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
 		data, status, retryAfter, err := c.send(ctx, method, url, body)
 		if err != nil {
-			return classifyTransportError(provider, err)
+			return time.Time{}, classifyTransportError(provider, err)
 		}
 		if status == http.StatusOK {
 			if int64(len(data)) > c.maxBodyBytes {
-				return &engine.ProviderError{
+				return time.Time{}, &engine.ProviderError{
 					Provider: provider,
 					Kind:     engine.ProviderErrorInvalidResponse,
 					Err:      fmt.Errorf("response body exceeds %d bytes", c.maxBodyBytes),
 				}
 			}
 			if err := json.Unmarshal(data, out); err != nil {
-				return &engine.ProviderError{
+				return time.Time{}, &engine.ProviderError{
 					Provider: provider,
 					Kind:     engine.ProviderErrorInvalidResponse,
 					Err:      fmt.Errorf("decode JSON: %w", err),
 				}
 			}
+			retrievedAt := c.now().UTC()
 			if c.cacheEnabled {
-				_ = c.cache.Set(ctx, cacheKey, data, c.cacheTTL)
+				cachedData, err := json.Marshal(cachedJSON{RetrievedAt: retrievedAt, Data: data})
+				if err == nil {
+					_ = c.cache.Set(ctx, cacheKey, cachedData, c.cacheTTL)
+				}
 			}
-			return nil
+			return retrievedAt, nil
 		}
 
 		providerErr := statusError(provider, status)
 		lastErr = providerErr
 		if !retryableStatus(status) || attempt == c.maxRetries {
-			return providerErr
+			return time.Time{}, providerErr
 		}
 		delay := c.retryBackoff
 		if retryAfter > delay {
@@ -159,11 +183,11 @@ func (c *Client) doJSON(ctx context.Context, provider, method, url string, body 
 		}
 		if delay > 0 {
 			if err := c.sleep(ctx, delay); err != nil {
-				return classifyContextError(provider, err)
+				return time.Time{}, classifyContextError(provider, err)
 			}
 		}
 	}
-	return lastErr
+	return time.Time{}, lastErr
 }
 
 func (c *Client) send(ctx context.Context, method, url string, body []byte) ([]byte, int, time.Duration, error) {

@@ -34,7 +34,6 @@ type Options struct {
 type Provider struct {
 	baseURL string
 	client  *fetch.Client
-	now     func() time.Time
 }
 
 // NewProvider 创建 PyPI 提供者。
@@ -42,16 +41,15 @@ func NewProvider(opts Options) *Provider {
 	if opts.BaseURL == "" {
 		opts.BaseURL = defaultBaseURL
 	}
-	if opts.Client == nil {
-		opts.Client = fetch.New(fetch.Config{})
-	}
 	if opts.Now == nil {
 		opts.Now = time.Now
+	}
+	if opts.Client == nil {
+		opts.Client = fetch.New(fetch.Config{Now: opts.Now})
 	}
 	return &Provider{
 		baseURL: strings.TrimRight(opts.BaseURL, "/"),
 		client:  opts.Client,
-		now:     opts.Now,
 	}
 }
 
@@ -190,10 +188,11 @@ func (p *Provider) fetchProject(ctx context.Context, pkg model.PackageIdentity) 
 	}
 	endpoint := p.baseURL + "/pypi/" + url.PathEscape(pkg.Name) + "/json"
 	var document projectDocument
-	if err := p.client.GetJSON(ctx, "pypi", endpoint, &document); err != nil {
+	retrievedAt, err := p.client.GetJSONWithRetrievedAt(ctx, "pypi", endpoint, &document)
+	if err != nil {
 		return projectDocument{}, model.SourceReference{}, err
 	}
-	return document, p.source(pkg, endpoint), nil
+	return document, p.source(pkg, endpoint, retrievedAt), nil
 }
 
 func (p *Provider) fetchVersion(ctx context.Context, pkg model.PackageIdentity, version string) (projectDocument, model.SourceReference, error) {
@@ -208,19 +207,20 @@ func (p *Provider) fetchVersion(ctx context.Context, pkg model.PackageIdentity, 
 	}
 	endpoint := p.baseURL + "/pypi/" + url.PathEscape(pkg.Name) + "/" + url.PathEscape(version) + "/json"
 	var document projectDocument
-	if err := p.client.GetJSON(ctx, "pypi", endpoint, &document); err != nil {
+	retrievedAt, err := p.client.GetJSONWithRetrievedAt(ctx, "pypi", endpoint, &document)
+	if err != nil {
 		return projectDocument{}, model.SourceReference{}, err
 	}
-	return document, p.source(pkg, endpoint), nil
+	return document, p.source(pkg, endpoint, retrievedAt), nil
 }
 
-func (p *Provider) source(pkg model.PackageIdentity, endpoint string) model.SourceReference {
+func (p *Provider) source(pkg model.PackageIdentity, endpoint string, retrievedAt time.Time) model.SourceReference {
 	return model.SourceReference{
 		ID:          sourceID,
 		Provider:    model.SourceProviderPyPI,
 		Identifier:  pkg.Name,
 		URL:         &endpoint,
-		RetrievedAt: p.now().UTC(),
+		RetrievedAt: retrievedAt,
 	}
 }
 

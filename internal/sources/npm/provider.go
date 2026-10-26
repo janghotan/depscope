@@ -31,7 +31,6 @@ type Options struct {
 type Provider struct {
 	baseURL string
 	client  *fetch.Client
-	now     func() time.Time
 }
 
 // NewProvider 创建 npm 提供者。
@@ -39,16 +38,15 @@ func NewProvider(opts Options) *Provider {
 	if opts.BaseURL == "" {
 		opts.BaseURL = defaultBaseURL
 	}
-	if opts.Client == nil {
-		opts.Client = fetch.New(fetch.Config{})
-	}
 	if opts.Now == nil {
 		opts.Now = time.Now
+	}
+	if opts.Client == nil {
+		opts.Client = fetch.New(fetch.Config{Now: opts.Now})
 	}
 	return &Provider{
 		baseURL: strings.TrimRight(opts.BaseURL, "/"),
 		client:  opts.Client,
-		now:     opts.Now,
 	}
 }
 
@@ -184,7 +182,8 @@ func (p *Provider) fetch(ctx context.Context, pkg model.PackageIdentity) (regist
 
 	endpoint := p.baseURL + "/" + url.PathEscape(pkg.Name)
 	var document registryDocument
-	if err := p.client.GetJSON(ctx, "npm", endpoint, &document); err != nil {
+	retrievedAt, err := p.client.GetJSONWithRetrievedAt(ctx, "npm", endpoint, &document)
+	if err != nil {
 		return registryDocument{}, model.SourceReference{}, nil, err
 	}
 	if document.Name != "" && !strings.EqualFold(document.Name, pkg.Name) {
@@ -201,7 +200,7 @@ func (p *Provider) fetch(ctx context.Context, pkg model.PackageIdentity) (regist
 		Provider:    model.SourceProviderNPM,
 		Identifier:  pkg.Name,
 		URL:         &endpoint,
-		RetrievedAt: p.now().UTC(),
+		RetrievedAt: retrievedAt,
 	}
 	return document, source, limitations, nil
 }
