@@ -30,6 +30,16 @@ pnpm dev
 
 Visit `http://localhost:3000`. The demo pages work offline. Live requests need the Go API at `http://127.0.0.1:8080` by default. You can configure a different address using the server-only `DEPSCOPE_API_BASE_URL` value in `.env.local`.
 
+pnpm 12 keeps its store operation lock under `$XDG_RUNTIME_DIR` (falling back to `/run/user/<uid>`). If that directory exists but is not writable, `pnpm install --frozen-lockfile` fails with `ERR_PNPM_STORE_DIR_OPEN_OPERATION_LOCK … Read-only file system` even when `--store-dir` points elsewhere. Redirect the runtime directory to a writable, Git-ignored location:
+
+```sh
+cd web
+XDG_RUNTIME_DIR="$PWD/../.scratch-prep/xdg-runtime" \
+  pnpm install --frozen-lockfile --store-dir "$PWD/../.scratch-prep/pnpm-store"
+```
+
+A successful frozen install must leave `pnpm-lock.yaml` unchanged; check with `git status --short web/pnpm-lock.yaml`.
+
 For a production build, run `pnpm build` and then `pnpm start` from `web/`. Set the public site origin in `DEPSCOPE_SITE_URL` at build time so absolute Open Graph image metadata uses the deployed origin. The development default is `http://localhost:3000`.
 
 ## Configuration

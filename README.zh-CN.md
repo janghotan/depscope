@@ -432,7 +432,7 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 
 本项目以 [Apache License 2.0](LICENSE) 发布。第三方组件及其许可证列于 [NOTICE](NOTICE)。
 
-`LICENSE` 与 `NOTICE` 中的版权持有者和年份目前是占位符，维护者必须在本仓库公开或分发任何版本之前完成确认。在此之前，许可证文件虽已准备，但尚未获得法律层面的最终确认。
+`LICENSE` 文本与 <https://www.apache.org/licenses/LICENSE-2.0.txt> 发布的官方 Apache 2.0 文本逐字节一致。`LICENSE` 与 `NOTICE` 中的版权持有者和年份目前是占位符，维护者必须在本仓库公开或分发任何版本之前完成确认。在此之前，许可证文件虽已准备，但尚未获得法律层面的最终确认：加入许可证文件不等于维护者已批准该许可证选择。
 
 ## 试用、反馈、改进
 

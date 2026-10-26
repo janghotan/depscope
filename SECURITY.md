@@ -6,12 +6,30 @@ Please **do not** open a public issue for a vulnerability in DepScope itself. Av
 
 ### Current reporting path
 
-The repository `janghotan/depscope` was created privately on 2026-10-26. During preparation, the private vulnerability reporting endpoint (`repos/{owner}/{repo}/private-vulnerability-reporting`) returned `404 Not Found` for it, and secret scanning was reported as unavailable. So **a private reporting channel is not verified as enabled yet**; the maintainer must confirm it before public launch. Until then:
+The repository `janghotan/depscope` was created privately on 2026-10-26. Its GitHub security features were probed on the same day; the results below are what the API actually returned, not what is intended:
+
+| Feature | Probe result | Meaning |
+| --- | --- | --- |
+| Private vulnerability reporting | `PUT`/`GET repos/{owner}/{repo}/private-vulnerability-reporting` → `404 Not Found` | Not enabled through the API. Re-check after the first push. |
+| Secret scanning | `PATCH` with `secret_scanning` → `422 Secret scanning is not available for this repository.` | Unavailable for this repository; likely a private-repository plan limitation. |
+| Dependabot alerts | `PUT …/vulnerability-alerts` → `204 No Content`; `GET` → `204` | Enabling succeeded. Alert routing only starts once a dependency manifest is on the default branch, so expect activity after the first push. |
+| Code scanning | `GET …/code-scanning/alerts` → `403 Code scanning is not enabled` | Not enabled; the CI workflow performs `govulncheck` instead. |
+| Branch protection | `GET …/branches/main/protection` → `403 Upgrade to GitHub Pro or make this repository public` | Not available on a private repository under this plan. |
+
+**A private reporting channel is therefore not verified as enabled yet**, and the maintainer must confirm one before public launch. Until then:
 
 1. Use GitHub's **Report a vulnerability** button under the repository's **Security** tab if it is shown. This uses GitHub private vulnerability reporting and keeps the report private.
 2. If that button is not available, contact the maintainer through the private channel where this repository was provided to you and ask for an acknowledged disclosure path before sending details.
 
 Do not invent or rely on an unverified email address for security reports. When a private channel is confirmed, it will be documented in this file and in the repository's Security settings.
+
+### Manual steps to finish the GitHub configuration
+
+These settings cannot be changed through the currently authenticated API token and must be completed in the GitHub web interface:
+
+1. **Private vulnerability reporting:** repository **Settings → Security** (the security and analysis area) → enable **Private vulnerability reporting**. The `PUT` API above returned `404`, so confirm the setting in the UI after the first push.
+2. **Secret scanning:** the API reported it unavailable. If it is also absent in **Settings → Code security and analysis**, it requires a GitHub plan or public visibility; record the outcome in this file when it changes.
+3. **Branch protection:** available only for public repositories or paid plans. Options are to make the repository public (a separate, explicit decision), upgrade the plan, or pin the repository's protection expectations in a maintainer note.
 
 Please include:
 

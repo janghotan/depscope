@@ -13,6 +13,13 @@ LICENSE and NOTICE. The maintainer must replace both placeholders with the
 verified holder identity and first-publication year before the repository is
 made public or any release is published. See "License" in README.md.
 
+Apache License 2.0, section 4(d) asks a distributor that distributes a NOTICE
+file to include a readable copy of its attribution notices in the distribution.
+This file is therefore packaged in every release archive. It intentionally does
+not reproduce the copyright attributions of the bundled dependencies; each of
+them is distributed in unmodified source form together with its own LICENSE
+file, and the list below records the relevant license for each one.
+
 Third-party components
 ----------------------
 

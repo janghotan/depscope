@@ -11,17 +11,21 @@ Status of the two former release gates (repository preparation, 2026-10-26):
 
 The repository still has no remote URL, default branch, website host, API host, signing identity, or deployment credentials configured. Binary releases do not deploy either service. Publishing a release remains blocked until the maintainer approves the final repository identity, completes the copyright notices, and explicitly authorizes publication.
 
-GoReleaser's `check` command also expects an SCM origin from which it can determine the release owner and repository. In this checkout no remote is configured, so `goreleaser check` reports `no remote configured to list refs from`; do not substitute a guessed URL. `goreleaser release --snapshot --clean` validates and builds the local package configuration without needing a remote. GoReleaser was not installed in the preparation environment, so neither command was run during repository preparation. Rerun `goreleaser check` after the maintainer configures the actual repository remote.
+GoReleaser's `check` command also expects an SCM origin from which it can determine the release owner and repository. While no remote is configured, `goreleaser check` fails with `configuration is invalid: scm releases: no remote configured to list refs from`; do not substitute a guessed URL. `goreleaser release --snapshot --clean` still validates and builds the local package configuration because a snapshot ignores that remote lookup, and it logs `ignoring errors because this is a snapshot`. Run `goreleaser check` again after the repository remote is configured.
 
 ## Release targets and artifacts
 
 GoReleaser builds `depscope` and `depscope-api` for Linux, macOS, and Windows on `amd64` and `arm64`, with CGO disabled. It creates separate CLI and API archives: `.tar.gz` for Unix targets, `.zip` for Windows, plus a `checksums.txt` file containing SHA-256 checksums. Build paths are trimmed, module timestamps use the source commit timestamp, and packaged file timestamps use a fixed value for reproducible artifacts.
 
+Each archive contains the `depscope` or `depscope-api` binary, `README.md`, `LICENSE`, `NOTICE`, `docs/*.md`, and `schemas/scan-report.v1.schema.json`. `NOTICE` is included because Apache License 2.0 section 4(d) asks a distributor that ships a `NOTICE` file to carry its attribution notices along; omitting it from an archive would make that obligation unmet.
+
 CI cross-compiles both command entry points for all six OS/architecture combinations. This proves the binaries compile for those targets; it is not runtime testing on each platform. Users should verify the archive checksum before extracting or running the binaries.
 
 ## Local package validation
 
-Install Go 1.26.10 and GoReleaser v2.18.2, then run from the repository root:
+Install Go 1.26.10 and GoReleaser v2.18.2, then run from the repository root.
+
+Go 1.26.10 builds the project, but `go install github.com/goreleaser/goreleaser/v2@v2.18.2` needs Go 1.27 or newer for its own module. `go install` therefore selects a newer toolchain automatically; this does not change the `go 1.26.10` directive in `go.mod`.
 
 ```sh
 goreleaser check

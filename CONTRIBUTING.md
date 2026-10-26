@@ -36,7 +36,18 @@ pnpm test
 pnpm build
 pnpm exec playwright install chromium
 pnpm test:e2e
+pnpm audit --prod --audit-level high
 ```
+
+`pnpm install --frozen-lockfile` must not modify `pnpm-lock.yaml`; verify with `git status --short web/pnpm-lock.yaml`. pnpm 12 takes its operation lock under `$XDG_RUNTIME_DIR` (falling back to `/run/user/<uid>`) and writes its store there too. In a restricted environment where that directory exists but is not writable, the install fails with `ERR_PNPM_STORE_DIR_OPEN_OPERATION_LOCK … Read-only file system`, which is an environment problem and not a lockfile problem. Point both the runtime directory and the store at a writable location:
+
+```sh
+cd web
+XDG_RUNTIME_DIR="$PWD/../.scratch-prep/xdg-runtime" \
+  pnpm install --frozen-lockfile --store-dir "$PWD/../.scratch-prep/pnpm-store"
+```
+
+Use a directory that is ignored by Git (`.scratch-prep/` is already in `.gitignore`) so the store is never committed.
 
 Run the local stack. Start the API with `go run ./cmd/depscope-api` (it listens on `127.0.0.1:8080`; liveness is `http://127.0.0.1:8080/healthz`). In another terminal run `cd web`, `cp .env.example .env.local`, and `pnpm dev`, then open `http://localhost:3000`. The site calls the API at `DEPSCOPE_API_BASE_URL`, which defaults to `http://127.0.0.1:8080`.
 

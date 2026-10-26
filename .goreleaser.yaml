@@ -56,6 +56,11 @@ archives:
         info:
           mtime: 2008-01-02T15:04:05Z
           mode: 0644
+      # Apache-2.0 第 4(d) 条要求在分发物中保留 NOTICE，因此随归档一起打包。
+      - src: NOTICE
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
       - src: docs/*.md
         info:
           mtime: 2008-01-02T15:04:05Z
@@ -83,6 +88,11 @@ archives:
           mtime: 2008-01-02T15:04:05Z
           mode: 0644
       - src: LICENSE*
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+      # Apache-2.0 第 4(d) 条要求在分发物中保留 NOTICE，因此随归档一起打包。
+      - src: NOTICE
         info:
           mtime: 2008-01-02T15:04:05Z
           mode: 0644

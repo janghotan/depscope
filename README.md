@@ -431,7 +431,7 @@ Reporting a *dependency* problem found with DepScope belongs in that package's o
 
 Distributed under the [Apache License 2.0](LICENSE). Third-party components and their licenses are listed in [NOTICE](NOTICE).
 
-The copyright holder and year in `LICENSE` and `NOTICE` are placeholders that the maintainer must confirm before this repository is published or any release is distributed. Until then, the license has been prepared but not legally approved.
+The `LICENSE` text is byte-identical to the official Apache 2.0 text published at <https://www.apache.org/licenses/LICENSE-2.0.txt>. The copyright holder and year in `LICENSE` and `NOTICE` are placeholders that the maintainer must confirm before this repository is published or any release is distributed. Until then, the license has been prepared but not legally approved: adding the file is not the same as the maintainer approving the license.
 
 ## Try it, report it, improve it
 
