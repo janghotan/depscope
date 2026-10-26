@@ -523,7 +523,7 @@ Phase 5 narrows:
 
 Still open:
 
-- Verified copyright holder and year in `LICENSE` and `NOTICE`. The Apache License 2.0 text is present; the holder placeholders need maintainer confirmation.
+- Copyright attribution in `LICENSE` and `NOTICE` was set to `Copyright 2026 Jangho Tan` by the maintainer; remaining open items below do not include the license choice.
 - Public repository creation and remote URL.
 - Live source terms, rate limits, and connectivity verification.
 - Recursive Python resolution and additional npm/Python lockfile formats.

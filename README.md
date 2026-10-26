@@ -404,7 +404,7 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 | Website (single scan, comparison, demo records) | Implemented locally; not deployed |
 | CI and GoReleaser configuration | Configured; no release published |
 | Hosted API or hosted website | Not provided |
-| License | Apache License 2.0 text added; copyright holder placeholder pending maintainer confirmation |
+| License | Apache License 2.0; copyright 2026 Jangho Tan |
 | Recursive Python resolution, more lockfiles, CLI JSON output, project/inventory API serialization | Not implemented |
 
 See [implementation plan](docs/implementation-plan.md) for phase history and [architecture decisions](docs/architecture.md) for open items.
@@ -431,7 +431,7 @@ Reporting a *dependency* problem found with DepScope belongs in that package's o
 
 Distributed under the [Apache License 2.0](LICENSE). Third-party components and their licenses are listed in [NOTICE](NOTICE).
 
-The `LICENSE` text is byte-identical to the official Apache 2.0 text published at <https://www.apache.org/licenses/LICENSE-2.0.txt>. The copyright holder and year in `LICENSE` and `NOTICE` are placeholders that the maintainer must confirm before this repository is published or any release is distributed. Until then, the license has been prepared but not legally approved: adding the file is not the same as the maintainer approving the license.
+Copyright 2026 Jangho Tan, as recorded in `LICENSE` and `NOTICE`. The only difference from the official Apache 2.0 text published at <https://www.apache.org/licenses/LICENSE-2.0.txt> is that copyright line; the license terms are unmodified. Naming the copyright holder records the maintainer's chosen attribution and does not by itself establish, transfer, or determine anyone's legal rights beyond the Apache License 2.0 grant.
 
 ## Try it, report it, improve it
 

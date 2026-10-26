@@ -77,5 +77,5 @@ Vitest tests use deterministic fixtures and mocked fetches. Playwright starts th
 - Demo reports are deterministic synthetic fixtures, labelled as demo data, and isolated from live requests.
 - The Go API defaults to loopback and is unauthenticated. Public hosting and deployment security are not configured by this project.
 - No remote repository is configured in this checkout and no public site has been deployed. Repository links appear only when `DEPSCOPE_REPOSITORY_URL` is set.
-- The project is distributed under the Apache License 2.0 (see the repository root `LICENSE`); the copyright holder placeholder still needs maintainer confirmation.
+- The project is distributed under the Apache License 2.0 (see the repository root `LICENSE`); the copyright notice names 2026 Jangho Tan.
 - Brand and documentation assets shared with the repository READMEs live in `assets/` at the repository root; see `assets/README.md`.

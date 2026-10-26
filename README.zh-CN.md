@@ -405,7 +405,7 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 | 网站（单包扫描、比较、演示记录） | 已在本地实现；尚未部署 |
 | CI 与 GoReleaser 配置 | 已配置；未发布任何版本 |
 | 托管 API 或托管网站 | 不提供 |
-| 许可证 | 已加入 Apache License 2.0 文本；版权持有者占位符待维护者确认 |
+| 许可证 | Apache License 2.0；版权 2026 Jangho Tan |
 | Python 递归解析、更多锁文件、CLI JSON 输出、项目与清单的 API 序列化 | 未实现 |
 
 阶段历史见[实施计划](docs/implementation-plan.md)，未决事项见[架构决策](docs/architecture.md)。
@@ -432,7 +432,7 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 
 本项目以 [Apache License 2.0](LICENSE) 发布。第三方组件及其许可证列于 [NOTICE](NOTICE)。
 
-`LICENSE` 文本与 <https://www.apache.org/licenses/LICENSE-2.0.txt> 发布的官方 Apache 2.0 文本逐字节一致。`LICENSE` 与 `NOTICE` 中的版权持有者和年份目前是占位符，维护者必须在本仓库公开或分发任何版本之前完成确认。在此之前，许可证文件虽已准备，但尚未获得法律层面的最终确认：加入许可证文件不等于维护者已批准该许可证选择。
+版权归 2026 Jangho Tan 所有，记录于 `LICENSE` 与 `NOTICE`。与 <https://www.apache.org/licenses/LICENSE-2.0.txt> 发布的官方 Apache 2.0 文本相比，唯一的差别是该版权行；许可证条款未被修改。标注版权持有者是对维护者所选署名的记录，其本身并不据此确立、转让或决定任何人在 Apache License 2.0 授权范围之外的法律权利。
 
 ## 试用、反馈、改进
 

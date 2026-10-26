@@ -6,10 +6,10 @@ The repository contains CI, cross-platform Go build configuration, and a GoRelea
 
 Status of the two former release gates (repository preparation, 2026-10-26):
 
-1. **License file:** `LICENSE` contains the unmodified Apache License 2.0 text. The copyright holder and year in the appendix of `LICENSE` and at the top of `NOTICE` are still placeholders. The maintainer must replace them and confirm the license choice before a public repository or release is published. The tagged-release workflow only checks that a `LICENSE` file exists; it does not verify the placeholder replacement.
+1. **License file:** **Resolved.** `LICENSE` carries the Apache License 2.0 with only the appendix copyright line set to `Copyright 2026 Jangho Tan`; `NOTICE` repeats that attribution. The license terms themselves are unmodified. The tagged-release workflow only checks that a `LICENSE` file exists; it does not inspect the copyright line.
 2. **Go module path:** `go.mod` uses `github.com/janghotan/depscope`, derived from the authenticated GitHub account and the intended repository name `depscope`. Changing the owner or repository name requires updating `go.mod` and every import.
 
-The repository still has no remote URL, default branch, website host, API host, signing identity, or deployment credentials configured. Binary releases do not deploy either service. Publishing a release remains blocked until the maintainer approves the final repository identity, completes the copyright notices, and explicitly authorizes publication.
+The repository is published at `https://github.com/janghotan/depscope` with the local history pushed as the default branch `main`. There is still no website host, API host, signing identity, or deployment credential configured. Binary releases do not deploy either service. Publishing a release remains blocked until a version is chosen and the maintainer explicitly authorizes the tag.
 
 GoReleaser's `check` command also expects an SCM origin from which it can determine the release owner and repository. While no remote is configured, `goreleaser check` fails with `configuration is invalid: scm releases: no remote configured to list refs from`; do not substitute a guessed URL. `goreleaser release --snapshot --clean` still validates and builds the local package configuration because a snapshot ignores that remote lookup, and it logs `ignoring errors because this is a snapshot`. Run `goreleaser check` again after the repository remote is configured.
 
@@ -41,7 +41,7 @@ After the copyright notices, repository owner and name, repository host, and rel
 1. Run the complete checks in [CONTRIBUTING.md](../CONTRIBUTING.md) and resolve every release-blocking security finding.
 2. Run `goreleaser check` and `goreleaser release --snapshot --clean`; inspect the archives and checksums.
 3. Review and approve the version and release notes.
-4. Push a signed `vMAJOR.MINOR.PATCH` tag only after explicit maintainer approval. The `.github/workflows/release.yml` workflow then rechecks that `LICENSE` exists and that `go.mod` does not use the old provisional path, then publishes GoReleaser artifacts using the repository-scoped GitHub token. It does not check the copyright placeholder in `LICENSE` or `NOTICE`.
+4. Push a signed `vMAJOR.MINOR.PATCH` tag only after explicit maintainer approval. The `.github/workflows/release.yml` workflow then rechecks that `LICENSE` exists and that `go.mod` does not use the old provisional path, then publishes GoReleaser artifacts using the repository-scoped GitHub token.
 5. Verify the published checksum file and assets from a clean download. Record any platform runtime checks separately from cross-compilation results.
 
 The workflow is configured but must not be triggered until the copyright notices are completed and release publication is explicitly authorized.
