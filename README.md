@@ -2,7 +2,7 @@
 
 DepScope is an open-source dependency security tool for npm and PyPI projects. It is intended to resolve project dependencies, correlate them with vulnerability data from OSV.dev, and present consistent, explainable risk results in both a terminal interface and a website.
 
-> **Status:** Phase 5 (production-oriented Go HTTP API) is complete. The repository contains the shared Go engine, canonical report schema, live npm/PyPI/OSV adapters, project scanning and global inventory, a report renderer, a shared application service, an interactive Bubble Tea terminal app, a non-interactive CLI, a deterministic offline demo, and an HTTP API over the same service. The Next.js website is not implemented yet.
+> **Status:** Phase 6 (website) is complete. DepScope includes a shared Go security engine and HTTP API, a CLI/TUI, deterministic offline examples, and a Next.js website for live scans, comparisons, and schema-backed reports. See [website setup and scope](web/README.md) for the web-specific limits.
 
 ## Approved architecture
 
@@ -203,13 +203,31 @@ There is no authentication, database, scan-history persistence, telemetry, or ho
 ├── testdata/fixtures/demo/     # deterministic synthetic reports
 ├── testdata/fixtures/inventory/ # synthetic installed-metadata fixtures
 ├── testdata/fixtures/projects/ # synthetic project trees and lockfiles
-├── web/                        # placeholder; website planned for Phase 6
+├── web/                        # Next.js website and browser/component tests
 ├── AGENTS.md
 ├── go.mod
 └── go.sum
 ```
 
-The Next.js application is not created yet.
+## Run the website locally
+
+Start the Go API in one terminal from the repository root:
+
+```sh
+go run ./cmd/depscope-api
+```
+
+In a second terminal:
+
+```sh
+cd web
+pnpm install --frozen-lockfile
+DEPSCOPE_API_BASE_URL=http://127.0.0.1:8080 pnpm dev
+```
+
+Open `http://localhost:3000`. The offline demo works without the API. Live scans and comparisons use the Go API through same-origin server routes; they never call npm, PyPI, or OSV from the browser. Production startup uses `pnpm build` and `pnpm start` in `web/`.
+
+The web server reads `DEPSCOPE_API_BASE_URL` (default `http://127.0.0.1:8080`) and `DEPSCOPE_API_TIMEOUT_MS` (default `100000`, allowed `1000`–`120000`). The optional `DEPSCOPE_REPOSITORY_URL` adds a source repository link when configured with a public HTTPS URL. These are server-side values; do not prefix them with `NEXT_PUBLIC_`. See [web/README.md](web/README.md) for development and browser test commands.
 
 ## Verification
 
@@ -217,12 +235,12 @@ Run from the repository root:
 
 ```sh
 gofmt -l .
-go build -buildvcs=false ./...
+go build ./...
 go vet ./...
 go test -count=1 ./...
 ```
 
-`-buildvcs=false` is required in this environment because a broken empty `.git` directory exists in the parent home directory, which makes Go's VCS stamping fail with `error obtaining VCS status: exit status 128`. This project directory itself is not a Git repository. On a machine without that condition, plain `go build ./...` should be used.
+The project now has its own Git metadata, and `go build ./...` completes successfully in this checkout.
 
 `go test ./internal/contract/` validates every demo fixture against the canonical schema and checks the status, demo-labelling, missing-evidence, unknown-severity, and incomplete-result rules.
 
@@ -240,6 +258,7 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 - [docs/risk-rules.md](docs/risk-rules.md) - scan scope, evidence rules, risk scoring, typosquat dataset, and provider failure behavior.
 - [docs/implementation-plan.md](docs/implementation-plan.md) - phased plan, dependencies, and exit criteria.
 - [docs/repository-audit.md](docs/repository-audit.md) - verified repository state and toolchain details.
+- [web/README.md](web/README.md) - website setup, configuration, tests, and current limitations.
 - [schemas/README.md](schemas/README.md) - canonical schema and versioning rules.
 - [AGENTS.md](AGENTS.md) - persistent instructions for future coding agents.
 
@@ -256,9 +275,10 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 - The offline demo runs without credentials or network access and is deterministic.
 - Report text is sanitized at the render boundary; color is optional and never the sole indicator of risk.
 - No live network request was made during Phase 5 verification; source connectivity and terms remain unverified.
-- Git has not been initialized.
+- Git is initialized on `feature/phase-6-website`; no remote URL is configured.
 - No license has been selected.
-- No website, database, authentication, scan-history persistence, or telemetry exists.
+- The website supports single-package scans and two-package comparisons; it does not scan projects or installed environments.
+- No database, authentication, scan-history persistence, or telemetry exists.
 - Recursive dependency resolution beyond the npm lockfile graph, Python transitive resolution, and live verification remain for later phases.
 - A machine-readable JSON output mode for the terminal has not been designed (D14); the HTTP API has its own JSON transport contract.
 

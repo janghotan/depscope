@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-26T09:56:28Z",
+  "title": "Design System: DepScope",
+  "extensions": {
+    "colorMeta": {
+      "safety-orange": { "role": "primary", "displayName": "Safety Orange", "canonical": "#f1855c", "tonalRamp": ["oklch(15% 0.04 36)", "oklch(25% 0.07 36)", "oklch(35% 0.10 36)", "oklch(45% 0.13 36)", "oklch(55% 0.16 36)", "oklch(65% 0.17 36)", "oklch(75% 0.14 36)", "oklch(90% 0.08 36)"] },
+      "safety-orange-light": { "role": "primary", "displayName": "Safety Orange Light", "canonical": "#ffad8c", "tonalRamp": ["oklch(15% 0.03 36)", "oklch(25% 0.05 36)", "oklch(35% 0.08 36)", "oklch(45% 0.11 36)", "oklch(55% 0.14 36)", "oklch(65% 0.16 36)", "oklch(75% 0.15 36)", "oklch(90% 0.09 36)"] },
+      "signal-amber": { "role": "secondary", "displayName": "Signal Amber", "canonical": "#f0c46a", "tonalRamp": ["oklch(15% 0.03 82)", "oklch(25% 0.06 82)", "oklch(35% 0.09 82)", "oklch(45% 0.12 82)", "oklch(55% 0.14 82)", "oklch(65% 0.15 82)", "oklch(75% 0.13 82)", "oklch(90% 0.08 82)"] },
+      "inspection-green": { "role": "tertiary", "displayName": "Inspection Green", "canonical": "#74b997", "tonalRamp": ["oklch(15% 0.02 160)", "oklch(25% 0.04 160)", "oklch(35% 0.06 160)", "oklch(45% 0.08 160)", "oklch(55% 0.09 160)", "oklch(65% 0.09 160)", "oklch(75% 0.08 160)", "oklch(90% 0.04 160)"] },
+      "inspection-green-light": { "role": "tertiary", "displayName": "Inspection Green Light", "canonical": "#8ed0ad", "tonalRamp": ["oklch(15% 0.02 160)", "oklch(25% 0.04 160)", "oklch(35% 0.06 160)", "oklch(45% 0.08 160)", "oklch(55% 0.09 160)", "oklch(65% 0.09 160)", "oklch(75% 0.08 160)", "oklch(90% 0.04 160)"] },
+      "shell": { "role": "neutral", "displayName": "Blue-Black Shell", "canonical": "#0d1519", "tonalRamp": ["oklch(15% 0.012 220)", "oklch(25% 0.012 220)", "oklch(35% 0.012 220)", "oklch(45% 0.012 220)", "oklch(55% 0.012 220)", "oklch(65% 0.012 220)", "oklch(75% 0.012 220)", "oklch(90% 0.012 220)"] },
+      "shell-raised": { "role": "neutral", "displayName": "Raised Shell", "canonical": "#17252c", "tonalRamp": ["oklch(15% 0.015 220)", "oklch(25% 0.015 220)", "oklch(35% 0.015 220)", "oklch(45% 0.015 220)", "oklch(55% 0.015 220)", "oklch(65% 0.015 220)", "oklch(75% 0.015 220)", "oklch(90% 0.015 220)"] },
+      "shell-edge": { "role": "neutral", "displayName": "Shell Edge", "canonical": "#33434a", "tonalRamp": ["oklch(15% 0.012 220)", "oklch(25% 0.012 220)", "oklch(35% 0.012 220)", "oklch(45% 0.012 220)", "oklch(55% 0.012 220)", "oklch(65% 0.012 220)", "oklch(75% 0.012 220)", "oklch(90% 0.012 220)"] },
+      "sheet": { "role": "neutral", "displayName": "Sheet Slate", "canonical": "#152229", "tonalRamp": ["oklch(15% 0.015 220)", "oklch(25% 0.015 220)", "oklch(35% 0.015 220)", "oklch(45% 0.015 220)", "oklch(55% 0.015 220)", "oklch(65% 0.015 220)", "oklch(75% 0.015 220)", "oklch(90% 0.015 220)"] },
+      "paper-text": { "role": "neutral", "displayName": "Paper Text", "canonical": "#dce5e5", "tonalRamp": ["oklch(15% 0.006 200)", "oklch(25% 0.006 200)", "oklch(35% 0.006 200)", "oklch(45% 0.006 200)", "oklch(55% 0.006 200)", "oklch(65% 0.006 200)", "oklch(75% 0.006 200)", "oklch(90% 0.006 200)"] },
+      "paper-deep": { "role": "neutral", "displayName": "Deep Paper", "canonical": "#203039", "tonalRamp": ["oklch(15% 0.015 220)", "oklch(25% 0.015 220)", "oklch(35% 0.015 220)", "oklch(45% 0.015 220)", "oklch(55% 0.015 220)", "oklch(65% 0.015 220)", "oklch(75% 0.015 220)", "oklch(90% 0.015 220)"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#e5eceb", "tonalRamp": ["oklch(15% 0.006 200)", "oklch(25% 0.006 200)", "oklch(35% 0.006 200)", "oklch(45% 0.006 200)", "oklch(55% 0.006 200)", "oklch(65% 0.006 200)", "oklch(75% 0.006 200)", "oklch(90% 0.006 200)"] },
+      "ink-soft": { "role": "neutral", "displayName": "Soft Ink", "canonical": "#b8c5c8", "tonalRamp": ["oklch(15% 0.008 210)", "oklch(25% 0.008 210)", "oklch(35% 0.008 210)", "oklch(45% 0.008 210)", "oklch(55% 0.008 210)", "oklch(65% 0.008 210)", "oklch(75% 0.008 210)", "oklch(90% 0.008 210)"] },
+      "ink-faint": { "role": "neutral", "displayName": "Faint Ink", "canonical": "#91a1a6", "tonalRamp": ["oklch(15% 0.008 210)", "oklch(25% 0.008 210)", "oklch(35% 0.008 210)", "oklch(45% 0.008 210)", "oklch(55% 0.008 210)", "oklch(65% 0.008 210)", "oklch(75% 0.008 210)", "oklch(90% 0.008 210)"] },
+      "rule": { "role": "neutral", "displayName": "Slate Rule", "canonical": "#394a51", "tonalRamp": ["oklch(15% 0.012 220)", "oklch(25% 0.012 220)", "oklch(35% 0.012 220)", "oklch(45% 0.012 220)", "oklch(55% 0.012 220)", "oklch(65% 0.012 220)", "oklch(75% 0.012 220)", "oklch(90% 0.012 220)"] },
+      "rule-strong": { "role": "neutral", "displayName": "Strong Rule", "canonical": "#586b72", "tonalRamp": ["oklch(15% 0.012 220)", "oklch(25% 0.012 220)", "oklch(35% 0.012 220)", "oklch(45% 0.012 220)", "oklch(55% 0.012 220)", "oklch(65% 0.012 220)", "oklch(75% 0.012 220)", "oklch(90% 0.012 220)"] },
+      "night": { "role": "neutral", "displayName": "Night", "canonical": "#0b1114", "tonalRamp": ["oklch(15% 0.008 220)", "oklch(25% 0.008 220)", "oklch(35% 0.008 220)", "oklch(45% 0.008 220)", "oklch(55% 0.008 220)", "oklch(65% 0.008 220)", "oklch(75% 0.008 220)", "oklch(90% 0.008 220)"] }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Inspection Headline", "purpose": "Page-level package inspection statement." },
+      "body": { "displayName": "Interface Copy", "purpose": "Explanations and report prose." },
+      "label": { "displayName": "Instrument Label", "purpose": "Navigation and compact section metadata." },
+      "data": { "displayName": "Record Data", "purpose": "Package identifiers, versions, counts, and timestamps." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-inspection", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Compact control and record-state transitions." },
+      { "name": "reduced-motion", "value": "0.01ms transition and animation duration", "purpose": "Honors the user's reduced-motion preference." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main inspection action with an orange lower rule.",
+      "html": "<button class=\"ds-button-primary\">Inspect package</button>",
+      "css": ".ds-button-primary { display: inline-flex; align-items: center; justify-content: space-between; min-height: 3rem; padding: 0.75rem 1rem; background: var(--color-shell); color: var(--color-paper); border: 1px solid var(--color-shell); border-bottom: 3px solid var(--color-safety); font-family: var(--font-sans); font-weight: 650; letter-spacing: 0.01em; transition: background-color 160ms var(--ease-inspection), color 160ms var(--ease-inspection), border-color 160ms var(--ease-inspection); } .ds-button-primary:hover:not(:disabled) { background: var(--color-safety); border-color: var(--color-safety); border-bottom-color: var(--color-safety-deep); color: var(--color-night); } .ds-button-primary:focus-visible { outline: 2px solid var(--color-safety); outline-offset: 2px; } .ds-button-primary:disabled { cursor: not-allowed; color: var(--color-ink-faint); background: var(--color-shell-raised); border-color: var(--color-rule-strong); }"
+    },
+    {
+      "name": "Secondary Action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Outlined supporting action for record controls.",
+      "html": "<button class=\"ds-button-secondary\">Open all evidence</button>",
+      "css": ".ds-button-secondary { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0.5rem 0.75rem; border: 1px solid var(--color-rule-strong); background: transparent; color: var(--color-ink); font-family: var(--font-sans); font-weight: 600; transition: border-color 140ms var(--ease-inspection), background-color 140ms var(--ease-inspection); } .ds-button-secondary:hover:not(:disabled) { border-color: var(--color-ink); background: var(--color-shell-raised); } .ds-button-secondary:focus-visible { outline: 2px solid var(--color-safety); outline-offset: 2px; }"
+    },
+    {
+      "name": "Package Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Square monospace field for package names and exact versions.",
+      "html": "<label class=\"ds-field-label\" for=\"ds-package\">Package name</label><input class=\"ds-field\" id=\"ds-package\" value=\"lodash\" />",
+      "css": ".ds-field-label { display: block; margin-bottom: 0.4rem; color: var(--color-ink); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.14em; line-height: 1.2; text-transform: uppercase; } .ds-field { width: 100%; min-height: 3rem; padding: 0.7rem 0.8rem; background: var(--color-sheet); color: var(--color-ink); border: 1px solid var(--color-rule-strong); border-radius: 0; font-family: var(--font-mono); font-size: 0.9375rem; line-height: 1.4; transition: border-color 140ms var(--ease-inspection), background-color 140ms var(--ease-inspection); } .ds-field:hover { border-color: var(--color-ink-soft); } .ds-field:focus-visible { outline: 2px solid var(--color-safety); outline-offset: 1px; border-color: var(--color-ink); } .ds-field[aria-invalid=\"true\"] { border-color: var(--color-oxide); }"
+    },
+    {
+      "name": "Primary Navigation",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "Compact uppercase navigation with an orange active-page rule.",
+      "html": "<nav aria-label=\"Primary\"><a class=\"ds-nav-link ds-nav-link-active\" href=\"#scan\" aria-current=\"page\">Scan</a><a class=\"ds-nav-link\" href=\"#compare\">Compare</a></nav>",
+      "css": ".ds-nav-link { display: inline-flex; min-height: 2.5rem; align-items: center; padding: 0.5rem 0.75rem; border-bottom: 2px solid transparent; color: var(--color-ink-soft); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; text-decoration: none; transition: color 140ms var(--ease-inspection), border-color 140ms var(--ease-inspection); } .ds-nav-link:hover { border-bottom-color: var(--color-shell-line); color: var(--color-paper); } .ds-nav-link:focus-visible { outline: 2px solid var(--color-safety); outline-offset: 2px; } .ds-nav-link-active { border-bottom-color: var(--color-safety); color: var(--color-paper); }"
+    },
+    {
+      "name": "Status Tag",
+      "kind": "chip",
+      "refersTo": "status-tag",
+      "description": "Square status label with explicit text and outlined signal color.",
+      "html": "<span class=\"ds-status-tag\">Live data</span>",
+      "css": ".ds-status-tag { display: inline-flex; min-height: 1.5rem; align-items: center; gap: 0.3rem; padding: 0.15rem 0.45rem; border: 1px solid var(--color-inspection-deep); color: var(--color-inspection-deep); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.1em; line-height: 1.2; text-transform: uppercase; white-space: nowrap; } .ds-status-tag-demo { border-color: var(--color-amber); background: var(--color-amber); color: var(--color-night); }"
+    },
+    {
+      "name": "Record Sheet",
+      "kind": "card",
+      "refersTo": "record-sheet",
+      "description": "Flat slate record surface separated by strong rules.",
+      "html": "<section class=\"ds-record-sheet\"><h2>Findings</h2><p>Confirmed evidence first, then heuristic signals.</p></section>",
+      "css": ".ds-record-sheet { padding: 1rem; background: var(--color-sheet); border: 1px solid var(--color-rule-strong); border-top: 3px solid var(--color-shell); color: var(--color-ink); } .ds-record-sheet h2 { margin: 0 0 0.5rem; font-family: var(--font-sans); font-size: 1.25rem; font-weight: 700; } .ds-record-sheet p { margin: 0; color: var(--color-ink-soft); font-family: var(--font-sans); font-size: 0.875rem; line-height: 1.5; }"
+    },
+    {
+      "name": "Condition Stamp",
+      "kind": "custom",
+      "refersTo": "condition-stamp",
+      "description": "Written condition and icon framed as an instrument stamp.",
+      "html": "<span class=\"ds-condition-stamp\"><span>Findings</span><small>Condition</small></span>",
+      "css": ".ds-condition-stamp { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; padding: 0.55rem 1rem 0.5rem; border: 2px solid var(--color-safety-deep); color: var(--color-safety-deep); font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700; letter-spacing: 0.12em; line-height: 1; text-transform: uppercase; transform: rotate(-1.25deg); } .ds-condition-stamp small { font-size: 0.5rem; font-weight: 500; letter-spacing: 0.2em; opacity: 0.85; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Inspection Bay",
+    "overview": "DepScope is a working inspection desk for package condition records. A quiet blue-black shell and restrained instrument details keep attention on the report: its condition, confirmed evidence, heuristic signals, successful checks, and coverage gaps. The interface treats the condition stamp as an index into the evidence, never as a substitute for it.\n\nThe visual language is technical and legible: Overpass for interface text, Overpass Mono for labels and package data, square outlined sheets, fine rules, and sparse safety-orange markers. The desktop and mobile views retain the same evidence order; narrow layouts stack their panels and keep comparison overflow inside the table.",
+    "keyCharacteristics": [
+      "Dark, low-glare inspection workspace.",
+      "Strong separation between findings, heuristics, and missing coverage.",
+      "Square, ruled surfaces with restrained orange, amber, and green signals."
+    ],
+    "rules": [
+      { "name": "The Evidence Color Rule", "body": "Color reinforces a written status or evidence label; it never carries severity, status, finding kind, or demo mode by itself.", "section": "colors" },
+      { "name": "The Data Voice Rule", "body": "Keep package identifiers and measured values in monospace; keep explanations in the interface sans serif.", "section": "typography" },
+      { "name": "The Flat Instrument Rule", "body": "Keep sheets flat and square; use tonal layering and rules to distinguish structure.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the condition, findings, path, checks, sources, and limitations visibly distinct.",
+      "Do keep status and finding labels readable without color and preserve visible keyboard focus.",
+      "Do use orange sparingly for inspection actions, focus, and confirmed-risk emphasis; reserve amber for caution and demo labeling.",
+      "Do honor reduced-motion preferences and keep narrow-screen tables in local scroll containers."
+    ],
+    "donts": [
+      "Don't imply that missing or failed checks indicate a clean condition.",
+      "Don't blur confirmed advisories and heuristic signals into one category.",
+      "Don't add rounded dashboard cards, gradients, or glow effects to the flat inspection surfaces.",
+      "Don't present demo fixtures as live scan results."
+    ]
+  }
+}

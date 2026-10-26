@@ -563,3 +563,18 @@ Phase 5 did not:
 - Change the wire schema or initialize Git, commit, push, publish, or deploy.
 
 Phases 2, 3, 4, and 5 are complete. The website is the next phase. Recursive dependency resolution and live verification remain deferred and have not begun.
+
+## Phase 6 update (2026-10-26)
+
+The website now exists under `web/`. The earlier audit entries above are historical snapshots and do not describe the current checkout.
+
+- Stack: Node `v24.22.0`, pnpm `12.14.0`, Next.js `16.4.3`, TypeScript `5.9.3`, and Tailwind CSS `4.3.3`; exact JavaScript dependencies are pinned in `web/pnpm-lock.yaml`.
+- Browser tests use Playwright `1.64.1` and the installed `/usr/bin/google-chrome`. Set `CHROMIUM_PATH` when the browser executable is elsewhere.
+- The website uses generated TypeScript report types and schema validation, same-origin proxy routes to the Go API, live scan and comparison forms, offline synthetic demos, report exports, and a keyboard-accessible dependency path view.
+- `DEPSCOPE_API_BASE_URL`, `DEPSCOPE_API_TIMEOUT_MS`, `DEPSCOPE_SITE_URL`, and optional `DEPSCOPE_REPOSITORY_URL` are documented in `web/README.md`. No repository remote URL is configured.
+- `go build ./...`, `go vet ./...`, `go test -count=1 ./...`, `go test -race ./...`, and `gofmt -l .` completed successfully. The `gofmt` command printed no files.
+- `web/` lint, typecheck, 106 Vitest tests, contract check, production build, and 3 Playwright tests completed successfully. The browser scan test used a schema-valid intercepted API report; no live registry or OSV scan was run.
+- A local request through the website's `/api/health` route returned `{"status":"ok"}` from the running Go API. Both local servers were stopped after this check.
+- Git is initialized on `feature/phase-6-website`. The initial repository state is committed; no remote or default branch is configured. The Phase 6 changes are recorded in the current branch history.
+
+Phase 7 recursive resolution and public-source live verification remain deferred. No CI, deployment, authentication, persistence, or telemetry was added.

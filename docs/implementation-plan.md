@@ -10,7 +10,7 @@ This is a provisional, dependency-ordered plan derived from the approved archite
 - **Phase 3 is complete:** project dependency scanning for npm lockfile v2/v3 graphs and exact-pinned Python requirements, plus read-only global npm and pip inventory, exist.
 - **Phase 4 is complete:** the shared application service, report renderer, Bubble Tea terminal interface, non-interactive CLI, and deterministic offline demo exist.
 - **Phase 5 is complete:** the production-oriented Go HTTP API, its strict transport contract, process-local limits, tests, and operational documentation exist.
-- **Phase 6 has not started:** the Next.js website is next. D4 (JavaScript package manager and Next/Tailwind/Node versions) must be resolved before scaffolding.
+- **Phase 6 is complete (2026-10-26):** the Next.js website uses the resolved pnpm/Node/Next/Tailwind toolchain. It includes the live scan proxy, schema-validated reports, comparison, an isolated offline demo, and browser verification.
 - **Phase 7 remains deferred:** recursive dependency resolution, broader lockfile coverage, and opt-in live verification require an agreed D8 resolution semantics and a separate explicit instruction.
 - Phase numbering and scope are provisional. The project owner's Phase 2 instruction implemented the engine and live adapters together, Phase 3 implemented project scanning and inventory, Phase 4 implemented the terminal experience, and Phase 5 implemented the HTTP API ahead of recursive resolution. This document records the revised sequence: the prior Phase 5 (recursive resolution) is now Phase 7, the prior Phase 6 (HTTP API) is Phase 5, and the prior Phase 7 (website) is Phase 6. Phases 8 and 9 are unchanged.
 
@@ -234,27 +234,26 @@ Each phase has a gate: work does not begin until the previous phase's exit crite
 
 **Objective:** present reports in a typed, accessible web interface.
 
-**Status:** not started. This is the next phase; D4 must be resolved before scaffolding.
+**Status:** complete on 2026-10-26. D4 was resolved before the existing scaffold was created.
 
 **Dependencies:** Phase 1 schema; Phase 5 API contract; D4, D10, and D16. The scan and compare endpoints are available, but project/inventory results are not part of the wire contract (D16), so the website must not display them as ad hoc JSON. UI work may begin against schema-valid fixtures once the stack is chosen.
 
-**Proposed deliverables:**
+**Delivered:**
 
-- Next.js, TypeScript, and Tailwind CSS application using the package manager and version policy chosen in D4.
-- TypeScript report types generated from or checked against the canonical schema.
-- Report overview and finding detail views.
-- A comparison presentation that consumes the documented API envelope.
-- Clear offline-demo labelling; the API does not serve demo data, so demo presentation must use approved fixtures or a separately authorized transport.
-- Safe rendering of untrusted advisory content.
-- Responsive and accessible layout.
-- Component tests and a production build.
+- Next.js App Router, TypeScript, Tailwind CSS v4 and pnpm app with schema-generated TypeScript types.
+- Same-origin server proxy to the Go API, request bounds/timeouts, report validation, and explicit cancellation, error, and partial-result views.
+- Live package scans, side-by-side comparisons, evidence-led reports, JSON export, and selectable dependency nodes with a textual path list.
+- Deterministic offline demo and comparison pages using validated fixtures, with visible demo labels and no scan or comparison API requests.
+- SEO and Open Graph metadata with a generated social image; optional repository URL configuration.
+- CLI install and quick-start, supported scope, source and methodology, limitation, API configuration, accessibility, and contribution documentation.
+- Responsive dark inspection interface, keyboard navigation, reduced-motion handling, Vitest coverage, Playwright browser tests, and a production build.
 
 **Exit criteria:**
 
-- The website renders schema-valid fixture reports and live API responses.
-- Offline data is unmistakably labelled.
-- The production build passes.
-- Browser verification covers the main flows and error states.
+- The website renders schema-valid live API reports and explicitly labelled offline fixtures.
+- Live scans and comparisons use only the shared Go API; browser code has no independent security rules.
+- The production build, lint, typecheck, and unit tests pass.
+- Browser tests cover the package scan journey, demo/live separation, and mobile layout.
 
 ### Phase 7 — Recursive dependency resolution and live verification
 
@@ -342,7 +341,7 @@ Phase 7 ────────────────────────
                                         └─> Phase 9 (hardening and release)
 ```
 
-Phases 4 and 5 are complete. Phase 6 requires D4 before scaffolding and a website-origin CORS entry for live API calls. Phase 7 is deferred and requires agreed D8 semantics before code is written. Phase 7 can proceed independently of the website only when explicitly authorized. D16 must be resolved before project or inventory results are served by the API or rendered by the website.
+Phases 4, 5, and 6 are complete. The website uses a same-origin server proxy; the Go API CORS allowlist is not used by browser requests in this deployment shape. Phase 7 is deferred and requires agreed D8 semantics before code is written. Phase 7 can proceed independently of the website only when explicitly authorized. D16 must be resolved before project or inventory results are served by the API or rendered by the website.
 
 ## 5. Verification strategy
 
