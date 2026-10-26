@@ -295,7 +295,7 @@ Status reflects the Phase 8 final integration review (2026-10-26). "Resolved" me
 
 | ID | Decision | Status and impact |
 | --- | --- | --- |
-| D1 | Initialize Git; choose default branch and remote repository URL | **Partial.** Phases 0–8 are committed locally on `feature/phase-6-website`. No remote URL or default branch is configured; none is inferred. |
+| D1 | Initialize Git; choose default branch and remote repository URL | **Resolved.** The history is published at `https://github.com/janghotan/depscope` with `main` as the public default branch; the local `feature/phase-6-website` branch tracks `origin/main`. |
 | D2 | Choose an open-source license | **Resolved by the maintainer.** Apache License 2.0 is applied, with `Copyright 2026 Jangho Tan` in `LICENSE` and `NOTICE`; all other license terms are unmodified. `NOTICE` lists the third-party licenses. |
 | D3 | Choose the Go module path | **Selected for repository preparation.** `go.mod` uses `github.com/janghotan/depscope`, derived from the authenticated GitHub account and the intended repository name. Revisit if the owner, name, or hosting changes before publication. |
 | D4 | Choose the JavaScript package manager and Next.js, Tailwind CSS, and Node version policy | **Resolved for Phase 6.** The website uses pnpm 12.14.0, Node 24, Next.js 16.4.3, and Tailwind CSS 4.3.3. Exact dependency versions and package manager policy are declared in `web/package.json` and `web/pnpm-lock.yaml`. |

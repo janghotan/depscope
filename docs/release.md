@@ -11,7 +11,7 @@ Status of the two former release gates (repository preparation, 2026-10-26):
 
 The repository is published at `https://github.com/janghotan/depscope` with the local history pushed as the default branch `main`. There is still no website host, API host, signing identity, or deployment credential configured. Binary releases do not deploy either service. Publishing a release remains blocked until a version is chosen and the maintainer explicitly authorizes the tag.
 
-GoReleaser's `check` command also expects an SCM origin from which it can determine the release owner and repository. While no remote is configured, `goreleaser check` fails with `configuration is invalid: scm releases: no remote configured to list refs from`; do not substitute a guessed URL. `goreleaser release --snapshot --clean` still validates and builds the local package configuration because a snapshot ignores that remote lookup, and it logs `ignoring errors because this is a snapshot`. Run `goreleaser check` again after the repository remote is configured.
+GoReleaser's `check` command also expects an SCM origin from which it can determine the release owner and repository. Before the repository was published there was no remote, and `goreleaser check` failed with `configuration is invalid: scm releases: no remote configured to list refs from`. With `origin` pointing at `https://github.com/janghotan/depscope`, it now reports `1 configuration file(s) validated`. Never substitute a guessed remote URL. `goreleaser release --snapshot --clean` builds the local package configuration without publishing and does not need the remote.
 
 ## Release targets and artifacts
 

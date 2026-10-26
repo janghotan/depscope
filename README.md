@@ -26,7 +26,7 @@ It scans npm and PyPI package releases through version-matched OSV.dev advisorie
 
 DepScope reads package metadata and advisory data. It never installs, imports, or executes the packages it scans, and it never runs lifecycle scripts.
 
-> **Project status:** the shared Go engine, Bubble Tea terminal app, non-interactive CLI, local HTTP API, and Next.js website are implemented and tested locally. No hosted service exists and no release has been published. The repository is being prepared for its first public launch; see [Project status](#project-status).
+> **Project status:** the shared Go engine, Bubble Tea terminal app, non-interactive CLI, local HTTP API, and Next.js website are implemented and tested locally. No hosted service exists and no release has been published. This is the first public source release of the repository; see [Project status](#project-status).
 
 ![DepScope terminal report from the offline demo: a synthetic npm package with confirmed findings](docs/assets/terminal-demo.png)
 
@@ -381,6 +381,7 @@ cd web
 pnpm install --frozen-lockfile
 pnpm check:contract
 pnpm lint
+pnpm typegen
 pnpm typecheck
 pnpm test
 pnpm build
@@ -402,7 +403,7 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 | Go engine, CLI, TUI, offline demo | Implemented and covered by tests |
 | Local HTTP API | Implemented; local, unauthenticated, process-local limits |
 | Website (single scan, comparison, demo records) | Implemented locally; not deployed |
-| CI and GoReleaser configuration | Configured; no release published |
+| CI and GoReleaser configuration | CI runs on GitHub; GoReleaser snapshot packaging verified locally; no release published |
 | Hosted API or hosted website | Not provided |
 | License | Apache License 2.0; copyright 2026 Jangho Tan |
 | Recursive Python resolution, more lockfiles, CLI JSON output, project/inventory API serialization | Not implemented |
@@ -421,7 +422,7 @@ Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), then r
 
 ## Security
 
-Please do not open a public issue for a vulnerability in DepScope itself. Read [SECURITY.md](SECURITY.md) for the current reporting path. GitHub private vulnerability reporting is not verified as enabled yet; the maintainer must confirm a private reporting channel before public launch.
+Please do not open a public issue for a vulnerability in DepScope itself. Use GitHub private vulnerability reporting through the **Security** tab, or read [SECURITY.md](SECURITY.md) for the current reporting path.
 
 Do not include secrets, private source code, or personal data in any report.
 

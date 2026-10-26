@@ -6,30 +6,30 @@ Please **do not** open a public issue for a vulnerability in DepScope itself. Av
 
 ### Current reporting path
 
-The repository `janghotan/depscope` was created privately on 2026-10-26. Its GitHub security features were probed on the same day; the results below are what the API actually returned, not what is intended:
+The repository `https://github.com/janghotan/depscope` was published publicly on 2026-10-26, and its security configuration was re-probed immediately afterwards. The table records what the GitHub API actually returned:
 
-| Feature | Probe result | Meaning |
+| Feature | Verified state | Evidence |
 | --- | --- | --- |
-| Private vulnerability reporting | `PUT`/`GET repos/{owner}/{repo}/private-vulnerability-reporting` → `404 Not Found` | Not enabled through the API. Re-check after the first push. |
-| Secret scanning | `PATCH` with `secret_scanning` → `422 Secret scanning is not available for this repository.` | Unavailable for this repository; likely a private-repository plan limitation. |
-| Dependabot alerts | `PUT …/vulnerability-alerts` → `204 No Content`; `GET` → `204` | Enabling succeeded. Alert routing only starts once a dependency manifest is on the default branch, so expect activity after the first push. |
-| Code scanning | `GET …/code-scanning/alerts` → `403 Code scanning is not enabled` | Not enabled; the CI workflow performs `govulncheck` instead. |
-| Branch protection | `GET …/branches/main/protection` → `403 Upgrade to GitHub Pro or make this repository public` | Not available on a private repository under this plan. |
+| Private vulnerability reporting | **Enabled** | `PUT repos/{owner}/{repo}/private-vulnerability-reporting` → `204`; `GET` → `{"enabled":true}` |
+| Secret scanning and push protection | **Enabled** | Repository `security_and_analysis` reports `secret_scanning: enabled` and `secret_scanning_push_protection: enabled` |
+| Dependabot alerts | **Enabled** | `PUT …/vulnerability-alerts` → `204`; `GET` → `204` |
+| Code scanning | Not enabled | `GET …/code-scanning/alerts` → `404 no analysis found`; the CI workflow runs `govulncheck` instead |
+| Branch protection on `main` | Not configured | `GET …/branches/main/protection` → `404 Branch not protected` |
 
-**A private reporting channel is therefore not verified as enabled yet**, and the maintainer must confirm one before public launch. Until then:
+To report a vulnerability in DepScope itself:
 
-1. Use GitHub's **Report a vulnerability** button under the repository's **Security** tab if it is shown. This uses GitHub private vulnerability reporting and keeps the report private.
-2. If that button is not available, contact the maintainer through the private channel where this repository was provided to you and ask for an acknowledged disclosure path before sending details.
+1. Use GitHub's **Report a vulnerability** button under the repository's **Security** tab. This opens a private GitHub Security Advisory and keeps the report private.
+2. Do not open a public issue, and do not post exploit details in any public channel.
 
-Do not invent or rely on an unverified email address for security reports. When a private channel is confirmed, it will be documented in this file and in the repository's Security settings.
+Do not include secrets, private source code, personal data, or third-party inventories. When you are ready to discuss a fix publicly, coordinate disclosure in the advisory.
 
-### Manual steps to finish the GitHub configuration
+### Manual steps still pending
 
-These settings cannot be changed through the currently authenticated API token and must be completed in the GitHub web interface:
+These items are not automated by this repository and remain with the maintainer:
 
-1. **Private vulnerability reporting:** repository **Settings → Security** (the security and analysis area) → enable **Private vulnerability reporting**. The `PUT` API above returned `404`, so confirm the setting in the UI after the first push.
-2. **Secret scanning:** the API reported it unavailable. If it is also absent in **Settings → Code security and analysis**, it requires a GitHub plan or public visibility; record the outcome in this file when it changes.
-3. **Branch protection:** available only for public repositories or paid plans. Options are to make the repository public (a separate, explicit decision), upgrade the plan, or pin the repository's protection expectations in a maintainer note.
+1. **Branch protection** on `main` (required reviewers, required status checks including the `CI` workflow, signed commits) — configure under **Settings → Branches → Add branch protection rule**.
+2. **Repository social preview** — upload `assets/social/depscope-social-preview.png` under **Settings → General → Social preview**. The GitHub API does not expose this setting (`PUT …/social-preview` → `404`).
+3. **Code scanning** — optionally enable GitHub's default CodeQL setup under **Settings → Code security and analysis**; the Go job already runs `govulncheck@v1.9.0`.
 
 Please include:
 

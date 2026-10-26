@@ -14,6 +14,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typegen": "next typegen",
+    "pretypecheck": "pnpm run typegen",
     "typecheck": "tsc --noEmit",
     "pretest": "pnpm run sync:contract",
     "test": "vitest run",

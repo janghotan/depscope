@@ -59,6 +59,7 @@ Run from `web/`:
 
 ```sh
 pnpm lint
+pnpm typegen
 pnpm typecheck
 pnpm test
 pnpm check:contract
@@ -66,6 +67,8 @@ pnpm build
 pnpm exec playwright install chromium
 pnpm test:e2e
 ```
+
+`pnpm typegen` runs `next typegen`, which generates `.next/types/routes.d.ts`. Next.js declares `PageProps` and `LayoutProps` as globals in that generated file, so `pnpm typecheck` fails with `Cannot find name 'PageProps'` on a clean checkout unless the types exist first. `pnpm typecheck` declares a `pretypecheck` hook that runs the generation automatically; the explicit step keeps the documented order identical to CI, where the type check runs before the build.
 
 Vitest tests use deterministic fixtures and mocked fetches. Playwright starts the built Next.js production server and uses the Chromium executable installed by Playwright; its live scan journey stubs only the browser-to-site response with a schema-valid report. The demo browser test verifies that it sends no scan or comparison request; the shared header may still check the same-origin health route. Go API provider behavior remains covered by the repository's offline Go tests.
 
@@ -76,6 +79,6 @@ Vitest tests use deterministic fixtures and mocked fetches. Playwright starts th
 - The browser API is a same-origin server proxy. Its request and response bodies are bounded, reports are schema-validated, responses are not cached, and upstream failure is shown as an error rather than demo data.
 - Demo reports are deterministic synthetic fixtures, labelled as demo data, and isolated from live requests.
 - The Go API defaults to loopback and is unauthenticated. Public hosting and deployment security are not configured by this project.
-- No remote repository is configured in this checkout and no public site has been deployed. Repository links appear only when `DEPSCOPE_REPOSITORY_URL` is set.
+- The source lives at `https://github.com/janghotan/depscope`; no public site has been deployed. Repository links appear only when `DEPSCOPE_REPOSITORY_URL` is set.
 - The project is distributed under the Apache License 2.0 (see the repository root `LICENSE`); the copyright notice names 2026 Jangho Tan.
 - Brand and documentation assets shared with the repository READMEs live in `assets/` at the repository root; see `assets/README.md`.

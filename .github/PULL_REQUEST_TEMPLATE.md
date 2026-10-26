@@ -26,6 +26,7 @@ cd web
 pnpm install --frozen-lockfile
 pnpm check:contract
 pnpm lint
+pnpm typegen
 pnpm typecheck
 pnpm test
 pnpm build
