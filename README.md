@@ -88,12 +88,12 @@ Both installers accept an explicit version and an installation directory:
 
 ```sh
 # Unix: pin a release and choose the directory
-curl -fsSL https://raw.githubusercontent.com/janghotan/depscope/main/install.sh | sh -s -- --version v0.1.0 --dir "$HOME/bin"
+curl -fsSL https://raw.githubusercontent.com/janghotan/depscope/main/install.sh | sh -s -- --version v0.1.1 --dir "$HOME/bin"
 ```
 
 ```powershell
 # Windows: pin a release and choose the directory
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/janghotan/depscope/main/install.ps1))) -Version v0.1.0 -InstallDir "$HOME\bin"
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/janghotan/depscope/main/install.ps1))) -Version v0.1.1 -InstallDir "$HOME\bin"
 ```
 
 | Setting | Unix | Windows |
@@ -479,7 +479,7 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 | Go engine, CLI, TUI, offline demo | Implemented and covered by tests |
 | Local HTTP API | Implemented; local, unauthenticated, process-local limits |
 | Website (single scan, comparison, demo records) | Implemented locally; not deployed |
-| CI and GoReleaser configuration | CI and the release workflow run on GitHub; `v0.1.0` publishes archives with a SHA-256 `checksums.txt` (not signed) |
+| CI and GoReleaser configuration | CI and the release workflow run on GitHub; tagged releases publish CLI and API archives with a SHA-256 `checksums.txt` (not signed) |
 | Hosted API or hosted website | Not provided |
 | License | Apache License 2.0; copyright 2026 Jangho Tan |
 | Recursive Python resolution, more lockfiles, CLI JSON output, project/inventory API serialization | Not implemented |

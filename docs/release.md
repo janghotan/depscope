@@ -2,14 +2,14 @@
 
 ## Current release state
 
-The repository contains CI, cross-platform Go build configuration, and a GoReleaser package definition. No release has been published.
+The repository contains CI, cross-platform Go build configuration, and a GoReleaser package definition. Published releases, including their archives and `checksums.txt`, are listed on [GitHub Releases](https://github.com/janghotan/depscope/releases). A release publishes binaries only; it does not deploy the website or API.
 
 Status of the two former release gates (repository preparation, 2026-10-26):
 
 1. **License file:** **Resolved.** `LICENSE` carries the Apache License 2.0 with only the appendix copyright line set to `Copyright 2026 Jangho Tan`; `NOTICE` repeats that attribution. The license terms themselves are unmodified. The tagged-release workflow only checks that a `LICENSE` file exists; it does not inspect the copyright line.
 2. **Go module path:** `go.mod` uses `github.com/janghotan/depscope`, derived from the authenticated GitHub account and the intended repository name `depscope`. Changing the owner or repository name requires updating `go.mod` and every import.
 
-The repository is published at `https://github.com/janghotan/depscope` with the local history pushed as the default branch `main`. There is still no website host, API host, signing identity, or deployment credential configured. Binary releases do not deploy either service. Publishing a release remains blocked until a version is chosen and the maintainer explicitly authorizes the tag.
+The repository is published at `https://github.com/janghotan/depscope` with the local history pushed as the default branch `main`. There is still no website host, API host, signing identity, or deployment credential configured. Binary releases do not deploy either service. Each new release requires a chosen version and explicit maintainer authorization for its tag.
 
 GoReleaser's `check` command also expects an SCM origin from which it can determine the release owner and repository. Before the repository was published there was no remote, and `goreleaser check` failed with `configuration is invalid: scm releases: no remote configured to list refs from`. With `origin` pointing at `https://github.com/janghotan/depscope`, it now reports `1 configuration file(s) validated`. Never substitute a guessed remote URL. `goreleaser release --snapshot --clean` builds the local package configuration without publishing and does not need the remote.
 
@@ -56,10 +56,10 @@ After the copyright notices, repository owner and name, repository host, and rel
 1. Run the complete checks in [CONTRIBUTING.md](../CONTRIBUTING.md) and resolve every release-blocking security finding.
 2. Run `goreleaser check` and `goreleaser release --snapshot --clean`; inspect the archives and checksums.
 3. Review and approve the version and release notes.
-4. Push a signed `vMAJOR.MINOR.PATCH` tag only after explicit maintainer approval. The `.github/workflows/release.yml` workflow then rechecks that `LICENSE` exists and that `go.mod` does not use the old provisional path, then publishes GoReleaser artifacts using the repository-scoped GitHub token.
+4. Push an annotated `vMAJOR.MINOR.PATCH` tag only after explicit maintainer approval. The tag message carries the release notes. The `.github/workflows/release.yml` workflow then rechecks that `LICENSE` exists and that `go.mod` does not use the old provisional path, then publishes GoReleaser artifacts using the repository-scoped GitHub token. GoReleaser also generates the GitHub release body from the commits since the previous tag.
 5. Verify the published checksum file and assets from a clean download. Record any platform runtime checks separately from cross-compilation results.
 
-The workflow is configured but must not be triggered until the copyright notices are completed and release publication is explicitly authorized.
+The workflow runs whenever a `v*` tag is pushed, so pushing the tag is the publication step. Do not push a release tag until the version, release notes, and publication are explicitly authorized.
 
 ## Website and API deployment
 

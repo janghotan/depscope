@@ -88,12 +88,12 @@ irm https://raw.githubusercontent.com/janghotan/depscope/main/install.ps1 | iex
 
 ```sh
 # Unix：固定版本并指定目录
-curl -fsSL https://raw.githubusercontent.com/janghotan/depscope/main/install.sh | sh -s -- --version v0.1.0 --dir "$HOME/bin"
+curl -fsSL https://raw.githubusercontent.com/janghotan/depscope/main/install.sh | sh -s -- --version v0.1.1 --dir "$HOME/bin"
 ```
 
 ```powershell
 # Windows：固定版本并指定目录
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/janghotan/depscope/main/install.ps1))) -Version v0.1.0 -InstallDir "$HOME\bin"
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/janghotan/depscope/main/install.ps1))) -Version v0.1.1 -InstallDir "$HOME\bin"
 ```
 
 | 配置项 | Unix | Windows |
@@ -480,7 +480,7 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 | Go 引擎、CLI、TUI、离线演示 | 已实现并有测试覆盖 |
 | 本地 HTTP API | 已实现；本地、无认证、进程内限流 |
 | 网站（单包扫描、比较、演示记录） | 已在本地实现；尚未部署 |
-| CI 与 GoReleaser 配置 | CI 与发布工作流在 GitHub 上运行；`v0.1.0` 版本已发布带校验值的归档 |
+| CI 与 GoReleaser 配置 | CI 与发布工作流在 GitHub 上运行；带标签的版本会发布 CLI 与 API 归档，并提供 SHA-256 校验值（未签名） |
 | 托管 API 或托管网站 | 不提供 |
 | 许可证 | Apache License 2.0；版权 2026 Jangho Tan |
 | Python 递归解析、更多锁文件、CLI JSON 输出、项目与清单的 API 序列化 | 未实现 |
