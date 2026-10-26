@@ -26,7 +26,7 @@ DepScope 专注于回答一个范围明确的问题：*这个确切的包版本�
 
 DepScope 只读取包的元数据与安全公告，从不安装、导入或执行所扫描的包，也从不运行生命周期脚本。
 
-> **项目状态：** 共享 Go 引擎、Bubble Tea 终端应用、非交互式 CLI、本地 HTTP API 与 Next.js 网站均已实现并在本地测试通过。目前没有托管服务，也未发布任何版本。这是本项目首次公开发布源代码，详见[项目状态](#项目状态)。
+> **项目状态：** 共享 Go 引擎、Bubble Tea 终端应用、非交互式 CLI、本地 HTTP API 与 Next.js 网站均已实现并在本地测试通过。[最新版本](https://github.com/janghotan/depscope/releases/latest)提供 Linux、macOS 与 Windows 的 CLI 与 API 二进制，但目前不提供任何托管服务。详见[项目状态](#项目状态)。
 
 ![DepScope 离线演示的终端报告：一个包含已确认发现的合成 npm 包](docs/assets/terminal-demo.png)
 
@@ -478,7 +478,7 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 | Go 引擎、CLI、TUI、离线演示 | 已实现并有测试覆盖 |
 | 本地 HTTP API | 已实现；本地、无认证、进程内限流 |
 | 网站（单包扫描、比较、演示记录） | 已在本地实现；尚未部署 |
-| CI 与 GoReleaser 配置 | CI 在 GitHub 上运行；GoReleaser 快照打包已在本地验证；未发布任何版本 |
+| CI 与 GoReleaser 配置 | CI 与发布工作流在 GitHub 上运行；`v0.1.0` 版本已发布带校验值的归档 |
 | 托管 API 或托管网站 | 不提供 |
 | 许可证 | Apache License 2.0；版权 2026 Jangho Tan |
 | Python 递归解析、更多锁文件、CLI JSON 输出、项目与清单的 API 序列化 | 未实现 |

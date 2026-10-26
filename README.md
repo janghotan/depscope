@@ -26,7 +26,7 @@ It scans npm and PyPI package releases through version-matched OSV.dev advisorie
 
 DepScope reads package metadata and advisory data. It never installs, imports, or executes the packages it scans, and it never runs lifecycle scripts.
 
-> **Project status:** the shared Go engine, Bubble Tea terminal app, non-interactive CLI, local HTTP API, and Next.js website are implemented and tested locally. No hosted service exists and no release has been published. This is the first public source release of the repository; see [Project status](#project-status).
+> **Project status:** the shared Go engine, Bubble Tea terminal app, non-interactive CLI, local HTTP API, and Next.js website are implemented and tested locally. The [latest release](https://github.com/janghotan/depscope/releases/latest) publishes CLI and API binaries for Linux, macOS, and Windows, but no hosted service is operated. See [Project status](#project-status).
 
 ![DepScope terminal report from the offline demo: a synthetic npm package with confirmed findings](docs/assets/terminal-demo.png)
 
@@ -477,7 +477,7 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 | Go engine, CLI, TUI, offline demo | Implemented and covered by tests |
 | Local HTTP API | Implemented; local, unauthenticated, process-local limits |
 | Website (single scan, comparison, demo records) | Implemented locally; not deployed |
-| CI and GoReleaser configuration | CI runs on GitHub; GoReleaser snapshot packaging verified locally; no release published |
+| CI and GoReleaser configuration | CI and the release workflow run on GitHub; `v0.1.0` publishes archives with a SHA-256 `checksums.txt` (not signed) |
 | Hosted API or hosted website | Not provided |
 | License | Apache License 2.0; copyright 2026 Jangho Tan |
 | Recursive Python resolution, more lockfiles, CLI JSON output, project/inventory API serialization | Not implemented |
