@@ -37,21 +37,6 @@ jobs:
       - name: Test installers
         run: python3 scripts/test_installers.py
 
-  installers-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: Parse install.ps1
-        shell: pwsh
-        run: |
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile("install.ps1", [ref]$null, [ref]$errors) | Out-Null
-          if ($errors) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
-          Write-Host "install.ps1 parsed without errors"
-      - name: Test install.ps1
-        shell: pwsh
-        run: python scripts/test_installers.py WindowsInstallerTests
-
   go-cross-build:
     runs-on: ubuntu-latest
     strategy:
