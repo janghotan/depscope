@@ -119,8 +119,14 @@ It delegates project parsing, dependency resolution, vulnerability matching, ris
 - `internal/app` defines `Service`, the shared scanning contract used by both terminal surfaces. `LiveService` wires the live scanner, project scanner, inventory scanner, and offline demo. TUI and CLI call this service and never construct engine requests directly.
 - `internal/cli` parses global flags and commands, renders documents, maps statuses to exit codes, and falls back to help when input or output is not a terminal. It does not contain scan logic.
 - `internal/tui` is a Bubble Tea `tea.Model`. Scans run in commands that call `app.Service`; real `app.Progress` callbacks are forwarded as messages. Each scan has a cancellable context, and results or progress from cancelled or superseded scans are ignored. The state machine is tested without a terminal.
-- `internal/render` turns shared report, project, and inventory results into `Document` values and plain text or limited ANSI output. It sanitizes untrusted text on copies of the input and never recalculates risk.
+- `internal/render` turns shared report, project, and inventory results into `Document` values and plain text or limited ANSI output. It sanitizes untrusted text on copies of the input and never recalculates risk. `Theme.Language` selects localized presentation chrome; report evidence and scanner diagnostics remain unchanged.
 - `cmd/depscope` wires standard streams, terminal detection, signal handling, and the CLI exit code.
+
+**Bilingual TUI presentation:**
+
+- `internal/i18n` is the only source of interactive UI copy. It defines typed message keys, complete English and Simplified Chinese catalogs, parameterized formatting, and an English fallback. English sentences are never used as keys, and all translations are bundled offline.
+- `internal/termtext` provides display-cell width measurement, wrapping, truncation, padding, and cursor windows. Layout code must use it instead of rune counts because CJK characters occupy two cells.
+- The TUI language is a session-only setting. Switching it rebuilds the current report through the shared renderer without changing findings, sources, limitations, form input, menu selection, or scroll position. The non-interactive CLI, HTTP API, and website remain English.
 
 The implemented command surface is `scan`, `project`, `compare`, `inventory`, `demo`, `help`, and `version`, with global color flags. Command names and flags are now fixed for this phase; adding machine-readable output remains open (D14).
 

@@ -6,9 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/janghotan/depscope/internal/i18n"
 	"github.com/janghotan/depscope/internal/inventory"
 	"github.com/janghotan/depscope/internal/model"
 	"github.com/janghotan/depscope/internal/project"
+	"github.com/janghotan/depscope/internal/termtext"
 )
 
 const (
@@ -32,10 +34,13 @@ type Tree struct {
 type Section struct {
 	Title string
 	Lines []string
+	// Overview 表示该信息块应出现在单屏概览中。
+	Overview bool
 }
 
 // Document 是包、项目与全局清单报告的统一展示模型。
 type Document struct {
+	Language    i18n.Language
 	Title       string
 	Target      string
 	Subtitle    string
@@ -52,16 +57,43 @@ type Document struct {
 	Sections    []Section
 }
 
+// presentationLanguage 解析可选语言；未提供时使用英语，保证 CLI 输出不变。
+func presentationLanguage(languages []i18n.Language) i18n.Language {
+	if len(languages) == 0 {
+		return i18n.English
+	}
+	return i18n.Normalize(languages[0])
+}
+
+// themeWith 在调用方未显式指定语言时沿用文档语言。
+func (d Document) themeWith(theme Theme) Theme {
+	if theme.Language == "" {
+		theme.Language = d.Language
+	}
+	return theme
+}
+
+// demoNoticeText 返回用于展示的演示声明；英语沿用报告原文，其他语言使用本地化文案。
+func (d Document) demoNoticeText(theme Theme) string {
+	if theme.Lang() == i18n.English && d.DemoNotice != nil {
+		return *d.DemoNotice
+	}
+	return theme.text(i18n.KeyReportDemoNotice)
+}
+
 // FromReport 将共享扫描报告转换为展示文档。
-func FromReport(report model.ScanReport) Document {
-	version := "(not resolved)"
+func FromReport(report model.ScanReport, languages ...i18n.Language) Document {
+	language := presentationLanguage(languages)
+	catalog := i18n.For(language)
+	version := catalog.Text(i18n.KeyReportNotResolved)
 	if report.Target.ResolvedVersion != nil {
 		version = *report.Target.ResolvedVersion
 	}
 	return sanitizeDocument(Document{
-		Title:       "PACKAGE REPORT",
+		Language:    language,
+		Title:       catalog.Text(i18n.KeyReportPackageTitle),
 		Target:      report.Target.Package.String(),
-		Subtitle:    "Resolved version " + version,
+		Subtitle:    catalog.Format(i18n.KeyReportSubtitleResolved, version),
 		DataMode:    report.DataMode,
 		DemoNotice:  report.DemoNotice,
 		ScannedAt:   report.ScannedAt,
@@ -69,42 +101,45 @@ func FromReport(report model.ScanReport) Document {
 		Summary:     report.Summary,
 		Findings:    report.Findings,
 		Checks:      report.Checks,
-		Tree:        treeFromGraph(report.Dependencies),
+		Tree:        treeFromGraph(report.Dependencies, language),
 		Sources:     report.Sources,
 		Limitations: report.Limitations,
 	})
 }
 
 // FromProject 将项目扫描结果转换为展示文档。
-func FromProject(result project.Result) Document {
+func FromProject(result project.Result, languages ...i18n.Language) Document {
+	language := presentationLanguage(languages)
+	catalog := i18n.For(language)
 	formats := make([]string, 0, len(result.Formats)*4)
 	for _, format := range result.Formats {
 		lockfile := format.LockfilePath
 		if lockfile == "" {
-			lockfile = "(missing)"
+			lockfile = catalog.Text(i18n.KeyReportLockfileMissing)
 		}
 		formats = append(formats,
 			fmt.Sprintf("%s  %s", format.Ecosystem, format.Format),
-			fmt.Sprintf("  manifest: %s", format.ManifestPath),
-			fmt.Sprintf("  lockfile: %s", lockfile),
-			fmt.Sprintf("  resolved packages: %d · unresolved: %d", format.ResolvedPackages, format.UnresolvedPackages),
+			catalog.Format(i18n.KeyReportManifestLine, format.ManifestPath),
+			catalog.Format(i18n.KeyReportLockfileLine, lockfile),
+			catalog.Format(i18n.KeyReportResolvedLine, format.ResolvedPackages, format.UnresolvedPackages),
 		)
 	}
 	if len(formats) == 0 {
-		formats = []string{"No supported project formats were detected."}
+		formats = []string{catalog.Text(i18n.KeyReportNoFormats)}
 	}
-	sections := []Section{{Title: "FORMATS", Lines: formats}}
+	sections := []Section{{Title: catalog.Text(i18n.KeyReportFormatsTitle), Lines: formats}}
 	return sanitizeDocument(Document{
-		Title:       "PROJECT REPORT",
+		Language:    language,
+		Title:       catalog.Text(i18n.KeyReportProjectTitle),
 		Target:      result.Root,
-		Subtitle:    "Dependency files are read only; project code and install scripts are never executed.",
+		Subtitle:    catalog.Text(i18n.KeyReportSubtitleProject),
 		DataMode:    model.DataModeLive,
 		ScannedAt:   result.ScannedAt,
 		Status:      result.Status,
 		Summary:     result.Summary,
 		Findings:    result.Findings,
 		Checks:      result.Checks,
-		Tree:        treeFromProject(result.Dependencies),
+		Tree:        treeFromProject(result.Dependencies, language),
 		Sources:     result.Sources,
 		Limitations: result.Limitations,
 		Sections:    sections,
@@ -112,7 +147,9 @@ func FromProject(result project.Result) Document {
 }
 
 // FromInventory 将全局清单结果转换为展示文档。
-func FromInventory(result inventory.Result) Document {
+func FromInventory(result inventory.Result, languages ...i18n.Language) Document {
+	language := presentationLanguage(languages)
+	catalog := i18n.For(language)
 	lines := []string{}
 	byEcosystem := map[model.Ecosystem]int{}
 	for _, pkg := range result.Packages {
@@ -130,10 +167,10 @@ func FromInventory(result inventory.Result) Document {
 	}
 	sort.Strings(ecosystems)
 	for _, ecosystem := range ecosystems {
-		lines = append(lines, fmt.Sprintf("%s  %d installed package(s)", ecosystem, byEcosystem[model.Ecosystem(ecosystem)]))
+		lines = append(lines, catalog.Format(i18n.KeyReportInstalledLine, ecosystem, byEcosystem[model.Ecosystem(ecosystem)]))
 	}
 	if len(lines) == 0 {
-		lines = append(lines, "No installed packages were reported by the configured package managers.")
+		lines = append(lines, catalog.Text(i18n.KeyReportNoInstalled))
 	}
 	if len(result.Packages) > 0 {
 		lines = append(lines, "")
@@ -145,14 +182,18 @@ func FromInventory(result inventory.Result) Document {
 			lines = append(lines, fmt.Sprintf("  %s@%s  [%s]", pkg.Package.String(), pkg.Version, pkg.Manager))
 		}
 		if len(result.Packages) > limit {
-			lines = append(lines, fmt.Sprintf("  … %d more package(s) omitted from this view.", len(result.Packages)-limit))
+			lines = append(lines, catalog.Format(i18n.KeyReportMorePackages, len(result.Packages)-limit))
 		}
 	}
-	sections := []Section{inventoryOverviewSection(result, byEcosystem), {Title: "INSTALLED PACKAGES", Lines: lines}}
+	sections := []Section{
+		inventoryOverviewSection(result, byEcosystem, language),
+		{Title: catalog.Text(i18n.KeyReportInstalledPackagesTitle), Lines: lines},
+	}
 	return sanitizeDocument(Document{
-		Title:       "GLOBAL INVENTORY",
-		Target:      "Local npm and PyPI installations",
-		Subtitle:    "Read-only metadata inventory; packages and install scripts are never executed.",
+		Language:    language,
+		Title:       catalog.Text(i18n.KeyReportInventoryTitle),
+		Target:      catalog.Text(i18n.KeyReportInventoryTarget),
+		Subtitle:    catalog.Text(i18n.KeyReportSubtitleInventory),
 		DataMode:    model.DataModeLive,
 		ScannedAt:   result.ScannedAt,
 		Status:      result.Status,
@@ -166,8 +207,10 @@ func FromInventory(result inventory.Result) Document {
 }
 
 // inventoryOverviewSection 汇总三类不同含义的数量，避免把漏洞、配对与包数混为一谈。
-// 行文本使用等宽标签，保证在纯文本与终端中都能对齐阅读。
-func inventoryOverviewSection(result inventory.Result, byEcosystem map[model.Ecosystem]int) Section {
+// 行文本按语言中最长的标签对齐，中英文都使用显示宽度而不是 rune 数量。
+func inventoryOverviewSection(result inventory.Result, byEcosystem map[model.Ecosystem]int, language i18n.Language) Section {
+	catalog := i18n.For(language)
+	theme := Theme{Language: language}
 	overview := result.Overview
 	if overview.InstalledPackages == 0 && overview.AdvisoryMatches == 0 {
 		overview.InstalledPackages = len(result.Packages)
@@ -175,15 +218,37 @@ func inventoryOverviewSection(result inventory.Result, byEcosystem map[model.Eco
 		overview.AdvisoryMatches = len(result.Findings)
 	}
 
-	lines := []string{
-		fmt.Sprintf("Installed packages      %d  (npm %d, PyPI %d)",
-			overview.InstalledPackages,
-			byEcosystem[model.EcosystemNPM],
-			byEcosystem[model.EcosystemPyPI]),
-		fmt.Sprintf("Affected packages       %d  packages with at least one matching advisory",
-			overview.AffectedPackages),
-		fmt.Sprintf("Advisory matches        %d  package-to-vulnerability pairs (the findings listed below)",
-			overview.AdvisoryMatches),
+	rows := []struct {
+		label string
+		value string
+	}{
+		{
+			label: catalog.Text(i18n.KeyInventoryInstalledLabel),
+			value: catalog.Format(i18n.KeyInventoryInstalledValue,
+				overview.InstalledPackages,
+				byEcosystem[model.EcosystemNPM],
+				byEcosystem[model.EcosystemPyPI]),
+		},
+		{
+			label: catalog.Text(i18n.KeyInventoryAffectedLabel),
+			value: catalog.Format(i18n.KeyInventoryAffectedValue, overview.AffectedPackages),
+		},
+		{
+			label: catalog.Text(i18n.KeyInventoryMatchesLabel),
+			value: catalog.Format(i18n.KeyInventoryMatchesValue, overview.AdvisoryMatches),
+		},
+	}
+	labelWidth := 0
+	for _, row := range rows {
+		if width := termtext.Width(row.label); width > labelWidth {
+			labelWidth = width
+		}
+	}
+	// 固定留出六个空格，保持英语输出与既有对齐方式一致。
+	labelWidth += 6
+	lines := make([]string, 0, len(rows)+6)
+	for _, row := range rows {
+		lines = append(lines, termtext.PadRight(row.label, labelWidth)+row.value)
 	}
 
 	if overview.AdvisoryMatches > 0 {
@@ -197,54 +262,61 @@ func inventoryOverviewSection(result inventory.Result, byEcosystem map[model.Eco
 		parts := make([]string, 0, len(order))
 		for _, severity := range order {
 			if count := overview.FindingsBySeverity[severity]; count > 0 {
-				parts = append(parts, fmt.Sprintf("%s %d", severity, count))
+				// 英语沿用既有小写统计形式；中文标签不含大小写，ToLower 不改变文字。
+				parts = append(parts, fmt.Sprintf("%s %d", strings.ToLower(theme.severityLabel(severity)), count))
 			}
 		}
 		if len(parts) > 0 {
-			lines = append(lines, "", "Matches by severity     "+strings.Join(parts, " · "))
+			label := catalog.Text(i18n.KeyInventorySeverityLabel)
+			if width := termtext.Width(label) + 6; width > labelWidth {
+				labelWidth = width
+			}
+			lines = append(lines, "", termtext.PadRight(label, labelWidth)+strings.Join(parts, " · "))
 		}
 	}
 
 	lines = append(lines, "",
-		"One vulnerability can match several installed packages, and one package can",
-		"match several vulnerabilities. Counts are pairs, not distinct vulnerabilities.",
-		"Advisory records that share CVE/GHSA/PYSEC aliases are merged into one finding.")
+		catalog.Text(i18n.KeyInventoryPairsNote),
+		catalog.Text(i18n.KeyInventoryPairsNote2),
+		catalog.Text(i18n.KeyInventoryPairsNote3))
 
-	return Section{Title: "OVERVIEW", Lines: lines}
+	return Section{Title: catalog.Text(i18n.KeyReportOverviewTitle), Lines: lines, Overview: true}
 }
 
-func treeFromGraph(graph model.DependencyGraph) *Tree {
+func treeFromGraph(graph model.DependencyGraph, language i18n.Language) *Tree {
 	if graph.RootNodeID == "" || len(graph.Nodes) == 0 {
 		return nil
 	}
+	catalog := i18n.For(language)
 	nodes := make(map[string]TreeNode, len(graph.Nodes))
 	for _, node := range graph.Nodes {
 		label := node.Package.String()
 		if node.Version != nil && *node.Version != "" {
 			label += "@" + *node.Version
 		} else if node.Relationship != model.DependencyRoot {
-			label += " (unresolved)"
+			label += catalog.Text(i18n.KeyReportTreeUnresolved)
 		}
 		nodes[node.ID] = TreeNode{Label: label, Children: append([]string(nil), node.Dependencies...)}
 	}
 	return &Tree{RootID: graph.RootNodeID, Nodes: nodes}
 }
 
-func treeFromProject(graph project.Graph) *Tree {
+func treeFromProject(graph project.Graph, language i18n.Language) *Tree {
 	if graph.RootID == "" {
 		return nil
 	}
+	catalog := i18n.For(language)
 	nodes := make(map[string]TreeNode, len(graph.Nodes)+1)
-	nodes[graph.RootID] = TreeNode{Label: "(project root)", Children: []string{}}
+	nodes[graph.RootID] = TreeNode{Label: catalog.Text(i18n.KeyReportTreeRoot), Children: []string{}}
 	for _, node := range graph.Nodes {
 		label := node.Package.String()
 		if node.Version != nil && *node.Version != "" {
 			label += "@" + *node.Version
 		} else {
-			label += " (unresolved)"
+			label += catalog.Text(i18n.KeyReportTreeUnresolved)
 		}
 		if node.Constraint != "" {
-			label += " · declared " + node.Constraint
+			label += catalog.Format(i18n.KeyReportTreeDeclared, node.Constraint)
 		}
 		nodes[node.ID] = TreeNode{Label: label, Children: append([]string(nil), node.Dependencies...)}
 	}
@@ -263,6 +335,7 @@ func treeFromProject(graph project.Graph) *Tree {
 
 // Overview 返回单屏概览，突出状态、覆盖缺口、发现与建议动作。
 func (d Document) Overview(theme Theme, selected int) string {
+	theme = d.themeWith(theme)
 	w := newWriter(theme)
 	d.writeHeader(w)
 	d.writeAssessment(w)
@@ -278,35 +351,27 @@ func (d Document) Overview(theme Theme, selected int) string {
 // 安装包列表等长列表仍保留在详细信息页，避免总览被撑满。
 func (d Document) writeOverviewSections(w *writer) {
 	for _, section := range d.Sections {
-		if !isOverviewSection(section.Title) {
+		if !section.Overview {
 			continue
 		}
 		w.blank()
 		w.heading(section.Title)
 		for _, line := range section.Lines {
-			if strings.TrimSpace(line) == "" {
-				w.blank()
-				continue
-			}
-			w.raw(line)
+			w.blockLine(line)
 		}
 	}
 }
 
-// isOverviewSection 判断信息块是否属于首屏需要的关键概览。
-func isOverviewSection(title string) bool {
-	return strings.EqualFold(strings.TrimSpace(title), "overview")
-}
-
 // Full 返回包含所有细节的完整纯文本报告。
 func (d Document) Full(theme Theme) string {
+	theme = d.themeWith(theme)
 	w := newWriter(theme)
 	d.writeHeader(w)
 	d.writeAssessment(w)
 	d.writeCoverageGaps(w, 0)
 	if len(d.Findings) == 0 {
-		w.heading("FINDINGS")
-		w.paragraph(d.emptyFindingMessage(), "  ")
+		w.heading(theme.text(i18n.KeyReportHeadingFindingsShort))
+		w.paragraph(d.emptyFindingMessage(theme), "  ")
 	} else {
 		for index, finding := range d.Findings {
 			w.blank()
@@ -323,11 +388,7 @@ func (d Document) Full(theme Theme) string {
 		w.blank()
 		w.heading(section.Title)
 		for _, line := range section.Lines {
-			if strings.TrimSpace(line) == "" {
-				w.blank()
-				continue
-			}
-			w.raw(line)
+			w.blockLine(line)
 		}
 	}
 	w.blank()
@@ -341,18 +402,19 @@ func (d Document) Full(theme Theme) string {
 
 // FindingDetail 返回单条发现的完整细节。
 func (d Document) FindingDetail(index int, theme Theme) string {
+	theme = d.themeWith(theme)
 	if index < 0 || index >= len(d.Findings) {
-		return "No finding is selected."
+		return theme.text(i18n.KeyReportNoFindingSelected)
 	}
 	w := newWriter(theme)
-	w.heading(fmt.Sprintf("FINDING %d OF %d", index+1, len(d.Findings)))
+	w.heading(theme.format(i18n.KeyReportHeadingFindingDetail, index+1, len(d.Findings)))
 	w.blank()
 	d.writeFinding(w, index, d.Findings[index])
 	w.blank()
-	w.heading("NEXT ACTIONS")
-	actions := actionsForFinding(d.Findings[index])
+	w.heading(theme.text(i18n.KeyReportHeadingNextActions))
+	actions := actionsForFinding(theme, d.Findings[index])
 	if len(actions) == 0 {
-		actions = []string{"Review the evidence and package context before making a decision."}
+		actions = []string{theme.text(i18n.KeyActionReviewEvidenceContext)}
 	}
 	for _, action := range actions {
 		w.bullet(action)
@@ -362,6 +424,7 @@ func (d Document) FindingDetail(index int, theme Theme) string {
 
 // ChecksSection 返回所有检查及其完整消息。
 func (d Document) ChecksSection(theme Theme) string {
+	theme = d.themeWith(theme)
 	w := newWriter(theme)
 	d.writeChecks(w)
 	return strings.TrimRight(w.b.String(), "\n")
@@ -369,10 +432,11 @@ func (d Document) ChecksSection(theme Theme) string {
 
 // DependenciesSection 返回依赖树与图覆盖说明。
 func (d Document) DependenciesSection(theme Theme) string {
+	theme = d.themeWith(theme)
 	w := newWriter(theme)
 	if d.Tree == nil {
-		w.heading("DEPENDENCIES")
-		w.paragraph("No dependency graph was recorded.", "  ")
+		w.heading(theme.text(i18n.KeyReportHeadingDependencies))
+		w.paragraph(theme.text(i18n.KeyReportNoDependencyGraph), "  ")
 		return strings.TrimRight(w.b.String(), "\n")
 	}
 	d.writeDependencies(w)
@@ -381,6 +445,7 @@ func (d Document) DependenciesSection(theme Theme) string {
 
 // SourcesSection 返回报告引用的全部来源。
 func (d Document) SourcesSection(theme Theme) string {
+	theme = d.themeWith(theme)
 	w := newWriter(theme)
 	d.writeSources(w)
 	return strings.TrimRight(w.b.String(), "\n")
@@ -388,10 +453,11 @@ func (d Document) SourcesSection(theme Theme) string {
 
 // DetailsSection 返回项目格式、已安装包等附加信息块。
 func (d Document) DetailsSection(theme Theme) string {
+	theme = d.themeWith(theme)
 	w := newWriter(theme)
 	if len(d.Sections) == 0 {
-		w.heading("DETAILS")
-		w.paragraph("No additional details were recorded for this report.", "  ")
+		w.heading(theme.text(i18n.KeyReportHeadingDetails))
+		w.paragraph(theme.text(i18n.KeyReportDetailsNone), "  ")
 		return strings.TrimRight(w.b.String(), "\n")
 	}
 	for index, section := range d.Sections {
@@ -400,11 +466,7 @@ func (d Document) DetailsSection(theme Theme) string {
 		}
 		w.heading(section.Title)
 		for _, line := range section.Lines {
-			if strings.TrimSpace(line) == "" {
-				w.blank()
-				continue
-			}
-			w.raw(line)
+			w.blockLine(line)
 		}
 	}
 	return strings.TrimRight(w.b.String(), "\n")
@@ -412,6 +474,7 @@ func (d Document) DetailsSection(theme Theme) string {
 
 // LimitationsSection 返回报告中记录的全部覆盖限制。
 func (d Document) LimitationsSection(theme Theme) string {
+	theme = d.themeWith(theme)
 	w := newWriter(theme)
 	d.writeLimitations(w)
 	return strings.TrimRight(w.b.String(), "\n")
@@ -419,39 +482,40 @@ func (d Document) LimitationsSection(theme Theme) string {
 
 // CompactSummary 返回可复制到问题跟踪器或聊天中的短摘要。
 func (d Document) CompactSummary(theme Theme) string {
+	theme = d.themeWith(theme)
 	w := newWriter(theme)
-	w.heading("DEPSCOPE SUMMARY")
+	w.heading(theme.text(i18n.KeyReportHeadingSummary))
 	target := d.Target
-	status := StatusLabel(d.Status)
+	status := theme.statusLabel(d.Status)
 	succeeded, total := checkCoverage(d.Checks)
-	w.line(fmt.Sprintf("%s · %s · %d/%d checks", target, status, succeeded, total))
-	highest := "none"
+	w.blockLine(theme.format(i18n.KeyReportSummaryLine, target, status, succeeded, total))
+	highest := theme.text(i18n.KeyValueNone)
 	if d.Summary.HighestSeverity != nil {
-		highest = SeverityLabel(*d.Summary.HighestSeverity)
+		highest = theme.severityLabel(*d.Summary.HighestSeverity)
 	}
-	w.line(fmt.Sprintf("Highest %s · confirmed %d · heuristic %d · data %s",
-		highest, d.Summary.ConfirmedFindings, d.Summary.HeuristicWarnings, DataModeLabel(d.DataMode)))
+	w.blockLine(theme.format(i18n.KeyReportSummaryHighest,
+		highest, d.Summary.ConfirmedFindings, d.Summary.HeuristicWarnings, theme.dataModeLabel(d.DataMode)))
 	if len(d.Findings) == 0 {
-		w.line("Findings: none in available data.")
+		w.blockLine(theme.text(i18n.KeyReportSummaryNoFindings))
 	} else {
-		w.line("Key findings:")
+		w.blockLine(theme.text(i18n.KeyReportSummaryKeyFindings))
 		limit := len(d.Findings)
 		if limit > 5 {
 			limit = 5
 		}
 		for _, finding := range d.Findings[:limit] {
-			w.line(fmt.Sprintf("- [%s] [%s] %s — %s", SeverityLabel(finding.Severity), KindLabel(finding.Kind), finding.ID, finding.Title))
+			w.blockLine(fmt.Sprintf("- [%s] [%s] %s — %s", theme.severityLabel(finding.Severity), theme.kindLabel(finding.Kind), finding.ID, finding.Title))
 		}
 		if len(d.Findings) > limit {
-			w.line(fmt.Sprintf("- … %d more finding(s)", len(d.Findings)-limit))
+			w.blockLine(theme.format(i18n.KeyReportSummaryMoreFindings, len(d.Findings)-limit))
 		}
 	}
-	w.line("Sources: " + sourceList(d.Sources))
-	if d.DataMode == model.DataModeDemo && d.DemoNotice != nil {
-		w.line("Demo: " + *d.DemoNotice)
+	w.blockLine(theme.format(i18n.KeyReportSummarySources, sourceList(theme, d.Sources)))
+	if d.DataMode == model.DataModeDemo {
+		w.blockLine(theme.format(i18n.KeyReportSummaryDemo, d.demoNoticeText(theme)))
 	}
 	if d.Status == model.StatusIncomplete || d.Status == model.StatusFailed {
-		w.line("Coverage gaps: " + coverageGapList(d.Checks))
+		w.blockLine(theme.format(i18n.KeyReportSummaryCoverageGaps, coverageGapList(theme, d.Checks)))
 	}
 	return strings.TrimRight(w.b.String(), "\n")
 }
@@ -470,8 +534,25 @@ func (w *writer) line(text string) {
 	w.b.WriteString("\n")
 }
 
-func (w *writer) raw(text string) {
-	w.line(truncate(text, w.theme.WidthForContent()))
+// blockLine 输出信息块中的一行；超宽时按显示宽度换行并保留缩进，
+// 避免中文长句在窄终端被直接裁掉。
+func (w *writer) blockLine(text string) {
+	width := w.theme.WidthForContent()
+	if strings.TrimSpace(text) == "" {
+		w.blank()
+		return
+	}
+	if termtext.Width(text) <= width {
+		w.line(text)
+		return
+	}
+	indent := len(text) - len(strings.TrimLeft(text, " "))
+	if indent >= width {
+		indent = 0
+	}
+	for _, line := range termtext.Wrap(strings.TrimSpace(text), width-indent) {
+		w.line(strings.Repeat(" ", indent) + line)
+	}
 }
 
 func (w *writer) blank() {
@@ -483,7 +564,7 @@ func (w *writer) heading(text string) {
 }
 
 func (w *writer) paragraph(text, prefix string) {
-	width := w.theme.WidthForContent() - runeCount(prefix)
+	width := w.theme.WidthForContent() - termtext.Width(prefix)
 	for _, line := range wrapText(text, width) {
 		w.line(prefix + line)
 	}
@@ -493,62 +574,133 @@ func (w *writer) bullet(text string) {
 	w.paragraph("• "+text, "  ")
 }
 
+// prefixed 输出带固定前缀的纯文本行；超宽时按显示宽度换行，续行对齐前缀。
+func (w *writer) prefixed(prefix, text string) {
+	w.prefixedStyled(prefix, text, nil)
+}
+
+// prefixedStyled 与 prefixed 相同，但对每一行正文应用样式。
+// text 必须是纯文本；样式在换行后应用，避免 ANSI 序列被切断。
+func (w *writer) prefixedStyled(prefix, text string, style func(string) string) {
+	width := w.theme.WidthForContent()
+	indent := termtext.Width(prefix)
+	if indent >= width {
+		// 前缀本身接近整行时先单独输出，正文从下一行开始，保证不越过右边缘。
+		w.line(prefix)
+		prefix = ""
+		indent = 0
+	}
+	apply := style
+	if apply == nil {
+		apply = func(value string) string { return value }
+	}
+	for _, line := range wrapText(text, width-indent) {
+		w.line(prefix + apply(line))
+		prefix = strings.Repeat(" ", indent)
+	}
+}
+
+// checkLine 输出检查状态、名称与标识；窄终端下名称与标识分行，避免右侧被裁切。
+func (w *writer) checkLine(prefix, name, id string) {
+	width := w.theme.WidthForContent()
+	indent := termtext.Width(prefix)
+	plain := name + "  [" + id + "]"
+	if indent+termtext.Width(plain) <= width {
+		w.line(prefix + w.theme.bold(name) + "  " + w.theme.dim("["+id+"]"))
+		return
+	}
+	w.prefixedStyled(prefix, name, w.theme.bold)
+	pad := strings.Repeat(" ", indent)
+	for _, line := range wrapText("["+id+"]", width-indent) {
+		w.line(pad + w.theme.dim(line))
+	}
+}
+
+// treeLine 输出依赖树的一行；长标签按显示宽度换行并延续树形缩进。
+func (w *writer) treeLine(head, text string) {
+	width := w.theme.WidthForContent()
+	indent := termtext.Width(head)
+	if indent >= width {
+		w.line(head)
+		head = ""
+		indent = 0
+	}
+	for _, line := range wrapText(text, width-indent) {
+		w.line(head + line)
+		head = strings.Repeat(" ", indent)
+	}
+}
+
 func (w *writer) keyValue(key, value string) {
 	const keyWidth = 19
 	plainKey := padRight(key, keyWidth)
-	w.line("  " + w.theme.dim(plainKey) + "  " + value)
+	prefix := "  " + w.theme.dim(plainKey) + "  "
+	if termtext.Width(prefix)+termtext.Width(value) > w.theme.WidthForContent() {
+		// 超宽值按纯文本换行；带样式的短值不会走到这里。
+		value = stripANSI(value)
+	}
+	w.prefixed(prefix, value)
 }
 
 func (d Document) writeHeader(w *writer) {
-	w.line(w.theme.paint(strings.ToUpper(d.Title), ansiBold, ansiAccent))
-	for _, line := range wrapText(d.Target, w.theme.WidthForContent()) {
-		w.line(w.theme.bold(line))
+	theme := w.theme
+	w.line(theme.paint(strings.ToUpper(d.Title), ansiBold, ansiAccent))
+	for _, line := range wrapText(d.Target, theme.WidthForContent()) {
+		w.line(theme.bold(line))
 	}
 	if d.Subtitle != "" {
 		w.paragraph(d.Subtitle, "")
 	}
 	w.blank()
-	w.keyValue("Data mode", DataModeLabel(d.DataMode))
+	w.keyValue(theme.text(i18n.KeyReportHeaderDataMode), theme.dataModeLabel(d.DataMode))
 	if !d.ScannedAt.IsZero() {
-		w.keyValue("Scanned at", d.ScannedAt.UTC().Format(time.RFC3339))
+		w.keyValue(theme.text(i18n.KeyReportHeaderScannedAt), d.ScannedAt.UTC().Format(time.RFC3339))
 	}
 	if len(d.Sources) > 0 {
-		w.keyValue("Sources", fmt.Sprintf("%d recorded", len(d.Sources)))
+		w.keyValue(theme.text(i18n.KeyReportHeaderSources), theme.format(i18n.KeyReportHeaderSourcesCount, len(d.Sources)))
 	}
-	if d.DataMode == model.DataModeDemo && d.DemoNotice != nil {
+	if d.DataMode == model.DataModeDemo {
 		w.blank()
-		prefix := w.theme.paint("[DEMO DATA]", ansiMedium, ansiBold) + " "
-		width := w.theme.WidthForContent() - runeCount("[DEMO DATA] ")
-		for _, line := range wrapText(*d.DemoNotice, width) {
-			w.line(prefix + w.theme.paint(line, ansiMedium))
-			prefix = strings.Repeat(" ", runeCount("[DEMO DATA] "))
+		badge := "[" + theme.text(i18n.KeyReportDemoBadge) + "]"
+		prefix := theme.paint(badge, ansiMedium, ansiBold) + " "
+		width := theme.WidthForContent() - termtext.Width(badge) - 1
+		for _, line := range wrapText(d.demoNoticeText(theme), width) {
+			w.line(prefix + theme.paint(line, ansiMedium))
+			prefix = strings.Repeat(" ", termtext.Width(badge)+1)
 		}
+	}
+	// 非英语界面明确说明扫描器诊断与公告原文保持原样，避免把证据误认为未翻译。
+	if theme.Lang() != i18n.English {
+		w.blank()
+		w.paragraph(theme.text(i18n.KeyReportSourceLanguageNote), "  ")
 	}
 }
 
 func (d Document) writeAssessment(w *writer) {
+	theme := w.theme
 	w.blank()
-	w.heading("ASSESSMENT")
-	w.keyValue("Status", w.theme.statusBadge(d.Status))
+	w.heading(theme.text(i18n.KeyReportHeadingAssessment))
+	w.keyValue(theme.text(i18n.KeyReportLabelStatus), theme.statusBadge(d.Status))
 	succeeded, total := checkCoverage(d.Checks)
-	coverage := fmt.Sprintf("%d of %d succeeded", succeeded, total)
+	coverage := theme.format(i18n.KeyReportCoverageSucceeded, succeeded, total)
 	if total == 0 {
-		coverage = "no checks recorded"
+		coverage = theme.text(i18n.KeyReportCoverageNoChecks)
 	}
-	w.keyValue("Completed checks", coverage)
-	w.keyValue("Confirmed findings", fmt.Sprint(d.Summary.ConfirmedFindings))
-	w.keyValue("Heuristic warnings", fmt.Sprint(d.Summary.HeuristicWarnings))
-	highest := "none"
+	w.keyValue(theme.text(i18n.KeyReportLabelCompletedChecks), coverage)
+	w.keyValue(theme.text(i18n.KeyReportLabelConfirmed), fmt.Sprint(d.Summary.ConfirmedFindings))
+	w.keyValue(theme.text(i18n.KeyReportLabelHeuristic), fmt.Sprint(d.Summary.HeuristicWarnings))
+	highest := theme.text(i18n.KeyValueNone)
 	if d.Summary.HighestSeverity != nil {
-		highest = w.theme.severityBadge(*d.Summary.HighestSeverity)
+		highest = theme.severityBadge(*d.Summary.HighestSeverity)
 	}
-	w.keyValue("Highest severity", highest)
+	w.keyValue(theme.text(i18n.KeyReportLabelHighest), highest)
 	if d.Status == model.StatusIncomplete || d.Status == model.StatusFailed {
-		w.keyValue("Interpretation", "coverage is incomplete; this result is not clean")
+		w.keyValue(theme.text(i18n.KeyReportLabelInterpretation), theme.text(i18n.KeyReportInterpretationIncomplete))
 	}
 }
 
 func (d Document) writeCoverageGaps(w *writer, limitationLimit int) {
+	theme := w.theme
 	gaps := make([]model.CheckResult, 0)
 	for _, check := range d.Checks {
 		if check.Status != model.CheckSucceeded {
@@ -559,9 +711,9 @@ func (d Document) writeCoverageGaps(w *writer, limitationLimit int) {
 		return
 	}
 	w.blank()
-	w.heading("COVERAGE GAPS")
+	w.heading(theme.text(i18n.KeyReportHeadingCoverageGaps))
 	for _, check := range gaps {
-		w.line("  " + w.theme.checkBadge(check.Status) + " " + check.Name + "  " + w.theme.dim("["+check.ID+"]"))
+		w.checkLine("  "+theme.checkBadge(check.Status)+" ", check.Name, check.ID)
 		w.paragraph(check.Message, "      ")
 	}
 	if len(d.Limitations) > 0 {
@@ -570,121 +722,125 @@ func (d Document) writeCoverageGaps(w *writer, limitationLimit int) {
 			limit = limitationLimit
 		}
 		for _, limitation := range d.Limitations[:limit] {
-			w.line("  " + w.theme.dim(limitation.Code) + ": " + limitation.Message)
+			w.prefixed("  "+theme.dim(limitation.Code)+": ", limitation.Message)
 		}
 		if limit < len(d.Limitations) {
-			w.line(w.theme.dim(fmt.Sprintf("  … %d more limitation(s)", len(d.Limitations)-limit)))
+			w.line(theme.dim(theme.format(i18n.KeyReportMoreLimitations, len(d.Limitations)-limit)))
 		}
 	}
 }
 
-func (d Document) emptyFindingMessage() string {
+func (d Document) emptyFindingMessage(theme Theme) string {
 	if d.Status == model.StatusIncomplete || d.Status == model.StatusFailed {
-		return "No confirmed findings or heuristic warnings were recorded in the available data, but coverage is incomplete. This is not a clean result."
+		return theme.text(i18n.KeyReportEmptyFindingsIncomplete)
 	}
-	return "No confirmed findings or heuristic warnings were recorded."
+	return theme.text(i18n.KeyReportEmptyFindings)
 }
 
 func (d Document) writeFindingList(w *writer, selected int) {
+	theme := w.theme
 	w.blank()
-	w.heading(fmt.Sprintf("FINDINGS (%d)", len(d.Findings)))
+	w.heading(theme.format(i18n.KeyReportHeadingFindings, len(d.Findings)))
 	if len(d.Findings) == 0 {
-		w.paragraph(d.emptyFindingMessage(), "  ")
+		w.paragraph(d.emptyFindingMessage(theme), "  ")
 		return
 	}
 	for index, finding := range d.Findings {
 		marker := "  "
 		if index == selected {
-			marker = w.theme.accent("› ")
+			marker = theme.accent("› ")
 		}
-		head := fmt.Sprintf("%s%d  %s %s %s", marker, index+1, w.theme.severityBadge(finding.Severity), w.theme.kindBadge(finding.Kind), finding.ID)
-		w.line(head)
+		head := fmt.Sprintf("%s%d  %s %s ", marker, index+1, theme.severityBadge(finding.Severity), theme.kindBadge(finding.Kind))
+		w.prefixedStyled(head, finding.ID, theme.dim)
 		w.paragraph(finding.Title, "     ")
 		line := finding.Package.String()
 		if finding.Version != nil && *finding.Version != "" {
 			line += "@" + *finding.Version
 		}
 		if finding.Risk != nil {
-			line += fmt.Sprintf(" · risk %.0f/100", finding.Risk.Score)
+			line += theme.format(i18n.KeyReportRiskSuffix, finding.Risk.Score)
 		}
 		w.paragraph(line, "     ")
 	}
 }
 
 func (d Document) writeFinding(w *writer, index int, finding model.Finding) {
-	w.heading(fmt.Sprintf("FINDING %d OF %d", index+1, len(d.Findings)))
+	theme := w.theme
+	w.heading(theme.format(i18n.KeyReportHeadingFindingDetail, index+1, len(d.Findings)))
 	w.blank()
-	w.line(w.theme.severityBadge(finding.Severity) + " " + w.theme.kindBadge(finding.Kind) + " " + w.theme.bold(finding.Title))
-	w.keyValue("ID", finding.ID)
+	w.prefixedStyled(theme.severityBadge(finding.Severity)+" "+theme.kindBadge(finding.Kind)+" ", finding.Title, theme.bold)
+	w.keyValue(theme.text(i18n.KeyReportLabelID), finding.ID)
 	pkg := finding.Package.String()
 	if finding.Version != nil && *finding.Version != "" {
 		pkg += "@" + *finding.Version
 	}
-	w.keyValue("Package", pkg)
+	w.keyValue(theme.text(i18n.KeyReportLabelPackage), pkg)
 	if finding.Risk != nil {
-		w.keyValue("Risk", fmt.Sprintf("%.0f/100", finding.Risk.Score))
+		w.keyValue(theme.text(i18n.KeyReportLabelRisk), fmt.Sprintf("%.0f/100", finding.Risk.Score))
 	} else {
-		w.keyValue("Risk", "not computed")
+		w.keyValue(theme.text(i18n.KeyReportLabelRisk), theme.text(i18n.KeyReportRiskNotComputed))
 	}
 	w.blank()
 	w.paragraph(finding.Description, "  ")
 	if finding.Risk != nil && strings.TrimSpace(finding.Risk.Rationale) != "" {
 		w.blank()
-		w.heading("RISK RATIONALE")
+		w.heading(theme.text(i18n.KeyReportHeadingRiskRationale))
 		w.paragraph(finding.Risk.Rationale, "  ")
 	}
 	if len(finding.Evidence) > 0 {
 		w.blank()
-		w.heading("EVIDENCE")
+		w.heading(theme.text(i18n.KeyReportHeadingEvidence))
 		for _, evidence := range finding.Evidence {
-			w.line("  " + w.theme.dim("["+string(evidence.Kind)+"]") + " " + evidence.Summary)
-			details := "source: " + evidence.SourceID
+			w.prefixed("  "+theme.dim("["+string(evidence.Kind)+"]")+" ", evidence.Summary)
+			details := theme.format(i18n.KeyReportEvidenceSource, evidence.SourceID)
 			if evidence.Reference != "" {
-				details += " · reference: " + evidence.Reference
+				details += theme.format(i18n.KeyReportEvidenceReference, evidence.Reference)
 			}
 			w.paragraph(details, "      ")
 		}
 	}
 	if finding.Remediation != nil && strings.TrimSpace(*finding.Remediation) != "" {
 		w.blank()
-		w.heading("REMEDIATION")
+		w.heading(theme.text(i18n.KeyReportHeadingRemediation))
 		w.paragraph(*finding.Remediation, "  ")
 	}
 }
 
 func (d Document) writeChecks(w *writer) {
-	w.heading("CHECKS")
+	theme := w.theme
+	w.heading(theme.text(i18n.KeyReportHeadingChecks))
 	succeeded, total := checkCoverage(d.Checks)
-	w.paragraph(fmt.Sprintf("%d of %d checks succeeded. A missing or unsuccessful check prevents a clean result.", succeeded, total), "  ")
+	w.paragraph(theme.format(i18n.KeyReportChecksCoverage, succeeded, total), "  ")
 	if len(d.Checks) == 0 {
 		w.blank()
-		w.paragraph("No checks were recorded. The result cannot be considered clean.", "  ")
+		w.paragraph(theme.text(i18n.KeyReportChecksNone), "  ")
 		return
 	}
 	for _, check := range d.Checks {
 		w.blank()
-		w.line("  " + w.theme.checkBadge(check.Status) + " " + w.theme.bold(check.Name) + "  " + w.theme.dim("["+check.ID+"]"))
+		w.checkLine("  "+theme.checkBadge(check.Status)+" ", check.Name, check.ID)
 		w.paragraph(check.Message, "      ")
 		if len(check.SourceIDs) > 0 {
-			w.paragraph("sources: "+strings.Join(check.SourceIDs, ", "), "      ")
+			w.paragraph(theme.format(i18n.KeyReportChecksSources, strings.Join(check.SourceIDs, ", ")), "      ")
 		}
 	}
 }
 
 func (d Document) writeDependencies(w *writer) {
-	w.heading("DEPENDENCIES")
-	w.paragraph(fmt.Sprintf("%d node(s) recorded. Node versions are exact when shown; unresolved nodes are never approximated.", nodeCount(d.Tree)), "  ")
+	theme := w.theme
+	w.heading(theme.text(i18n.KeyReportHeadingDependencies))
+	w.paragraph(theme.format(i18n.KeyReportDependenciesCount, nodeCount(d.Tree)), "  ")
 	w.blank()
 	if d.Tree == nil {
-		w.paragraph("No dependency graph was recorded.", "  ")
+		w.paragraph(theme.text(i18n.KeyReportNoDependencyGraph), "  ")
 		return
 	}
 	root, exists := d.Tree.Nodes[d.Tree.RootID]
 	if !exists {
-		w.paragraph("The dependency graph has no root node.", "  ")
+		w.paragraph(theme.text(i18n.KeyReportDependencyNoRoot), "  ")
 		return
 	}
-	w.line("  " + root.Label)
+	w.treeLine("  ", root.Label)
 	rendered := map[string]bool{d.Tree.RootID: true}
 	d.writeTreeChildren(w, root.Children, "  ", map[string]bool{d.Tree.RootID: true}, rendered)
 	orphans := make([]string, 0)
@@ -696,10 +852,10 @@ func (d Document) writeDependencies(w *writer) {
 	if len(orphans) > 0 {
 		sort.Strings(orphans)
 		w.blank()
-		w.paragraph(fmt.Sprintf("%d node(s) are not linked from the root and are listed separately.", len(orphans)), "  ")
+		w.paragraph(theme.format(i18n.KeyReportDependencyOrphans, len(orphans)), "  ")
 		for _, id := range orphans {
 			node := d.Tree.Nodes[id]
-			w.line("  " + w.theme.dim("•") + " " + node.Label)
+			w.treeLine("  "+theme.dim("•")+" ", node.Label)
 			d.writeTreeChildren(w, node.Children, "    ", map[string]bool{id: true}, rendered)
 		}
 	}
@@ -707,14 +863,14 @@ func (d Document) writeDependencies(w *writer) {
 	for _, check := range d.Checks {
 		if check.ID == "dependency-graph" || strings.HasSuffix(check.ID, ":dependency-resolution") {
 			if check.Status != model.CheckSucceeded {
-				graphStatus = strings.ToLower(CheckLabel(check.Status))
+				graphStatus = strings.ToLower(theme.checkLabel(check.Status))
 				break
 			}
 		}
 	}
 	if graphStatus != "" {
 		w.blank()
-		w.paragraph("Dependency graph coverage is incomplete. See COVERAGE GAPS before relying on this tree.", "  ")
+		w.paragraph(theme.text(i18n.KeyReportDependencyIncomplete), "  ")
 	}
 }
 
@@ -735,9 +891,9 @@ func (d Document) writeTreeChildren(w *writer, children []string, prefix string,
 		}
 		marker := ""
 		if path[id] {
-			marker = " (cycle)"
+			marker = w.theme.text(i18n.KeyReportDependencyCycle)
 		}
-		w.raw(prefix + branch + node.Label + marker)
+		w.treeLine(prefix+branch, node.Label+marker)
 		if path[id] {
 			continue
 		}
@@ -752,43 +908,44 @@ func (d Document) writeTreeChildren(w *writer, children []string, prefix string,
 }
 
 func (d Document) writeSources(w *writer) {
-	w.heading("SOURCES")
+	theme := w.theme
+	w.heading(theme.text(i18n.KeyReportHeadingSources))
 	if len(d.Sources) == 0 {
-		w.paragraph("No source references were recorded. Results without sources cannot be clean.", "  ")
+		w.paragraph(theme.text(i18n.KeyReportSourcesNone), "  ")
 		return
 	}
 	for _, source := range d.Sources {
-		line := fmt.Sprintf("%s  [%s]  %s  · retrieved %s",
+		line := theme.format(i18n.KeyReportSourceLine,
 			source.ID, source.Provider, source.Identifier, source.RetrievedAt.UTC().Format(time.RFC3339))
 		w.paragraph(line, "  ")
 		if source.URL != nil {
-			w.paragraph("url: "+*source.URL, "    ")
+			w.paragraph(theme.format(i18n.KeyReportSourceURL, *source.URL), "    ")
 		}
 	}
 }
 
 func (d Document) writeLimitations(w *writer) {
-	w.heading("LIMITATIONS")
+	theme := w.theme
+	w.heading(theme.text(i18n.KeyReportHeadingLimitations))
 	if len(d.Limitations) == 0 {
-		w.paragraph("No additional limitations were recorded.", "  ")
+		w.paragraph(theme.text(i18n.KeyReportLimitationsNone), "  ")
 		return
 	}
 	for _, limitation := range d.Limitations {
-		w.line("  " + w.theme.dim(limitation.Code))
+		w.prefixedStyled("  ", limitation.Code, theme.dim)
 		w.paragraph(limitation.Message, "    ")
 	}
 }
 
 func (d Document) writeActions(w *writer) {
 	w.blank()
-	w.heading("NEXT ACTIONS")
-	actions := d.actions()
-	for _, action := range actions {
+	w.heading(w.theme.text(i18n.KeyReportHeadingNextActions))
+	for _, action := range d.actions(w.theme) {
 		w.bullet(action)
 	}
 }
 
-func (d Document) actions() []string {
+func (d Document) actions(theme Theme) []string {
 	actions := []string{}
 	seen := map[string]bool{}
 	add := func(action string) {
@@ -805,47 +962,47 @@ func (d Document) actions() []string {
 			if finding.Remediation != nil {
 				add(*finding.Remediation)
 			} else {
-				add("Review confirmed finding " + finding.ID + " and apply the referenced advisory guidance.")
+				add(theme.format(i18n.KeyActionReviewConfirmed, finding.ID))
 			}
 		}
 		if strings.HasPrefix(finding.ID, "LIFECYCLE-") {
-			add("Review the declared install-script commands before installing; DepScope did not execute them.")
+			add(theme.text(i18n.KeyActionLifecycle))
 		}
 		if strings.HasPrefix(finding.ID, "TYPOSQUAT-") {
-			add("Verify the package name and publisher against the official project before installing.")
+			add(theme.text(i18n.KeyActionTyposquat))
 		}
 	}
 	if d.Status == model.StatusIncomplete {
-		add("Treat this result as incomplete, not clean, and restore coverage for: " + coverageGapList(d.Checks) + ".")
+		add(theme.format(i18n.KeyActionIncomplete, coverageGapList(theme, d.Checks)))
 	}
 	if d.Status == model.StatusFailed {
-		add("The scan failed; resolve the coverage gaps before relying on this result.")
+		add(theme.text(i18n.KeyActionFailed))
 	}
 	if d.Status == model.StatusClean {
-		add("No action is required by the completed checks; re-run after dependency changes.")
+		add(theme.text(i18n.KeyActionClean))
 	}
 	if len(actions) == 0 && len(d.Findings) > 0 {
-		add("Review each heuristic warning and its evidence before making a decision.")
+		add(theme.text(i18n.KeyActionReviewHeuristics))
 	}
 	if len(actions) == 0 {
-		add("Review the report evidence and source coverage before making a decision.")
+		add(theme.text(i18n.KeyActionReviewEvidence))
 	}
 	return actions
 }
 
-func actionsForFinding(finding model.Finding) []string {
+func actionsForFinding(theme Theme, finding model.Finding) []string {
 	actions := []string{}
 	if finding.Remediation != nil && strings.TrimSpace(*finding.Remediation) != "" {
 		actions = append(actions, *finding.Remediation)
 	}
 	if strings.HasPrefix(finding.ID, "LIFECYCLE-") {
-		actions = append(actions, "Inspect the lifecycle command in the evidence; DepScope never executes package scripts.")
+		actions = append(actions, theme.text(i18n.KeyActionInspectLifecycle))
 	}
 	if strings.HasPrefix(finding.ID, "TYPOSQUAT-") {
-		actions = append(actions, "Confirm the package name and publisher with the official project before installing.")
+		actions = append(actions, theme.text(i18n.KeyActionConfirmPublisher))
 	}
 	if len(actions) == 0 {
-		actions = append(actions, "Compare the evidence with the package's published release information.")
+		actions = append(actions, theme.text(i18n.KeyActionCompareEvidence))
 	}
 	if len(actions) > maxActions {
 		actions = actions[:maxActions]
@@ -863,22 +1020,22 @@ func checkCoverage(checks []model.CheckResult) (int, int) {
 	return succeeded, len(checks)
 }
 
-func coverageGapList(checks []model.CheckResult) string {
+func coverageGapList(theme Theme, checks []model.CheckResult) string {
 	names := []string{}
 	for _, check := range checks {
 		if check.Status != model.CheckSucceeded {
-			names = append(names, check.Name+" ("+strings.ToLower(CheckLabel(check.Status))+")")
+			names = append(names, check.Name+" ("+strings.ToLower(theme.checkLabel(check.Status))+")")
 		}
 	}
 	if len(names) == 0 {
-		return "none"
+		return theme.text(i18n.KeyValueNone)
 	}
 	return strings.Join(names, ", ")
 }
 
-func sourceList(sources []model.SourceReference) string {
+func sourceList(theme Theme, sources []model.SourceReference) string {
 	if len(sources) == 0 {
-		return "none"
+		return theme.text(i18n.KeyValueNone)
 	}
 	ids := make([]string, 0, len(sources))
 	for _, source := range sources {

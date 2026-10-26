@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode"
 
 	"github.com/janghotan/depscope/internal/app"
 	"github.com/janghotan/depscope/internal/demo"
@@ -158,6 +159,25 @@ func TestDemoIsDeterministicAndOffline(t *testing.T) {
 	code, out, _ := runCLI(t, service, nil, false, "--no-color", "demo")
 	if code != 0 || !strings.Contains(out, "DEMO DATA") || !strings.Contains(out, "FINDINGS") {
 		t.Fatalf("default demo code = %d output = %q", code, out)
+	}
+}
+
+// TestCLIOutputStaysEnglish 确保非交互式输出不随 TUI 语言设置变化。
+func TestCLIOutputStaysEnglish(t *testing.T) {
+	service := &app.LiveService{}
+	code, out, errOut := runCLI(t, service, nil, false, "--no-color", "demo", "vulnerable")
+	if code != 0 {
+		t.Fatalf("demo exit code = %d (stderr: %s)", code, errOut)
+	}
+	for _, text := range []string{"DEMO DATA", "ASSESSMENT", "FINDINGS", "SOURCES"} {
+		if !strings.Contains(out, text) {
+			t.Fatalf("English CLI output is missing %q:\n%s", text, out)
+		}
+	}
+	for _, r := range out {
+		if unicode.Is(unicode.Han, r) {
+			t.Fatalf("English CLI output contains Chinese text %q:\n%s", r, out)
+		}
 	}
 }
 

@@ -231,6 +231,8 @@ Global flags go before the command: `--no-color`, `--color=auto|always|never`, `
 
 The interactive app animates a short brand reveal, navigation feedback, a loading indicator, and a completion transition. Animations are disabled by `DEPSCOPE_NO_ANIMATION=1`, by `TERM=dumb`, and in CI environments; every screen stays fully usable with animation and color disabled. `NO_COLOR` disables color only and never affects navigation.
 
+The interactive app can display English or Simplified Chinese. Open **Settings** from the main menu, select **Language**, and press `enter` or `left`/`right` to switch immediately. The choice is session-only: it is never written to disk, and a new session starts in English. Menus, forms, help, loading states, reports, and comparisons are localized, while package names, versions, advisory IDs, URLs, and raw advisory text stay unchanged. Layout, wrapping, and input focus use terminal display cells, so Chinese text aligns and wraps correctly. The non-interactive CLI, HTTP API, and website remain English.
+
 | Exit code | Meaning |
 | --- | --- |
 | `0` | Command completed; report status was not `failed` or `cancelled` (an `incomplete` report still exits `0`) |
@@ -477,6 +479,7 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 | Area | Status |
 | --- | --- |
 | Go engine, CLI, TUI, offline demo | Implemented and covered by tests |
+| TUI languages | English and Simplified Chinese, selected in Settings; session-only. CLI, API, and website remain English |
 | Local HTTP API | Implemented; local, unauthenticated, process-local limits |
 | Website (single scan, comparison, demo records) | Implemented locally; not deployed |
 | CI and GoReleaser configuration | CI and the release workflow run on GitHub; tagged releases publish CLI and API archives with a SHA-256 `checksums.txt` (not signed) |
@@ -493,7 +496,7 @@ Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), then r
 - Add deterministic tests with synthetic fixtures; the default suite must not make public network requests.
 - Preserve incomplete results and evidence — a missing check must never become a clean result.
 - Never install, import, or execute scanned packages or run their lifecycle scripts.
-- All new source-code comments and docstrings are written in Simplified Chinese; identifiers, UI copy, and public documentation stay in English.
+- All new source-code comments and docstrings are written in Simplified Chinese; identifiers, CLI/API output, and public documentation stay in English, while interactive TUI copy is localized through `internal/i18n`.
 - Describe the exact commands you ran in your pull request.
 
 ## Security

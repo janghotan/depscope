@@ -12,6 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/janghotan/depscope/internal/app"
+	"github.com/janghotan/depscope/internal/i18n"
 	"github.com/janghotan/depscope/internal/model"
 	"github.com/janghotan/depscope/internal/render"
 )
@@ -53,43 +54,34 @@ const (
 )
 
 type menuEntry struct {
-	title       string
-	description string
-	target      screen
+	titleKey       i18n.Key
+	descriptionKey i18n.Key
+	target         screen
 }
 
 var menuEntries = []menuEntry{
-	{
-		title:       "Check a single package",
-		description: "Registry metadata, advisories, lifecycle scripts, and name signals.",
-		target:      screenPackageForm,
-	},
-	{
-		title:       "Scan my project",
-		description: "Read supported npm and Python manifests without executing code.",
-		target:      screenProjectForm,
-	},
-	{
-		title:       "Compare two packages",
-		description: "Side-by-side versions, source coverage, and findings.",
-		target:      screenCompareForm,
-	},
-	{
-		title:       "Check my global installs",
-		description: "Read-only npm and pip inventory of this machine.",
-		target:      screenInventoryConfirm,
-	},
-	{
-		title:       "Run the offline demo",
-		description: "Deterministic synthetic reports; no network access.",
-		target:      screenDemoPicker,
-	},
-	{
-		title:       "Settings",
-		description: "Session defaults and color behavior.",
-		target:      screenSettings,
-	},
+	{titleKey: i18n.KeyMenuPackageTitle, descriptionKey: i18n.KeyMenuPackageDescription, target: screenPackageForm},
+	{titleKey: i18n.KeyMenuProjectTitle, descriptionKey: i18n.KeyMenuProjectDescription, target: screenProjectForm},
+	{titleKey: i18n.KeyMenuCompareTitle, descriptionKey: i18n.KeyMenuCompareDescription, target: screenCompareForm},
+	{titleKey: i18n.KeyMenuInventoryTitle, descriptionKey: i18n.KeyMenuInventoryDescription, target: screenInventoryConfirm},
+	{titleKey: i18n.KeyMenuDemoTitle, descriptionKey: i18n.KeyMenuDemoDescription, target: screenDemoPicker},
+	{titleKey: i18n.KeyMenuSettingsTitle, descriptionKey: i18n.KeyMenuSettingsDescription, target: screenSettings},
 }
+
+// demoTitleKeys 与 demoDescriptionKeys 把稳定的场景 ID 映射到本地化文案；
+// 未知场景回退到服务提供的文本。
+var (
+	demoTitleKeys = map[string]i18n.Key{
+		"vulnerable":      i18n.KeyDemoScenarioVulnerableTitle,
+		"install-scripts": i18n.KeyDemoScenarioScriptsTitle,
+		"clean":           i18n.KeyDemoScenarioCleanTitle,
+	}
+	demoDescriptionKeys = map[string]i18n.Key{
+		"vulnerable":      i18n.KeyDemoScenarioVulnerableDescription,
+		"install-scripts": i18n.KeyDemoScenarioScriptsDescription,
+		"clean":           i18n.KeyDemoScenarioCleanDescription,
+	}
+)
 
 var reportViews = []reportView{
 	viewOverview,
@@ -108,6 +100,8 @@ type Options struct {
 	Context          context.Context
 	// Animations 显式控制动画；留空时由 DEPSCOPE_NO_ANIMATION、TERM 与 CI 决定。
 	Animations string
+	// Language 是本次会话的初始界面语言；留空时使用英语。
+	Language i18n.Language
 }
 
 // Model 是 Bubble Tea 的界面状态；所有扫描通过 app.Service 完成。
@@ -122,6 +116,7 @@ type Model struct {
 	colorMode  render.ColorMode
 	color      bool
 	ecosystem  model.Ecosystem
+	language   i18n.Language
 	menuIndex  int
 	formFields []textField
 	formIndex  int
@@ -144,10 +139,13 @@ type Model struct {
 	findingIndex int
 	returnScreen screen
 	comparison   *app.Comparison
+	// documentSource 用当前会话语言重新构建报告，切换语言时不会丢失结果。
+	documentSource func() render.Document
 
 	scroll    int
 	errorText string
-	notice    string
+	noticeKey i18n.Key
+	noticeSet bool
 
 	// anim 保存动画进度；没有动画时所有字段为 0，界面保持静态。
 	anim animation
@@ -184,6 +182,7 @@ func New(service app.Service, opts Options) *Model {
 		baseCtx:    baseCtx,
 		colorMode:  mode,
 		ecosystem:  ecosystem,
+		language:   i18n.Normalize(opts.Language),
 		progressCh: make(chan progressMsg, 32),
 	}
 	m.color = render.ColorEnabled(mode, true, lookupEnv)
@@ -198,6 +197,33 @@ func New(service app.Service, opts Options) *Model {
 
 // Init 只启动品牌入场动画，不执行任何后台扫描工作。
 func (m *Model) Init() tea.Cmd { return m.startBrand() }
+
+// text 返回当前会话语言的界面文案；未知语言由目录回退到英语。
+func (m *Model) text(key i18n.Key) string {
+	return i18n.For(m.language).Text(key)
+}
+
+// format 返回当前语言的参数化文案。
+func (m *Model) format(key i18n.Key, args ...any) string {
+	return i18n.For(m.language).Format(key, args...)
+}
+
+// setNotice 记录一条可随语言切换重新渲染的界面提示。
+func (m *Model) setNotice(key i18n.Key) {
+	m.noticeKey = key
+	m.noticeSet = true
+}
+
+func (m *Model) noticeText() string {
+	if !m.noticeSet {
+		return ""
+	}
+	return m.text(m.noticeKey)
+}
+
+func (m *Model) clearNotice() {
+	m.noticeSet = false
+}
 
 // Update 处理窗口、键盘、进度与扫描结果消息。
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -242,7 +268,7 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.cancel()
 			}
 			m.cancelling = true
-			m.loading.Message = "Cancellation requested. Waiting for the current read-only request to stop."
+			m.loading.Message = m.text(i18n.KeyLoadingCancelling)
 			return m, nil
 		}
 		return m, nil
@@ -306,7 +332,7 @@ func (m *Model) handleMenuKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) openScreen(target screen) tea.Cmd {
-	m.notice = ""
+	m.clearNotice()
 	m.formError = ""
 	m.scroll = 0
 	// 切换画面时让在途动画帧失效，随后开始新的导航强调。
@@ -316,15 +342,15 @@ func (m *Model) openScreen(target screen) tea.Cmd {
 	m.formIndex = 0
 	switch target {
 	case screenPackageForm:
-		m.formFields = []textField{newTextField("lodash@4.17.21 · pypi:requests==2.31.0")}
+		m.formFields = []textField{newTextField(m.text(i18n.KeyFormPlaceholderPackage))}
 	case screenProjectForm:
-		field := newTextField("project directory")
+		field := newTextField(m.text(i18n.KeyFormPlaceholderProject))
 		field.SetValue(".")
 		m.formFields = []textField{field}
 	case screenCompareForm:
 		m.formFields = []textField{
-			newTextField("first package"),
-			newTextField("second package"),
+			newTextField(m.text(i18n.KeyFormPlaceholderFirst)),
+			newTextField(m.text(i18n.KeyFormPlaceholderSecond)),
 		}
 	case screenDemoPicker:
 		m.demoAt = 0
@@ -396,12 +422,12 @@ func (m *Model) submitForm() (tea.Model, tea.Cmd) {
 	case screenPackageForm:
 		value := strings.TrimSpace(m.formFields[0].String())
 		if value == "" {
-			m.formError = "Enter a package name, for example lodash@4.17.21 or pypi:requests==2.31.0."
+			m.formError = m.text(i18n.KeyFormErrorPackageRequired)
 			return m, nil
 		}
 		request, err := app.ParsePackageSpec(value, m.ecosystem)
 		if err != nil {
-			m.formError = "Cannot parse package: " + render.Sanitize(err.Error())
+			m.formError = m.text(i18n.KeyFormErrorCannotParse) + m.localizedValidationError(err)
 			return m, nil
 		}
 		m.formError = ""
@@ -409,12 +435,12 @@ func (m *Model) submitForm() (tea.Model, tea.Cmd) {
 	case screenProjectForm:
 		value := strings.TrimSpace(m.formFields[0].String())
 		if value == "" {
-			m.formError = "Enter a project directory, or use . for the current directory."
+			m.formError = m.text(i18n.KeyFormErrorProjectRequired)
 			return m, nil
 		}
 		request := app.ProjectRequest{Path: value}
 		if err := request.Validate(); err != nil {
-			m.formError = render.Sanitize(err.Error())
+			m.formError = m.localizedValidationError(err)
 			return m, nil
 		}
 		m.formError = ""
@@ -422,7 +448,7 @@ func (m *Model) submitForm() (tea.Model, tea.Cmd) {
 	case screenCompareForm:
 		if m.formIndex == 0 && len(m.formFields) > 1 && strings.TrimSpace(m.formFields[1].String()) == "" {
 			if strings.TrimSpace(m.formFields[0].String()) == "" {
-				m.formError = "Enter the first package."
+				m.formError = m.text(i18n.KeyFormErrorFirstPackage)
 				return m, nil
 			}
 			m.formIndex = 1
@@ -431,17 +457,17 @@ func (m *Model) submitForm() (tea.Model, tea.Cmd) {
 		}
 		left, err := app.ParsePackageSpec(strings.TrimSpace(m.formFields[0].String()), m.ecosystem)
 		if err != nil {
-			m.formError = "Left package: " + render.Sanitize(err.Error())
+			m.formError = m.text(i18n.KeyFormErrorLeftPrefix) + m.localizedValidationError(err)
 			return m, nil
 		}
 		right, err := app.ParsePackageSpec(strings.TrimSpace(m.formFields[1].String()), m.ecosystem)
 		if err != nil {
-			m.formError = "Right package: " + render.Sanitize(err.Error())
+			m.formError = m.text(i18n.KeyFormErrorRightPrefix) + m.localizedValidationError(err)
 			return m, nil
 		}
 		request := app.CompareRequest{Left: left, Right: right}
 		if err := request.Validate(); err != nil {
-			m.formError = render.Sanitize(err.Error())
+			m.formError = m.localizedValidationError(err)
 			return m, nil
 		}
 		m.formError = ""
@@ -474,7 +500,7 @@ func (m *Model) handleDemoKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "enter":
 		if len(m.demos) == 0 {
-			m.formError = "No offline demo scenarios are available."
+			m.formError = m.text(i18n.KeyFormErrorNoDemos)
 			return m, nil
 		}
 		scenario := m.demos[m.demoAt]
@@ -484,7 +510,7 @@ func (m *Model) handleDemoKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) handleSettingsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	const rowCount = 4
+	const rowCount = 5
 	switch msg.String() {
 	case "esc":
 		return m, m.returnToMenu()
@@ -506,12 +532,14 @@ func (m *Model) handleSettingsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) changeSetting(backward bool) tea.Cmd {
 	switch m.settingsAt {
 	case 0:
+		m.applyLanguage(m.language.Toggle())
+	case 1:
 		if m.ecosystem == model.EcosystemNPM {
 			m.ecosystem = model.EcosystemPyPI
 		} else {
 			m.ecosystem = model.EcosystemNPM
 		}
-	case 1:
+	case 2:
 		modes := []render.ColorMode{render.ColorAuto, render.ColorAlways, render.ColorNever}
 		index := 0
 		for current, mode := range modes {
@@ -528,7 +556,7 @@ func (m *Model) changeSetting(backward bool) tea.Cmd {
 		m.colorMode = modes[index]
 		m.color = render.ColorEnabled(m.colorMode, true, m.lookupEnv)
 		m.styles = newStyles(m.color)
-	case 2:
+	case 3:
 		// 动画开关切换后立即生效：关闭时清除所有进行中的动画。
 		m.anim.enabled = !m.anim.enabled
 		if !m.anim.enabled {
@@ -537,10 +565,32 @@ func (m *Model) changeSetting(backward bool) tea.Cmd {
 		} else {
 			return m.startFocus()
 		}
-	case 3:
+	case 4:
 		return m.returnToMenu()
 	}
 	return nil
+}
+
+// applyLanguage 切换会话语言并立即重建当前报告；表单内容、菜单选择与
+// 报告视图保持不变，只重新生成本地化文案。
+func (m *Model) applyLanguage(language i18n.Language) {
+	language = i18n.Normalize(language)
+	if language == m.language {
+		return
+	}
+	m.language = language
+	if m.documentSource == nil {
+		return
+	}
+	document := m.documentSource()
+	m.document = &document
+	if m.findingIndex >= len(document.Findings) {
+		m.findingIndex = len(document.Findings) - 1
+	}
+	if m.findingIndex < 0 {
+		m.findingIndex = 0
+	}
+	m.clampScroll()
 }
 
 func (m *Model) handleReportKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -681,7 +731,7 @@ func (m *Model) handleScanResult(msg scanResultMsg) (tea.Model, tea.Cmd) {
 	if msg.err != nil {
 		if errors.Is(msg.err, context.Canceled) {
 			cmd := m.returnToMenu()
-			m.notice = "Scan cancelled. No results were kept."
+			m.setNotice(i18n.KeyNoticeScanCancelled)
 			return m, cmd
 		}
 		m.screen = screenError
@@ -692,35 +742,45 @@ func (m *Model) handleScanResult(msg scanResultMsg) (tea.Model, tea.Cmd) {
 	case scanPackage, scanDemo:
 		if msg.report.Status == model.StatusCancelled {
 			cmd := m.returnToMenu()
-			m.notice = "Scan cancelled. No results were kept."
+			m.setNotice(i18n.KeyNoticeScanCancelled)
 			return m, cmd
 		}
-		document := render.FromReport(msg.report)
-		return m, m.showDocument(document, screenMenu)
+		report := msg.report
+		m.documentSource = func() render.Document {
+			return render.FromReport(report, m.language)
+		}
+		return m, m.showDocument(m.documentSource(), screenMenu)
 	case scanProject:
 		if msg.project.Status == model.StatusCancelled {
 			cmd := m.returnToMenu()
-			m.notice = "Scan cancelled. No results were kept."
+			m.setNotice(i18n.KeyNoticeScanCancelled)
 			return m, cmd
 		}
-		document := render.FromProject(msg.project)
-		return m, m.showDocument(document, screenMenu)
+		projectResult := msg.project
+		m.documentSource = func() render.Document {
+			return render.FromProject(projectResult, m.language)
+		}
+		return m, m.showDocument(m.documentSource(), screenMenu)
 	case scanInventory:
 		if msg.inventory.Status == model.StatusCancelled {
 			cmd := m.returnToMenu()
-			m.notice = "Scan cancelled. No results were kept."
+			m.setNotice(i18n.KeyNoticeScanCancelled)
 			return m, cmd
 		}
-		document := render.FromInventory(msg.inventory)
-		return m, m.showDocument(document, screenMenu)
+		inventoryResult := msg.inventory
+		m.documentSource = func() render.Document {
+			return render.FromInventory(inventoryResult, m.language)
+		}
+		return m, m.showDocument(m.documentSource(), screenMenu)
 	case scanCompare:
 		comparison := msg.comparison
 		m.comparison = &comparison
+		m.documentSource = nil
 		m.stopAnimations()
 		m.advanceGeneration()
 		m.screen = screenComparison
 		m.scroll = 0
-		m.notice = ""
+		m.clearNotice()
 		return m, m.startComplete()
 	}
 	return m, nil
@@ -736,7 +796,7 @@ func (m *Model) showDocument(document render.Document, returnScreen screen) tea.
 	m.findingIndex = 0
 	m.scroll = 0
 	m.returnScreen = returnScreen
-	m.notice = ""
+	m.clearNotice()
 	return m.startComplete()
 }
 
@@ -807,7 +867,7 @@ func (m *Model) startScan(cmd tea.Cmd) tea.Cmd {
 }
 
 func (m *Model) theme() render.Theme {
-	return render.Theme{Color: m.color, Width: m.contentWidth()}
+	return render.Theme{Color: m.color, Width: m.contentWidth(), Language: m.language}
 }
 
 func (m *Model) contentWidth() int {
@@ -858,9 +918,9 @@ func clamp(value, low, high int) int {
 
 // animationDescription 描述动画当前状态与决定方式。
 func (m *Model) animationDescription() string {
-	state := "off"
+	state := m.text(i18n.KeyValueOff)
 	if m.anim.enabled {
-		state = "on"
+		state = m.text(i18n.KeyValueOn)
 	}
 	description := state
 	if strings.TrimSpace(m.motionMode) != "" {
@@ -876,9 +936,9 @@ func (m *Model) animationDescription() string {
 }
 
 func (m *Model) colorDescription() string {
-	state := "off"
+	state := m.text(i18n.KeyValueOff)
 	if m.color {
-		state = "on"
+		state = m.text(i18n.KeyValueOn)
 	}
 	description := fmt.Sprintf("%s (%s)", m.colorMode, state)
 	if m.lookupEnv("NO_COLOR") != "" {

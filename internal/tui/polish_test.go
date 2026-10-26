@@ -36,7 +36,7 @@ func newSizedModel(t *testing.T, service app.Service, width, height int) *Model 
 func assertLinesFit(t *testing.T, view string, width int) {
 	t.Helper()
 	for index, line := range strings.Split(view, "\n") {
-		if got := runeLen(line); got > width {
+		if got := displayWidth(line); got > width {
 			t.Fatalf("line %d is %d columns wide, want <= %d: %q", index, got, width, line)
 		}
 	}
@@ -152,7 +152,7 @@ func TestWordmarkSpellsBrandInEveryVariant(t *testing.T) {
 		if rows[row] != goldenWordmark[row] {
 			t.Fatalf("wordmark row %d = %q, want %q", row, rows[row], goldenWordmark[row])
 		}
-		if got := runeLen(rows[row]); got != 65 {
+		if got := displayWidth(rows[row]); got != 65 {
 			t.Fatalf("wordmark row %d width = %d, want 65", row, got)
 		}
 	}
@@ -256,11 +256,12 @@ func TestColorLayoutKeepsHeaderAndNavigationIntact(t *testing.T) {
 			t.Fatalf("%dx%d: header title is not right-aligned: %q", dimensions[0], dimensions[1], lines[0])
 		}
 		for _, entry := range menuEntries {
-			if !strings.Contains(plain, entry.title) {
-				t.Fatalf("%dx%d: navigation entry %q is clipped in color mode", dimensions[0], dimensions[1], entry.title)
+			title := model.text(entry.titleKey)
+			if !strings.Contains(plain, title) {
+				t.Fatalf("%dx%d: navigation entry %q is clipped in color mode", dimensions[0], dimensions[1], title)
 			}
 		}
-		if !strings.Contains(plain, "› 1  "+menuEntries[0].title) {
+		if !strings.Contains(plain, "› 1  "+model.text(menuEntries[0].titleKey)) {
 			t.Fatalf("%dx%d: selected navigation row is clipped in color mode:\n%s", dimensions[0], dimensions[1], plain)
 		}
 	}
@@ -277,8 +278,9 @@ func TestStartScreenShowsBrandAndAllWorkflows(t *testing.T) {
 			t.Fatalf("%dx%d: start screen is missing the purpose line", size[0], size[1])
 		}
 		for _, entry := range menuEntries {
-			if !strings.Contains(view, entry.title) {
-				t.Fatalf("%dx%d: workflow %q is missing", size[0], size[1], entry.title)
+			title := model.text(entry.titleKey)
+			if !strings.Contains(view, title) {
+				t.Fatalf("%dx%d: workflow %q is missing", size[0], size[1], title)
 			}
 		}
 		assertLinesFit(t, view, size[0])
@@ -296,7 +298,11 @@ func TestStartScreenSelectionState(t *testing.T) {
 		t.Fatalf("selection did not move:\n%s", view)
 	}
 	// 双列布局下右侧描述必须跟随选择。
-	if !strings.Contains(view, menuEntries[1].description[:20]) {
+	description := []rune(model.text(menuEntries[1].descriptionKey))
+	if len(description) > 20 {
+		description = description[:20]
+	}
+	if !strings.Contains(view, string(description)) {
 		t.Fatalf("context panel did not follow the selection:\n%s", view)
 	}
 }
@@ -564,7 +570,8 @@ func TestSettingsTogglesAnimation(t *testing.T) {
 	send(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("6")})
 	send(model, tea.KeyMsg{Type: tea.KeyDown})
 	send(model, tea.KeyMsg{Type: tea.KeyDown})
-	if model.settingsAt != 2 {
+	send(model, tea.KeyMsg{Type: tea.KeyDown})
+	if model.settingsAt != 3 {
 		t.Fatalf("settings row = %d, want the animation row", model.settingsAt)
 	}
 	send(model, tea.KeyMsg{Type: tea.KeyEnter})

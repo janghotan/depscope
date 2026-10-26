@@ -3,7 +3,8 @@ package tui
 import (
 	"strings"
 	"unicode"
-	"unicode/utf8"
+
+	"github.com/janghotan/depscope/internal/termtext"
 )
 
 const marginWidth = 2
@@ -91,68 +92,24 @@ func printable(r rune) bool {
 	return unicode.IsPrint(r) && r != '\n' && r != '\r'
 }
 
-func runeLen(value string) int {
-	return utf8.RuneCountInString(value)
+// displayWidth 返回终端显示宽度；中文等宽字符占两列，不能按 rune 计数。
+func displayWidth(value string) int {
+	return termtext.Width(value)
 }
 
 func truncatePlain(value string, width int) string {
-	if width <= 0 {
-		return ""
-	}
-	runes := []rune(value)
-	if len(runes) <= width {
-		return value
-	}
-	if width == 1 {
-		return "…"
-	}
-	return string(runes[:width-1]) + "…"
+	return termtext.Truncate(value, width, "…")
 }
 
 func padPlain(value string, width int) string {
-	count := runeLen(value)
-	if count >= width {
-		return truncatePlain(value, width)
+	if width <= 0 {
+		return ""
 	}
-	return value + strings.Repeat(" ", width-count)
+	return termtext.PadRight(termtext.Truncate(value, width, "…"), width)
 }
 
 func wrapPlain(value string, width int) []string {
-	if width < 1 {
-		width = 1
-	}
-	words := strings.Fields(value)
-	if len(words) == 0 {
-		return []string{""}
-	}
-	lines := []string{}
-	current := ""
-	for _, word := range words {
-		runes := []rune(word)
-		for len(runes) > width {
-			if current != "" {
-				lines = append(lines, current)
-				current = ""
-			}
-			lines = append(lines, string(runes[:width]))
-			runes = runes[width:]
-		}
-		word = string(runes)
-		if current == "" {
-			current = word
-			continue
-		}
-		if runeLen(current)+1+runeLen(word) <= width {
-			current += " " + word
-			continue
-		}
-		lines = append(lines, current)
-		current = word
-	}
-	if current != "" {
-		lines = append(lines, current)
-	}
-	return lines
+	return termtext.Wrap(value, width)
 }
 
 func indentText(value, prefix string) string {
@@ -165,25 +122,7 @@ func indentText(value, prefix string) string {
 	return strings.Join(lines, "\n")
 }
 
-// visibleField 截取围绕光标的窗口，避免长输入超出终端宽度。
+// visibleField 按显示宽度截取围绕光标的窗口，避免长中文输入超出终端宽度。
 func visibleField(value []rune, cursor, width int) (string, int, int) {
-	if width < 1 {
-		width = 1
-	}
-	if len(value) <= width {
-		return string(value), cursor, 0
-	}
-	start := 0
-	if cursor > width-1 {
-		start = cursor - (width - 1)
-	}
-	end := start + width
-	if end > len(value) {
-		end = len(value)
-		start = end - width
-		if start < 0 {
-			start = 0
-		}
-	}
-	return string(value[start:end]), cursor - start, start
+	return termtext.CellWindow(value, cursor, width)
 }

@@ -4,9 +4,10 @@ package render
 
 import (
 	"strings"
-	"unicode/utf8"
 
+	"github.com/janghotan/depscope/internal/i18n"
 	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/termtext"
 )
 
 const (
@@ -25,13 +26,28 @@ const (
 	defaultWidth = 80
 )
 
-// Theme 控制内容宽度与是否输出 ANSI 颜色。
+// Theme 控制内容宽度、是否输出 ANSI 颜色与展示语言。
+// Language 留空时按英语处理，保证 CLI 与机器输出的默认行为不变。
 type Theme struct {
-	Color bool
-	Width int
+	Color    bool
+	Width    int
+	Language i18n.Language
 }
 
-// Width 返回实际使用的排版宽度。
+// Lang 返回归一化后的展示语言。
+func (t Theme) Lang() i18n.Language {
+	return i18n.Normalize(t.Language)
+}
+
+func (t Theme) text(key i18n.Key) string {
+	return i18n.For(t.Language).Text(key)
+}
+
+func (t Theme) format(key i18n.Key, args ...any) string {
+	return i18n.For(t.Language).Format(key, args...)
+}
+
+// WidthForContent 返回实际使用的排版宽度。
 func (t Theme) WidthForContent() int {
 	if t.Width <= 0 {
 		return defaultWidth
@@ -53,88 +69,108 @@ func (t Theme) bold(text string) string   { return t.paint(text, ansiBold) }
 func (t Theme) dim(text string) string    { return t.paint(text, ansiDim) }
 func (t Theme) accent(text string) string { return t.paint(text, ansiAccent) }
 
-// StatusLabel 返回扫描状态的显式文字标签。
+// StatusLabel 返回英语扫描状态标签；本地化界面使用主题方法。
 func StatusLabel(status model.ScanStatus) string {
+	return Theme{}.statusLabel(status)
+}
+
+// SeverityLabel 返回英语严重性等级标签。
+func SeverityLabel(severity model.Severity) string {
+	return Theme{}.severityLabel(severity)
+}
+
+// KindLabel 返回英语发现类型标签。
+func KindLabel(kind model.FindingKind) string {
+	return Theme{}.kindLabel(kind)
+}
+
+// CheckLabel 返回英语检查状态标签。
+func CheckLabel(status model.CheckStatus) string {
+	return Theme{}.checkLabel(status)
+}
+
+// DataModeLabel 返回英语数据模式标签。
+func DataModeLabel(mode model.DataMode) string {
+	return Theme{}.dataModeLabel(mode)
+}
+
+func (t Theme) statusLabel(status model.ScanStatus) string {
 	switch status {
 	case model.StatusPending:
-		return "PENDING"
+		return t.text(i18n.KeyStatusPending)
 	case model.StatusRunning:
-		return "RUNNING"
+		return t.text(i18n.KeyStatusRunning)
 	case model.StatusClean:
-		return "CLEAN"
+		return t.text(i18n.KeyStatusClean)
 	case model.StatusFindings:
-		return "FINDINGS"
+		return t.text(i18n.KeyStatusFindings)
 	case model.StatusIncomplete:
-		return "INCOMPLETE"
+		return t.text(i18n.KeyStatusIncomplete)
 	case model.StatusFailed:
-		return "FAILED"
+		return t.text(i18n.KeyStatusFailed)
 	case model.StatusCancelled:
-		return "CANCELLED"
+		return t.text(i18n.KeyStatusCancelled)
 	default:
 		return strings.ToUpper(string(status))
 	}
 }
 
-// SeverityLabel 返回严重性等级的显式文字标签。
-func SeverityLabel(severity model.Severity) string {
+func (t Theme) severityLabel(severity model.Severity) string {
 	switch severity {
 	case model.SeverityCritical:
-		return "CRITICAL"
+		return t.text(i18n.KeySeverityCritical)
 	case model.SeverityHigh:
-		return "HIGH"
+		return t.text(i18n.KeySeverityHigh)
 	case model.SeverityMedium:
-		return "MEDIUM"
+		return t.text(i18n.KeySeverityMedium)
 	case model.SeverityLow:
-		return "LOW"
+		return t.text(i18n.KeySeverityLow)
 	case model.SeverityUnknown:
-		return "UNKNOWN"
+		return t.text(i18n.KeySeverityUnknown)
 	default:
 		return strings.ToUpper(string(severity))
 	}
 }
 
-// KindLabel 返回发现类型的显式文字标签。
-func KindLabel(kind model.FindingKind) string {
+func (t Theme) kindLabel(kind model.FindingKind) string {
 	switch kind {
 	case model.FindingConfirmed:
-		return "CONFIRMED"
+		return t.text(i18n.KeyKindConfirmed)
 	case model.FindingHeuristic:
-		return "HEURISTIC"
+		return t.text(i18n.KeyKindHeuristic)
 	default:
 		return strings.ToUpper(string(kind))
 	}
 }
 
-// CheckLabel 返回检查状态的显式文字标签。
-func CheckLabel(status model.CheckStatus) string {
+func (t Theme) checkLabel(status model.CheckStatus) string {
 	switch status {
 	case model.CheckSucceeded:
-		return "OK"
+		return t.text(i18n.KeyCheckOK)
 	case model.CheckUnavailable:
-		return "UNAVAILABLE"
+		return t.text(i18n.KeyCheckUnavailable)
 	case model.CheckSkipped:
-		return "SKIPPED"
+		return t.text(i18n.KeyCheckSkipped)
 	case model.CheckFailed:
-		return "FAILED"
+		return t.text(i18n.KeyCheckFailed)
 	default:
 		return strings.ToUpper(string(status))
 	}
 }
 
-// DataModeLabel 返回数据模式的显式文字标签。
-func DataModeLabel(mode model.DataMode) string {
+func (t Theme) dataModeLabel(mode model.DataMode) string {
 	switch mode {
 	case model.DataModeDemo:
-		return "DEMO"
+		return t.text(i18n.KeyDataModeDemo)
 	case model.DataModeLive:
-		return "LIVE"
+		return t.text(i18n.KeyDataModeLive)
 	default:
 		return strings.ToUpper(string(mode))
 	}
 }
 
 func (t Theme) statusBadge(status model.ScanStatus) string {
-	label := "[" + StatusLabel(status) + "]"
+	label := "[" + t.statusLabel(status) + "]"
 	switch status {
 	case model.StatusClean:
 		return t.paint(label, ansiSuccess)
@@ -150,7 +186,7 @@ func (t Theme) statusBadge(status model.ScanStatus) string {
 }
 
 func (t Theme) severityBadge(severity model.Severity) string {
-	label := "[" + SeverityLabel(severity) + "]"
+	label := "[" + t.severityLabel(severity) + "]"
 	switch severity {
 	case model.SeverityCritical:
 		return t.paint(label, ansiDanger)
@@ -166,7 +202,7 @@ func (t Theme) severityBadge(severity model.Severity) string {
 }
 
 func (t Theme) kindBadge(kind model.FindingKind) string {
-	label := "[" + KindLabel(kind) + "]"
+	label := "[" + t.kindLabel(kind) + "]"
 	if kind == model.FindingHeuristic {
 		return t.paint(label, ansiInfo)
 	}
@@ -174,7 +210,7 @@ func (t Theme) kindBadge(kind model.FindingKind) string {
 }
 
 func (t Theme) checkBadge(status model.CheckStatus) string {
-	label := "[" + CheckLabel(status) + "]"
+	label := "[" + t.checkLabel(status) + "]"
 	switch status {
 	case model.CheckSucceeded:
 		return t.paint(label, ansiSuccess)
@@ -187,103 +223,17 @@ func (t Theme) checkBadge(status model.CheckStatus) string {
 	}
 }
 
+// wrapText 按显示宽度换行，中文与英文都按终端单元格计算。
 func wrapText(text string, width int) []string {
-	if width < 1 {
-		width = 1
-	}
-	text = strings.ReplaceAll(text, "\r\n", "\n")
-	text = strings.ReplaceAll(text, "\r", "\n")
-	lines := []string{}
-	for _, raw := range strings.Split(text, "\n") {
-		raw = strings.TrimRight(raw, " \t")
-		if strings.TrimSpace(raw) == "" {
-			lines = append(lines, "")
-			continue
-		}
-		lines = append(lines, wrapLine(raw, width)...)
-	}
-	return lines
+	return termtext.Wrap(text, width)
 }
 
-func wrapLine(line string, width int) []string {
-	words := strings.Fields(line)
-	if len(words) == 0 {
-		return []string{""}
-	}
-	result := []string{}
-	current := ""
-	for _, word := range words {
-		for runeCount(word) > width {
-			if current != "" {
-				result = append(result, current)
-				current = ""
-			}
-			head, tail := splitRunes(word, width)
-			result = append(result, head)
-			word = tail
-		}
-		if current == "" {
-			current = word
-			continue
-		}
-		if runeCount(current)+1+runeCount(word) <= width {
-			current += " " + word
-			continue
-		}
-		result = append(result, current)
-		current = word
-	}
-	if current != "" {
-		result = append(result, current)
-	}
-	return result
-}
-
-func runeCount(value string) int {
-	return utf8.RuneCountInString(value)
-}
-
-func splitRunes(value string, count int) (string, string) {
-	runes := []rune(value)
-	if count >= len(runes) {
-		return value, ""
-	}
-	return string(runes[:count]), string(runes[count:])
-}
-
+// truncate 按显示宽度截断并附加省略号。
 func truncate(value string, width int) string {
-	if width <= 0 {
-		return ""
-	}
-	runes := []rune(value)
-	if len(runes) <= width {
-		return value
-	}
-	if width == 1 {
-		return "…"
-	}
-	return string(runes[:width-1]) + "…"
+	return termtext.Truncate(value, width, "…")
 }
 
+// padRight 按显示宽度补齐；内容过宽时先截断，保证不会破坏列布局。
 func padRight(value string, width int) string {
-	count := runeCount(value)
-	if count >= width {
-		return truncate(value, width)
-	}
-	return value + strings.Repeat(" ", width-count)
-}
-
-func indentLines(lines []string, prefix string) []string {
-	result := make([]string, 0, len(lines))
-	for _, line := range lines {
-		result = append(result, prefix+line)
-	}
-	return result
-}
-
-func plural(count int, singular, plural string) string {
-	if count == 1 {
-		return singular
-	}
-	return plural
+	return termtext.PadRight(truncate(value, width), width)
 }

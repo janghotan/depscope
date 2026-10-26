@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/janghotan/depscope/internal/i18n"
 	"github.com/janghotan/depscope/internal/model"
 )
 
@@ -14,29 +15,36 @@ const (
 )
 
 // Comparison 并排展示两个包扫描结果，并在窄终端中自动改为上下排列。
+// 标签与界面文案随主题语言本地化；包名、版本、公告与来源保持原始证据。
 func Comparison(leftRequest, rightRequest string, left, right *model.ScanReport, leftErr, rightErr error, theme Theme) string {
 	leftRequest = Sanitize(leftRequest)
 	rightRequest = Sanitize(rightRequest)
 	left = sanitizeReportPointer(left)
 	right = sanitizeReportPointer(right)
 	w := newWriter(theme)
-	w.heading("PACKAGE COMPARISON")
-	w.paragraph(leftRequest+"   vs   "+rightRequest, "")
+	w.heading(theme.text(i18n.KeyComparisonTitle))
+	w.paragraph(leftRequest+theme.text(i18n.KeyComparisonVs)+rightRequest, "")
 	if isDemoReport(left) || isDemoReport(right) {
 		w.blank()
-		w.line(w.theme.paint("[DEMO DATA] ", ansiMedium, ansiBold) + w.theme.paint("This comparison includes synthetic demo data; it is not a real security assessment.", ansiMedium))
+		badge := "[" + theme.text(i18n.KeyReportDemoBadge) + "] "
+		w.prefixedStyled(
+			theme.paint(badge, ansiMedium, ansiBold),
+			theme.text(i18n.KeyComparisonDemoWarning),
+			func(value string) string { return theme.paint(value, ansiMedium) },
+		)
 	}
 	w.blank()
 
-	leftData := summarizeSide("LEFT", leftRequest, left, leftErr)
-	rightData := summarizeSide("RIGHT", rightRequest, right, rightErr)
-	rows := comparisonRows(leftData, rightData)
+	leftData := summarizeSide(theme, i18n.KeyComparisonLeft, leftRequest, left, leftErr)
+	rightData := summarizeSide(theme, i18n.KeyComparisonRight, rightRequest, right, rightErr)
+	rows := comparisonRows(theme, leftData, rightData)
 	if theme.WidthForContent() >= compareMinColumns {
-		w.line(w.theme.dim(padRight("", compareLabelWidth)) + "  " + w.theme.bold(padRight("LEFT", compareColumnWidth(theme))) + "  " + w.theme.bold("RIGHT"))
+		columnWidth := compareColumnWidth(theme)
+		w.line(theme.dim(padRight("", compareLabelWidth)) + "  " + theme.bold(padRight(leftData.label, columnWidth)) + "  " + theme.bold(rightData.label))
 		for _, row := range rows {
-			leftCell := padRight(truncate(row.left, compareColumnWidth(theme)), compareColumnWidth(theme))
-			rightCell := truncate(row.right, compareColumnWidth(theme))
-			w.line(w.theme.dim(padRight(row.label, compareLabelWidth)) + "  " + leftCell + "  " + rightCell)
+			leftCell := padRight(truncate(row.left, columnWidth), columnWidth)
+			rightCell := truncate(row.right, columnWidth)
+			w.line(theme.dim(padRight(row.label, compareLabelWidth)) + "  " + leftCell + "  " + rightCell)
 		}
 	} else {
 		writeStackedSide(w, leftData)
@@ -45,24 +53,32 @@ func Comparison(leftRequest, rightRequest string, left, right *model.ScanReport,
 	}
 
 	w.blank()
-	w.heading("FINDINGS — LEFT")
+	w.heading(theme.text(i18n.KeyComparisonFindingsLeft))
 	writeSideFindings(w, leftData)
 	w.blank()
-	w.heading("FINDINGS — RIGHT")
+	w.heading(theme.text(i18n.KeyComparisonFindingsRight))
 	writeSideFindings(w, rightData)
 	w.blank()
-	w.heading("SOURCE COVERAGE")
-	w.paragraph("LEFT   "+sourceCoverage(leftData), "  ")
-	w.paragraph("RIGHT  "+sourceCoverage(rightData), "  ")
+	w.heading(theme.text(i18n.KeyComparisonSourceCoverage))
+	w.paragraph(padRight(leftData.label, 7)+sourceCoverage(theme, leftData), "  ")
+	w.paragraph(padRight(rightData.label, 7)+sourceCoverage(theme, rightData), "  ")
 	return strings.TrimRight(w.b.String(), "\n")
 }
+
+type sideQuality int
+
+const (
+	qualityUnavailable sideQuality = iota
+	qualityPartial
+	qualityComplete
+)
 
 type sideSummary struct {
 	label         string
 	request       string
 	report        *model.ScanReport
 	err           error
-	quality       string
+	quality       sideQuality
 	packageName   string
 	version       string
 	status        string
@@ -79,25 +95,26 @@ type sideSummary struct {
 	uniqueSources []string
 }
 
-func summarizeSide(label, request string, report *model.ScanReport, err error) sideSummary {
+func summarizeSide(theme Theme, labelKey i18n.Key, request string, report *model.ScanReport, err error) sideSummary {
+	dash := "—"
 	side := sideSummary{
-		label:       label,
+		label:       theme.text(labelKey),
 		request:     request,
 		report:      report,
 		err:         err,
-		packageName: "—",
-		version:     "—",
-		status:      "UNAVAILABLE",
-		checks:      "—",
-		confirmed:   "—",
-		heuristic:   "—",
-		highest:     "—",
-		topFinding:  "—",
-		lifecycle:   "—",
-		typosquat:   "—",
-		sources:     "—",
-		dataMode:    "—",
-		quality:     "UNAVAILABLE",
+		packageName: dash,
+		version:     dash,
+		status:      theme.text(i18n.KeyComparisonStatusUnavailable),
+		checks:      dash,
+		confirmed:   dash,
+		heuristic:   dash,
+		highest:     dash,
+		topFinding:  dash,
+		lifecycle:   dash,
+		typosquat:   dash,
+		sources:     dash,
+		dataMode:    dash,
+		quality:     qualityUnavailable,
 	}
 	if err != nil || report == nil {
 		return side
@@ -105,40 +122,51 @@ func summarizeSide(label, request string, report *model.ScanReport, err error) s
 
 	side.quality = sideDataQuality(*report)
 	side.packageName = report.Target.Package.String()
-	side.version = "not resolved"
+	side.version = theme.text(i18n.KeyComparisonNotResolved)
 	if report.Target.ResolvedVersion != nil && *report.Target.ResolvedVersion != "" {
 		side.version = *report.Target.ResolvedVersion
 	}
-	side.status = StatusLabel(report.Status)
+	side.status = theme.statusLabel(report.Status)
 	succeeded, total := checkCoverage(report.Checks)
-	side.checks = fmt.Sprintf("%d/%d succeeded", succeeded, total)
+	side.checks = theme.format(i18n.KeyComparisonChecks, succeeded, total)
 	side.confirmed = fmt.Sprint(report.Summary.ConfirmedFindings)
 	side.heuristic = fmt.Sprint(report.Summary.HeuristicWarnings)
 	if report.Summary.HighestSeverity != nil {
-		side.highest = SeverityLabel(*report.Summary.HighestSeverity)
+		side.highest = theme.severityLabel(*report.Summary.HighestSeverity)
 	}
 	side.findings = report.Findings
 	if len(report.Findings) > 0 {
 		top := report.Findings[0]
-		side.topFinding = fmt.Sprintf("[%s] %s — %s", SeverityLabel(top.Severity), KindLabel(top.Kind), top.Title)
+		side.topFinding = fmt.Sprintf("[%s] %s — %s", theme.severityLabel(top.Severity), theme.kindLabel(top.Kind), top.Title)
 	}
 	lifecycle := findingsWithPrefix(report.Findings, "LIFECYCLE-")
 	typosquat := findingsWithPrefix(report.Findings, "TYPOSQUAT-")
-	side.lifecycle = "No"
+	side.lifecycle = theme.text(i18n.KeyComparisonNo)
 	if lifecycle > 0 {
-		side.lifecycle = fmt.Sprintf("Yes (%d)", lifecycle)
+		side.lifecycle = theme.format(i18n.KeyComparisonYes, lifecycle)
 	}
-	side.typosquat = "No"
+	side.typosquat = theme.text(i18n.KeyComparisonNo)
 	if typosquat > 0 {
-		side.typosquat = fmt.Sprintf("Yes (%d)", typosquat)
+		side.typosquat = theme.format(i18n.KeyComparisonYes, typosquat)
 	}
 	side.uniqueSources = uniqueProviders(report.Sources)
-	side.sources = fmt.Sprintf("%s (%d)", strings.Join(side.uniqueSources, ", "), len(report.Sources))
+	side.sources = theme.format(i18n.KeyComparisonSources, strings.Join(side.uniqueSources, ", "), len(report.Sources))
 	if len(report.Sources) == 0 {
-		side.sources = "none"
+		side.sources = theme.text(i18n.KeyComparisonSourcesNone)
 	}
-	side.dataMode = DataModeLabel(report.DataMode)
+	side.dataMode = theme.dataModeLabel(report.DataMode)
 	return side
+}
+
+func qualityLabel(theme Theme, quality sideQuality) string {
+	switch quality {
+	case qualityPartial:
+		return theme.text(i18n.KeyComparisonQualityPartial)
+	case qualityComplete:
+		return theme.text(i18n.KeyComparisonQualityComplete)
+	default:
+		return theme.text(i18n.KeyComparisonQualityUnavailable)
+	}
 }
 
 type comparisonRow struct {
@@ -147,75 +175,74 @@ type comparisonRow struct {
 	right string
 }
 
-func comparisonRows(left, right sideSummary) []comparisonRow {
-	rows := []comparisonRow{
-		{label: "Package", left: left.packageName, right: right.packageName},
-		{label: "Version", left: left.version, right: right.version},
-		{label: "Status", left: left.status, right: right.status},
-		{label: "Data quality", left: left.quality, right: right.quality},
-		{label: "Checks", left: left.checks, right: right.checks},
-		{label: "Confirmed", left: left.confirmed, right: right.confirmed},
-		{label: "Heuristic", left: left.heuristic, right: right.heuristic},
-		{label: "Highest severity", left: left.highest, right: right.highest},
-		{label: "Top finding", left: left.topFinding, right: right.topFinding},
-		{label: "Lifecycle scripts", left: left.lifecycle, right: right.lifecycle},
-		{label: "Typosquat signal", left: left.typosquat, right: right.typosquat},
-		{label: "Sources", left: left.sources, right: right.sources},
-		{label: "Data mode", left: left.dataMode, right: right.dataMode},
+func comparisonRows(theme Theme, left, right sideSummary) []comparisonRow {
+	return []comparisonRow{
+		{label: theme.text(i18n.KeyComparisonRowPackage), left: left.packageName, right: right.packageName},
+		{label: theme.text(i18n.KeyComparisonRowVersion), left: left.version, right: right.version},
+		{label: theme.text(i18n.KeyComparisonRowStatus), left: left.status, right: right.status},
+		{label: theme.text(i18n.KeyComparisonRowQuality), left: qualityLabel(theme, left.quality), right: qualityLabel(theme, right.quality)},
+		{label: theme.text(i18n.KeyComparisonRowChecks), left: left.checks, right: right.checks},
+		{label: theme.text(i18n.KeyComparisonRowConfirmed), left: left.confirmed, right: right.confirmed},
+		{label: theme.text(i18n.KeyComparisonRowHeuristic), left: left.heuristic, right: right.heuristic},
+		{label: theme.text(i18n.KeyComparisonRowHighest), left: left.highest, right: right.highest},
+		{label: theme.text(i18n.KeyComparisonRowTopFinding), left: left.topFinding, right: right.topFinding},
+		{label: theme.text(i18n.KeyComparisonRowLifecycle), left: left.lifecycle, right: right.lifecycle},
+		{label: theme.text(i18n.KeyComparisonRowTyposquat), left: left.typosquat, right: right.typosquat},
+		{label: theme.text(i18n.KeyComparisonRowSources), left: left.sources, right: right.sources},
+		{label: theme.text(i18n.KeyComparisonRowDataMode), left: left.dataMode, right: right.dataMode},
 	}
-	return rows
 }
 
 func writeStackedSide(w *writer, side sideSummary) {
-	w.line(w.theme.bold(side.label + "  " + side.request))
-	for _, row := range comparisonRows(side, sideSummary{}) {
-		value := row.left
-		w.keyValue(row.label, value)
+	w.prefixedStyled(w.theme.bold(side.label)+"  ", side.request, nil)
+	for _, row := range comparisonRows(w.theme, side, sideSummary{}) {
+		w.keyValue(row.label, row.left)
 	}
 }
 
 func writeSideFindings(w *writer, side sideSummary) {
+	theme := w.theme
 	if side.err != nil {
-		w.paragraph("Data unavailable: "+Sanitize(side.err.Error()), "  ")
+		w.paragraph(theme.format(i18n.KeyComparisonDataUnavailable, Sanitize(side.err.Error())), "  ")
 		return
 	}
 	if side.report == nil {
-		w.paragraph("No report was produced.", "  ")
+		w.paragraph(theme.text(i18n.KeyComparisonNoReport), "  ")
 		return
 	}
 	if len(side.findings) == 0 {
-		if side.quality == "PARTIAL" {
-			w.paragraph("No findings in the available data; coverage is incomplete.", "  ")
+		if side.quality == qualityPartial {
+			w.paragraph(theme.text(i18n.KeyComparisonNoFindingsPartial), "  ")
 		} else {
-			w.paragraph("No findings in completed checks.", "  ")
+			w.paragraph(theme.text(i18n.KeyComparisonNoFindingsComplete), "  ")
 		}
 		return
 	}
 	for _, finding := range side.findings {
-		w.line("  " + w.theme.severityBadge(finding.Severity) + " " + w.theme.kindBadge(finding.Kind) + " " + finding.ID)
+		w.prefixedStyled("  "+theme.severityBadge(finding.Severity)+" "+theme.kindBadge(finding.Kind)+" ", finding.ID, theme.dim)
 		w.paragraph(finding.Title, "      ")
 	}
 }
 
-func sideDataQuality(report model.ScanReport) string {
+func sideDataQuality(report model.ScanReport) sideQuality {
 	if report.Status == model.StatusIncomplete || report.Status == model.StatusFailed || report.Status == model.StatusCancelled {
-		return "PARTIAL"
+		return qualityPartial
 	}
 	succeeded, total := checkCoverage(report.Checks)
 	if total == 0 || succeeded != total {
-		return "PARTIAL"
+		return qualityPartial
 	}
-	return "COMPLETE"
+	return qualityComplete
 }
 
-func sourceCoverage(side sideSummary) string {
+func sourceCoverage(theme Theme, side sideSummary) string {
 	if side.err != nil || side.report == nil {
-		return "unavailable"
+		return theme.text(i18n.KeyComparisonUnavailable)
 	}
 	if len(side.report.Sources) == 0 {
-		return "no source references recorded"
+		return theme.text(i18n.KeyComparisonNoSourceRefs)
 	}
-	return fmt.Sprintf("%s · %d reference(s)", strings.Join(side.uniqueSources, ", "), len(side.report.Sources))
+	return theme.format(i18n.KeyComparisonSourceRefs, strings.Join(side.uniqueSources, ", "), len(side.report.Sources))
 }
 
 func compareColumnWidth(theme Theme) int {

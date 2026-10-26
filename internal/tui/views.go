@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/janghotan/depscope/internal/i18n"
 	"github.com/janghotan/depscope/internal/model"
 	"github.com/janghotan/depscope/internal/render"
+	"github.com/janghotan/depscope/internal/termtext"
 )
 
 // View 渲染当前界面；颜色关闭时不产生任何 ANSI 转义序列。
@@ -21,12 +23,12 @@ func (m *Model) View() string {
 
 func (m *Model) smallTerminalView() string {
 	return strings.Join([]string{
-		"Terminal too small",
+		m.text(i18n.KeySmallTerminalTitle),
 		"",
-		fmt.Sprintf("DepScope needs at least %d columns x %d rows.", minWidth, minHeight),
-		fmt.Sprintf("Current size: %d x %d.", m.width, m.height),
+		m.format(i18n.KeySmallTerminalNeeds, minWidth, minHeight),
+		m.format(i18n.KeySmallTerminalCurrent, m.width, m.height),
 		"",
-		"Resize the window, or press q to quit.",
+		m.text(i18n.KeySmallTerminalResize),
 	}, "\n")
 }
 
@@ -39,7 +41,7 @@ func (m *Model) header() string {
 		available = 1
 	}
 	title = truncatePlain(title, available)
-	gap := m.width - brandWidth - runeLen(title) - 1
+	gap := m.width - brandWidth - displayWidth(title) - 1
 	if gap < 1 {
 		gap = 1
 	}
@@ -63,36 +65,36 @@ func (m *Model) headerBrand() string {
 func (m *Model) screenTitle() string {
 	switch m.screen {
 	case screenMenu:
-		return "Start"
+		return m.text(i18n.KeyScreenStart)
 	case screenPackageForm:
-		return "Check a single package"
+		return m.text(i18n.KeyScreenPackageForm)
 	case screenProjectForm:
-		return "Scan my project"
+		return m.text(i18n.KeyScreenProjectForm)
 	case screenCompareForm:
-		return "Compare two packages"
+		return m.text(i18n.KeyScreenCompareForm)
 	case screenInventoryConfirm:
-		return "Check my global installs"
+		return m.text(i18n.KeyScreenInventory)
 	case screenDemoPicker:
-		return "Offline demo"
+		return m.text(i18n.KeyScreenDemo)
 	case screenSettings:
-		return "Settings"
+		return m.text(i18n.KeyScreenSettings)
 	case screenLoading:
-		return "Working"
+		return m.text(i18n.KeyScreenWorking)
 	case screenReport:
 		if m.document != nil {
 			title := m.document.Title
 			if m.document.DataMode == model.DataModeDemo {
-				title += " · DEMO"
+				title += m.text(i18n.KeyScreenDemoSuffix)
 			}
 			return title
 		}
-		return "Report"
+		return m.text(i18n.KeyScreenReport)
 	case screenComparison:
-		return "Comparison"
+		return m.text(i18n.KeyScreenComparison)
 	case screenError:
-		return "Error"
+		return m.text(i18n.KeyScreenError)
 	case screenHelp:
-		return "Keyboard help"
+		return m.text(i18n.KeyScreenHelp)
 	default:
 		return ""
 	}
@@ -101,36 +103,36 @@ func (m *Model) screenTitle() string {
 func (m *Model) footerHints() string {
 	switch m.screen {
 	case screenMenu:
-		return "↑/↓ move · enter select · 1-6 jump · ? help · q quit"
+		return m.text(i18n.KeyFooterMenu)
 	case screenPackageForm, screenProjectForm:
-		return "enter scan · esc back · ? is part of the input"
+		return m.text(i18n.KeyFooterForm)
 	case screenCompareForm:
-		return "enter next/scan · tab switch · esc back"
+		return m.text(i18n.KeyFooterCompareForm)
 	case screenInventoryConfirm:
-		return "enter start scan · esc back"
+		return m.text(i18n.KeyFooterInventory)
 	case screenDemoPicker:
-		return "↑/↓ choose · enter run · esc back"
+		return m.text(i18n.KeyFooterDemo)
 	case screenSettings:
-		return "↑/↓ choose · enter or ←/→ change · esc back"
+		return m.text(i18n.KeyFooterSettings)
 	case screenLoading:
-		return "esc cancel · ctrl+c quit"
+		return m.text(i18n.KeyFooterLoading)
 	case screenReport:
 		switch m.reportView {
 		case viewOverview:
-			return "↑/↓ finding · enter details · c checks · d deps · i info · s summary · v sources · esc menu"
+			return m.text(i18n.KeyFooterReportOverview)
 		case viewFinding:
-			return "↑/↓ finding · esc overview · c/d/i/s/v views · ? keys"
+			return m.text(i18n.KeyFooterReportFinding)
 		default:
-			return "↑/↓ scroll · esc overview · tab next view · ? keys"
+			return m.text(i18n.KeyFooterReportScroll)
 		}
 	case screenComparison:
-		return "↑/↓ scroll · esc menu · ? keys · q quit"
+		return m.text(i18n.KeyFooterComparison)
 	case screenError:
-		return "esc menu · q quit"
+		return m.text(i18n.KeyFooterError)
 	case screenHelp:
-		return "esc back · q quit"
+		return m.text(i18n.KeyFooterHelp)
 	default:
-		return "esc back · q quit"
+		return m.text(i18n.KeyFooterDefault)
 	}
 }
 
@@ -198,14 +200,9 @@ func (m *Model) menuView() string {
 	lines := []string{}
 
 	// 品牌块：大标识只在空间充足时出现，否则用紧凑形式，避免挤压导航。
-	if size == logoFull {
-		lines = append(lines, strings.Split(m.brandedLogo(size), "\n")...)
-		lines = append(lines, "")
-	} else {
-		lines = append(lines, m.brandedLogo(size))
-		lines = append(lines, m.styles.subtleText(tagline))
-		lines = append(lines, "")
-	}
+	// 本地化标签行统一放在标识下方，所有尺寸都保留产品定位说明。
+	lines = append(lines, strings.Split(m.brandedLogo(size), "\n")...)
+	lines = append(lines, m.styles.subtleText(m.text(i18n.KeyBrandTagline)), "")
 
 	layout := layoutFor(width, height)
 	if layout == layoutTwoColumn {
@@ -217,16 +214,16 @@ func (m *Model) menuView() string {
 		lines = append(lines, m.menuNavLines(width)...)
 		// 单列时只保留当前选中项的说明，避免整屏文字。
 		lines = append(lines, "")
-		lines = append(lines, wrapBlock(menuEntries[m.menuIndex].description, width, 2)...)
+		lines = append(lines, wrapBlock(m.text(menuEntries[m.menuIndex].descriptionKey), width, 2)...)
 		if height >= 22 {
 			lines = append(lines, "")
 			lines = append(lines, m.safetyLines(width)...)
 		}
 	}
 
-	if m.notice != "" {
+	if notice := m.noticeText(); notice != "" {
 		lines = append(lines, "")
-		for _, line := range wrapBlock(m.notice, width, 2) {
+		for _, line := range wrapBlock(notice, width, 2) {
 			lines = append(lines, m.styles.successText(line))
 		}
 	}
@@ -243,7 +240,7 @@ func (m *Model) brandedLogo(size logoSize) string {
 
 // menuNavLines 生成导航列表。选中项同时使用箭头与高亮，无颜色时箭头仍可辨识。
 func (m *Model) menuNavLines(width int) []string {
-	lines := []string{m.sectionLabel("ACTIONS"), ""}
+	lines := []string{m.sectionLabel(m.text(i18n.KeyMenuActions)), ""}
 	for index, entry := range menuEntries {
 		selected := index == m.menuIndex
 		marker := "  "
@@ -256,8 +253,8 @@ func (m *Model) menuNavLines(width int) []string {
 			focus = " ◂"
 		}
 		// 先按可见文本截断标题，再应用样式；否则 ANSI 序列会被计入宽度并截掉标题。
-		titleWidth := width - runeLen(marker) - runeLen(shortcut) - 2 - runeLen(focus)
-		title := truncatePlain(entry.title, titleWidth)
+		titleWidth := width - displayWidth(marker) - displayWidth(shortcut) - 2 - displayWidth(focus)
+		title := truncatePlain(m.text(entry.titleKey), titleWidth)
 		if selected {
 			marker = m.styles.accentText(marker)
 			title = m.styles.selectedText(title)
@@ -276,10 +273,10 @@ func (m *Model) menuNavLines(width int) []string {
 
 // menuContextLines 生成右侧的上下文说明与安全信息。
 func (m *Model) menuContextLines(width int) []string {
-	lines := []string{m.sectionLabel("SELECTED"), ""}
-	lines = append(lines, m.styles.boldText(menuEntries[m.menuIndex].title))
+	lines := []string{m.sectionLabel(m.text(i18n.KeyMenuSelected)), ""}
+	lines = append(lines, m.styles.boldText(m.text(menuEntries[m.menuIndex].titleKey)))
 	lines = append(lines, "")
-	lines = append(lines, wrapBlock(menuEntries[m.menuIndex].description, width, 0)...)
+	lines = append(lines, wrapBlock(m.text(menuEntries[m.menuIndex].descriptionKey), width, 0)...)
 	lines = append(lines, "")
 	lines = append(lines, m.safetyLines(width)...)
 	return lines
@@ -287,11 +284,11 @@ func (m *Model) menuContextLines(width int) []string {
 
 // safetyLines 是只读、证据优先的简短说明；不包含任何统计或健康指标。
 func (m *Model) safetyLines(width int) []string {
-	lines := []string{m.sectionLabel("HOW IT WORKS"), ""}
+	lines := []string{m.sectionLabel(m.text(i18n.KeyMenuHowItWorks)), ""}
 	for _, text := range []string{
-		"Reads registry metadata and advisories. Never installs or executes packages.",
-		"Confirmed advisories and heuristic signals are reported separately.",
-		"Missing or failed checks are shown, never counted as clean.",
+		m.text(i18n.KeyMenuSafetyRegistry),
+		m.text(i18n.KeyMenuSafetySeparate),
+		m.text(i18n.KeyMenuSafetyIncomplete),
 	} {
 		wrapped := wrapBlock(text, width, 0)
 		for index, line := range wrapped {
@@ -314,74 +311,74 @@ func (m *Model) sectionLabel(text string) string {
 
 func (m *Model) packageFormView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText("PACKAGE"))
+	b.WriteString(m.styles.boldText(m.text(i18n.KeyFormPackageTitle)))
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("One read-only scan. Registry metadata, advisories, lifecycle scripts, and name signals are checked; no package code is executed."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyFormPackageIntro)))
 	b.WriteString("\n\n")
-	b.WriteString(m.fieldBlock("Package", 0))
-	b.WriteString(m.wrappedDim("Examples: lodash@4.17.21 · pypi:requests==2.31.0 · @scope/pkg"))
+	b.WriteString(m.fieldBlock(m.text(i18n.KeyFormPackageLabel), 0))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyFormPackageExamples)))
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("Default ecosystem: " + string(m.ecosystem) + ". Prefix with pypi: for Python packages."))
+	b.WriteString(m.wrappedDim(m.format(i18n.KeyFormDefaultEcosystem, m.ecosystem)))
 	b.WriteString(m.formErrorView())
 	return strings.TrimRight(b.String(), "\n")
 }
 
 func (m *Model) projectFormView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText("PROJECT SCAN"))
+	b.WriteString(m.styles.boldText(m.text(i18n.KeyFormProjectTitle)))
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("Reads package.json with package-lock.json v2/v3, and exact-pinned requirements.txt. Project code, package code, and install scripts are never executed."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyFormProjectIntro)))
 	b.WriteString("\n\n")
-	b.WriteString(m.fieldBlock("Directory", 0))
-	b.WriteString(m.wrappedDim("Unsupported formats are reported precisely. Missing or unresolved coverage never produces a clean result."))
+	b.WriteString(m.fieldBlock(m.text(i18n.KeyFormProjectLabel), 0))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyFormProjectHint)))
 	b.WriteString(m.formErrorView())
 	return strings.TrimRight(b.String(), "\n")
 }
 
 func (m *Model) compareFormView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText("COMPARE PACKAGES"))
+	b.WriteString(m.styles.boldText(m.text(i18n.KeyFormCompareTitle)))
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("Two independent reports. If one side is unavailable, the other is still shown with its own coverage."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyFormCompareIntro)))
 	b.WriteString("\n\n")
-	b.WriteString(m.fieldBlock("Left package", 0))
+	b.WriteString(m.fieldBlock(m.text(i18n.KeyFormCompareLeft), 0))
 	b.WriteString("\n")
-	b.WriteString(m.fieldBlock("Right package", 1))
-	b.WriteString(m.wrappedDim("Tab or shift+tab switches fields · enter moves to the next empty field, then scans."))
+	b.WriteString(m.fieldBlock(m.text(i18n.KeyFormCompareRight), 1))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyFormCompareHint)))
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("Both sides use the default ecosystem unless a package has an npm: or pypi: prefix."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyFormCompareEcosystem)))
 	b.WriteString(m.formErrorView())
 	return strings.TrimRight(b.String(), "\n")
 }
 
 func (m *Model) inventoryView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText("GLOBAL INVENTORY"))
+	b.WriteString(m.styles.boldText(m.text(i18n.KeyInventoryTitle)))
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("DepScope will ask npm and pip for their installed package lists, then match exact installed versions against the configured security sources."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyInventoryIntro)))
 	b.WriteString("\n\n")
-	b.WriteString(m.wrappedStyled("It will not install, upgrade, import, or execute any package.", m.styles.warningText))
+	b.WriteString(m.wrappedStyled(m.text(i18n.KeyInventoryNoExecute), m.styles.warningText))
 	b.WriteString("\n\n")
-	b.WriteString(m.wrappedDim("Top-level npm global packages and the selected Python interpreter's default environment are covered. Other environments are not."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyInventoryScope)))
 	b.WriteString("\n\n")
-	b.WriteString(m.wrappedStyled("Press enter to start the read-only scan.", m.styles.accentText))
+	b.WriteString(m.wrappedStyled(m.text(i18n.KeyInventoryPressEnter), m.styles.accentText))
 	b.WriteString("\n")
 	return b.String()
 }
 
 func (m *Model) demoView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText("OFFLINE DEMO"))
+	b.WriteString(m.styles.boldText(m.text(i18n.KeyDemoTitle)))
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("Deterministic synthetic reports from the same engine and risk rules. No network requests are made, and every report is marked DEMO DATA."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyDemoIntro)))
 	b.WriteString("\n\n")
 	if len(m.demos) == 0 {
-		b.WriteString(m.styles.dangerText("No demo scenarios are available."))
+		b.WriteString(m.styles.dangerText(m.text(i18n.KeyDemoEmpty)))
 		return b.String()
 	}
 	for index, scenario := range m.demos {
 		marker := "  "
-		title := scenario.Title
+		title := m.demoTitle(scenario)
 		if index == m.demoAt {
 			marker = m.styles.accentText("› ")
 			title = m.styles.selectedText(title)
@@ -391,40 +388,71 @@ func (m *Model) demoView() string {
 		if width < 10 {
 			width = 10
 		}
-		for _, line := range wrapPlain(scenario.Description, width) {
+		for _, line := range wrapPlain(m.demoDescription(scenario), width) {
 			b.WriteString("      " + m.styles.dimText(line) + "\n")
 		}
 	}
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("The demo never mixes synthetic data into live scans; live and demo scanners use separate data modes."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyDemoNote)))
 	b.WriteString(m.formErrorView())
 	return strings.TrimRight(b.String(), "\n")
 }
 
 func (m *Model) settingsView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText("SETTINGS"))
+	b.WriteString(m.styles.boldText(m.text(i18n.KeySettingsTitle)))
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("Session-only preferences. Nothing is written to disk."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeySettingsIntro)))
 	b.WriteString("\n\n")
-	rows := []string{
-		labelValue("Default ecosystem", string(m.ecosystem), 20),
-		labelValue("Color", m.colorDescription(), 20),
-		labelValue("Animation", m.animationDescription(), 20),
-		"Back",
+	rows := []struct {
+		label string
+		value string
+	}{
+		{m.text(i18n.KeySettingsLanguageLabel), m.language.NativeName()},
+		{m.text(i18n.KeySettingsEcosystemLabel), string(m.ecosystem)},
+		{m.text(i18n.KeySettingsColorLabel), m.colorDescription()},
+		{m.text(i18n.KeySettingsAnimationLabel), m.animationDescription()},
+		{"", m.text(i18n.KeySettingsBack)},
 	}
 	for index, row := range rows {
 		marker := "  "
-		if index == m.settingsAt {
+		selected := index == m.settingsAt
+		if selected {
 			marker = m.styles.accentText("› ")
-			row = m.styles.selectedText(row)
 		}
-		b.WriteString(marker + row + "\n")
+		if row.label == "" {
+			text := row.value
+			if selected {
+				text = m.styles.selectedText(text)
+			}
+			b.WriteString(marker + text + "\n")
+			continue
+		}
+		// 窄终端下把超长取值换行到下一行，避免隐藏颜色或动画的决定信息。
+		prefix := marker + padPlain(row.label, 20)
+		if selected {
+			prefix = m.styles.selectedText(prefix)
+		}
+		width := m.contentWidth() - displayWidth(prefix)
+		if width < 1 {
+			width = 1
+		}
+		for lineIndex, line := range wrapPlain(row.value, width) {
+			if lineIndex > 0 {
+				prefix = strings.Repeat(" ", displayWidth(prefix))
+			}
+			if selected {
+				line = m.styles.selectedText(line)
+			}
+			b.WriteString(prefix + line + "\n")
+		}
 	}
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("NO_COLOR and TERM=dumb always disable color, even when the setting is always. Settings affect new scans and the interface."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeySettingsLanguageNote)))
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("Animations can also be disabled for a session with DEPSCOPE_NO_ANIMATION=1."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeySettingsColorNote)))
+	b.WriteString("\n")
+	b.WriteString(m.wrappedDim(m.text(i18n.KeySettingsAnimationNote)))
 	return strings.TrimRight(b.String(), "\n")
 }
 
@@ -432,21 +460,34 @@ func (m *Model) loadingView() string {
 	var b strings.Builder
 	b.WriteString(m.styles.boldText(m.loadingName))
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("Real read-only requests are in progress. DepScope does not estimate or fabricate progress."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyLoadingIntro)))
 	b.WriteString("\n\n")
 	if m.cancelling {
-		b.WriteString(m.wrappedStyled("Cancellation requested · waiting for in-flight requests to stop.", m.styles.warningText))
+		b.WriteString(m.wrappedStyled(m.text(i18n.KeyLoadingCancelling), m.styles.warningText))
 		b.WriteString("\n")
-		b.WriteString(m.wrappedDim("No partial result will be shown. Press ctrl+c to quit immediately."))
+		b.WriteString(m.wrappedDim(m.text(i18n.KeyLoadingNoPartial)))
 		b.WriteString("\n")
 	}
-	stage := strings.ToUpper(strings.TrimSpace(m.loading.Stage))
+	stage := m.stageLabel(m.loading.Stage)
 	if stage == "" {
-		stage = "START"
+		stage = m.text(i18n.KeyLoadingStageStart)
 	}
 	// 指示字符只表示“正在等待”，不代表完成的百分比；真实进度另行显示。
 	glyph := m.styles.accentText(m.spinnerGlyph())
-	fmt.Fprintf(&b, "%s %s  %s\n", glyph, m.styles.accentText("["+stage+"]"), m.styles.boldText(sanitizeLine(m.loading.Message)))
+	stageLabel := "[" + stage + "]"
+	// 阶段前缀固定宽度，正文按剩余显示宽度换行，避免长消息越过右边缘。
+	messageWidth := m.contentWidth() - displayWidth(glyph) - 1 - displayWidth(stageLabel) - 2
+	if messageWidth < 1 {
+		messageWidth = 1
+	}
+	indent := strings.Repeat(" ", displayWidth(glyph)+1+displayWidth(stageLabel)+2)
+	for index, line := range wrapPlain(sanitizeLine(m.loading.Message), messageWidth) {
+		if index == 0 {
+			fmt.Fprintf(&b, "%s %s  %s\n", glyph, m.styles.accentText(stageLabel), m.styles.boldText(line))
+			continue
+		}
+		b.WriteString(indent + m.styles.boldText(line) + "\n")
+	}
 	if m.loading.Total > 0 {
 		// 只有引擎给出真实完成数与总数时才显示进度条。
 		b.WriteString("\n")
@@ -454,28 +495,32 @@ func (m *Model) loadingView() string {
 		b.WriteString("\n")
 	} else {
 		b.WriteString("\n")
-		b.WriteString(m.wrappedDim("Work in progress; this request does not report a countable total."))
+		b.WriteString(m.wrappedDim(m.text(i18n.KeyLoadingNoCountableTotal)))
 		b.WriteString("\n")
 	}
 	if len(m.progressLog) > 0 {
 		b.WriteString("\n")
-		b.WriteString(m.styles.dimText("Recent stages"))
+		b.WriteString(m.styles.dimText(m.text(i18n.KeyLoadingRecentStages)))
 		b.WriteString("\n")
 		for _, item := range m.progressLog {
-			line := sanitizeLine(item.Stage + " · " + item.Message)
+			stage := m.stageLabel(item.Stage)
+			if stage == "" {
+				stage = m.text(i18n.KeyLoadingStageStart)
+			}
+			line := sanitizeLine(stage + " · " + item.Message)
 			for _, wrapped := range wrapPlain(line, m.contentWidth()-4) {
 				b.WriteString("  " + m.styles.dimText(wrapped) + "\n")
 			}
 		}
 	}
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("Press esc to cancel. Completed requests are read-only and no partial result is presented as a scan."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyLoadingPressEsc)))
 	return strings.TrimRight(b.String(), "\n")
 }
 
 func (m *Model) reportContent() string {
 	if m.document == nil {
-		return "No report is loaded."
+		return m.text(i18n.KeyReportNoDocument)
 	}
 	theme := m.theme()
 	switch m.reportView {
@@ -503,7 +548,7 @@ func (m *Model) reportContent() string {
 
 func (m *Model) comparisonView() string {
 	if m.comparison == nil {
-		return "No comparison is loaded."
+		return m.text(i18n.KeyComparisonNoDocument)
 	}
 	return render.Comparison(
 		m.comparison.LeftRequest.String(),
@@ -518,42 +563,42 @@ func (m *Model) comparisonView() string {
 
 func (m *Model) errorView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.dangerText("SCAN ERROR"))
+	b.WriteString(m.styles.dangerText(m.text(i18n.KeyErrorTitle)))
 	b.WriteString("\n")
 	for _, line := range wrapPlain(m.errorText, m.contentWidth()) {
 		b.WriteString(line)
 		b.WriteString("\n")
 	}
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("No packages were installed, upgraded, or executed, and no partial result is presented as a scan."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyErrorNoSideEffects)))
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("Return to the menu with esc and try again, or check the package name and network access."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyErrorRetry)))
 	return strings.TrimRight(b.String(), "\n")
 }
 
 // helpView 说明当前画面可用的按键，并列出全局快捷键。
 func (m *Model) helpView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText("KEYBOARD"))
+	b.WriteString(m.styles.boldText(m.text(i18n.KeyHelpTitle)))
 	b.WriteString("\n")
-	b.WriteString(m.wrappedDim("The section marked CURRENT applies to the screen you came from."))
+	b.WriteString(m.wrappedDim(m.text(i18n.KeyHelpIntro)))
 	b.WriteString("\n\n")
 
 	current := m.helpContext()
 	currentTitle := m.screenName(m.helpReturn)
-	b.WriteString(m.wrappedStyled("Current · "+currentTitle, m.styles.accentText))
+	b.WriteString(m.wrappedStyled(m.format(i18n.KeyHelpCurrent, currentTitle), m.styles.accentText))
 	b.WriteString("\n")
 	for _, line := range wrapPlain(current, m.contentWidth()-2) {
 		b.WriteString("  " + m.styles.boldText(line) + "\n")
 	}
 
 	sections := [][2]string{
-		{"Menus", "↑/↓ or j/k move · enter select · 1-6 jump · esc back · q quit"},
-		{"Forms", "tab / shift+tab switch fields · enter continue · esc back · ctrl+u clear field"},
-		{"Reports", "↑/↓ select or scroll · enter opens the selected finding · esc overview"},
-		{"Report views", "o overview · c checks · d dependencies · i details · s summary · v sources · tab cycles"},
-		{"Scrolling", "pgup/pgdn page · home/end jump"},
-		{"Any time", "? opens this help · ctrl+c cancels and quits"},
+		{m.text(i18n.KeyHelpSectionMenus), m.text(i18n.KeyHelpMenusBody)},
+		{m.text(i18n.KeyHelpSectionForms), m.text(i18n.KeyHelpFormsBody)},
+		{m.text(i18n.KeyHelpSectionReports), m.text(i18n.KeyHelpReportsBody)},
+		{m.text(i18n.KeyHelpSectionViews), m.text(i18n.KeyHelpViewsBody)},
+		{m.text(i18n.KeyHelpSectionScrolling), m.text(i18n.KeyHelpScrollingBody)},
+		{m.text(i18n.KeyHelpSectionAnyTime), m.text(i18n.KeyHelpAnyTimeBody)},
 	}
 	for _, section := range sections {
 		b.WriteString("\n")
@@ -570,25 +615,25 @@ func (m *Model) helpView() string {
 func (m *Model) helpContext() string {
 	switch m.helpReturn {
 	case screenPackageForm:
-		return "type a package · enter scans · tab is not needed for a single field"
+		return m.text(i18n.KeyHelpContextPackageForm)
 	case screenProjectForm:
-		return "type a directory · enter scans · the default is the current directory"
+		return m.text(i18n.KeyHelpContextProjectForm)
 	case screenCompareForm:
-		return "tab moves between left and right · enter advances to the empty field, then scans"
+		return m.text(i18n.KeyHelpContextCompareForm)
 	case screenInventoryConfirm:
-		return "enter starts the read-only inventory scan"
+		return m.text(i18n.KeyHelpContextInventory)
 	case screenDemoPicker:
-		return "↑/↓ choose a scenario · enter runs it offline"
+		return m.text(i18n.KeyHelpContextDemo)
 	case screenSettings:
-		return "↑/↓ choose a row · ←/→ or enter changes the value"
+		return m.text(i18n.KeyHelpContextSettings)
 	case screenLoading:
-		return "esc requests cancellation · ctrl+c quits"
+		return m.text(i18n.KeyHelpContextLoading)
 	case screenReport:
-		return "↑/↓ moves through findings · enter opens detail · esc returns to the menu from the overview"
+		return m.text(i18n.KeyHelpContextReport)
 	case screenComparison:
-		return "↑/↓ scroll · esc returns to the menu"
+		return m.text(i18n.KeyHelpContextComparison)
 	default:
-		return "↑/↓ move · enter selects the highlighted action · 1-6 open a workflow directly"
+		return m.text(i18n.KeyHelpContextMenu)
 	}
 }
 
@@ -596,29 +641,29 @@ func (m *Model) helpContext() string {
 func (m *Model) screenName(value screen) string {
 	switch value {
 	case screenMenu:
-		return "Start"
+		return m.text(i18n.KeyScreenStart)
 	case screenPackageForm:
-		return "Check a single package"
+		return m.text(i18n.KeyScreenPackageForm)
 	case screenProjectForm:
-		return "Scan my project"
+		return m.text(i18n.KeyScreenProjectForm)
 	case screenCompareForm:
-		return "Compare two packages"
+		return m.text(i18n.KeyScreenCompareForm)
 	case screenInventoryConfirm:
-		return "Check my global installs"
+		return m.text(i18n.KeyScreenInventory)
 	case screenDemoPicker:
-		return "Offline demo"
+		return m.text(i18n.KeyScreenDemo)
 	case screenSettings:
-		return "Settings"
+		return m.text(i18n.KeyScreenSettings)
 	case screenLoading:
-		return "Working"
+		return m.text(i18n.KeyScreenWorking)
 	case screenReport:
-		return "Report"
+		return m.text(i18n.KeyScreenReport)
 	case screenComparison:
-		return "Comparison"
+		return m.text(i18n.KeyScreenComparison)
 	case screenError:
-		return "Error"
+		return m.text(i18n.KeyScreenError)
 	default:
-		return "Help"
+		return m.text(i18n.KeyScreenHelp)
 	}
 }
 
@@ -638,7 +683,7 @@ func (m *Model) fieldBlock(label string, index int) string {
 		label = fmt.Sprintf("%s %d/%d", label, index+1, len(m.formFields))
 	}
 	if focused {
-		label += m.styles.subtleText("  editing")
+		label += m.styles.subtleText("  " + m.text(i18n.KeyFormEditing))
 	}
 	return marker + label + "\n" + "  " + m.fieldView(m.formFields[index], focused) + "\n"
 }
@@ -658,22 +703,31 @@ func (m *Model) fieldView(field textField, focused bool) string {
 		}
 		return "[ " + content + " ]"
 	}
-	visible, cursor, _ := visibleField(field.value, field.cursor, inner-1)
-	runes := []rune(visible)
-	if cursor < 0 {
-		cursor = 0
-	}
-	if cursor > len(runes) {
-		cursor = len(runes)
-	}
-	before := string(runes[:cursor])
-	after := string(runes[cursor:])
+	visible, cursorCell, _ := visibleField(field.value, field.cursor, inner-1)
+	before, after := splitAtCell(visible, cursorCell)
 	if focused {
 		content = m.styles.boldText(before) + m.styles.accentText("▏") + m.styles.boldText(after)
 	} else {
 		content = visible
 	}
 	return "[ " + content + " ]"
+}
+
+// splitAtCell 按终端显示列把文本切成光标前后两段。
+// 中文输入时光标列不等于 rune 下标，必须按显示宽度切分。
+func splitAtCell(value string, cell int) (string, string) {
+	if cell <= 0 {
+		return "", value
+	}
+	used := 0
+	for index, r := range value {
+		width := termtext.Width(string(r))
+		if used+width > cell {
+			return value[:index], value[index:]
+		}
+		used += width
+	}
+	return value, ""
 }
 
 func (m *Model) formErrorView() string {

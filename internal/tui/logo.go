@@ -48,7 +48,7 @@ var letterGlyphs = map[rune][]string{
 func glyphWidth(glyph []string) int {
 	width := 0
 	for _, line := range glyph {
-		if current := runeLen(line); current > width {
+		if current := displayWidth(line); current > width {
 			width = current
 		}
 	}
@@ -85,7 +85,7 @@ func wordmarkComplete(word string) bool {
 		}
 		width := glyphWidth(glyph)
 		for _, line := range glyph {
-			if runeLen(line) != width {
+			if displayWidth(line) != width {
 				return false
 			}
 		}
@@ -104,9 +104,6 @@ func wordmarkWidth(word string) int {
 	return width
 }
 
-// tagline 是一行产品定位；主菜单会显示它。
-const tagline = "Dependency risk, explained."
-
 // shieldArt 是大标识中的盾牌轮廓，逐行与词标并排。
 var shieldArt = []string{
 	"  ╭─────╮  ",
@@ -120,7 +117,7 @@ var shieldArt = []string{
 func shieldWidth() int {
 	width := 0
 	for _, line := range shieldArt {
-		if current := runeLen(line); current > width {
+		if current := displayWidth(line); current > width {
 			width = current
 		}
 	}
@@ -156,9 +153,9 @@ func logoWidth(size logoSize) int {
 	case logoFull:
 		return shieldWidth() + wordmarkWidth(brandName)
 	case logoInline:
-		return runeLen(shieldMark) + 1 + runeLen(brandName)
+		return displayWidth(shieldMark) + 1 + displayWidth(brandName)
 	case logoCompact:
-		return runeLen(shieldMark) + 1 + runeLen(compactName)
+		return displayWidth(shieldMark) + 1 + displayWidth(compactName)
 	default:
 		return 0
 	}
@@ -185,9 +182,7 @@ func selectLogoSize(width, height int) logoSize {
 func renderLogo(s styles, size logoSize) string {
 	switch size {
 	case logoFull:
-		lines := logoFullLines(s)
-		lines = append(lines, "", s.subtleText(tagline))
-		return strings.Join(lines, "\n")
+		return strings.Join(logoFullLines(s), "\n")
 	case logoInline:
 		return s.brandAccentText(shieldMark) + " " + s.brandWordText(brandName)
 	case logoCompact:

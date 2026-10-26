@@ -11,6 +11,7 @@ import (
 
 	"github.com/janghotan/depscope/internal/app"
 	"github.com/janghotan/depscope/internal/demo"
+	"github.com/janghotan/depscope/internal/i18n"
 	"github.com/janghotan/depscope/internal/inventory"
 	domain "github.com/janghotan/depscope/internal/model"
 	"github.com/janghotan/depscope/internal/project"
@@ -128,8 +129,8 @@ func TestPackageFormValidationAndCancellation(t *testing.T) {
 	if model.screen != screenMenu {
 		t.Fatalf("screen = %v, want menu after cancellation", model.screen)
 	}
-	if !strings.Contains(model.notice, "cancelled") {
-		t.Fatalf("notice = %q, want cancellation message", model.notice)
+	if !strings.Contains(model.noticeText(), "cancelled") {
+		t.Fatalf("notice = %q, want cancellation message", model.noticeText())
 	}
 }
 
@@ -361,7 +362,7 @@ func TestDemoPickerStartsSelectedScenario(t *testing.T) {
 		t.Fatalf("demo index = %d, want 1", model.demoAt)
 	}
 	send(model, tea.KeyMsg{Type: tea.KeyEnter})
-	if model.screen != screenLoading || model.loadingName != "BUILDING OFFLINE DEMO" {
+	if model.screen != screenLoading || model.loadingName != i18n.For(i18n.English).Text(i18n.KeyLoadingBuildingDemo) {
 		t.Fatalf("screen = %v loading = %q", model.screen, model.loadingName)
 	}
 	model.cancel()
@@ -377,7 +378,7 @@ func TestInventoryRequiresConfirmation(t *testing.T) {
 		t.Fatal("inventory confirmation does not explain the read-only behavior")
 	}
 	send(model, tea.KeyMsg{Type: tea.KeyEnter})
-	if model.screen != screenLoading || model.loadingName != "READING GLOBAL INVENTORY" {
+	if model.screen != screenLoading || model.loadingName != i18n.For(i18n.English).Text(i18n.KeyLoadingReadingInventory) {
 		t.Fatalf("screen = %v loading = %q", model.screen, model.loadingName)
 	}
 	model.cancel()
@@ -394,6 +395,7 @@ func TestSettingsChangeDefaultsAndDisableColor(t *testing.T) {
 	if model.screen != screenSettings {
 		t.Fatalf("screen = %v, want settings", model.screen)
 	}
+	send(model, tea.KeyMsg{Type: tea.KeyDown})
 	send(model, tea.KeyMsg{Type: tea.KeyEnter})
 	if model.ecosystem != domain.EcosystemPyPI {
 		t.Fatalf("ecosystem = %q, want pypi", model.ecosystem)

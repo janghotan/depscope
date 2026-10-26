@@ -1,0 +1,382 @@
+package i18n
+
+// Key 是消息目录的类型化键；界面代码只引用这些常量，不使用英文句子作键。
+type Key int
+
+const (
+	// 品牌与通用值
+	KeyBrandTagline Key = iota
+	KeyLanguageEnglish
+	KeyLanguageChinese
+	KeyValueOn
+	KeyValueOff
+	KeyValueNone
+
+	// 画面名称
+	KeyScreenStart
+	KeyScreenPackageForm
+	KeyScreenProjectForm
+	KeyScreenCompareForm
+	KeyScreenInventory
+	KeyScreenDemo
+	KeyScreenSettings
+	KeyScreenWorking
+	KeyScreenReport
+	KeyScreenComparison
+	KeyScreenError
+	KeyScreenHelp
+	KeyScreenDemoSuffix
+	KeyReportNoDocument
+	KeyComparisonNoDocument
+
+	// 极小终端
+	KeySmallTerminalTitle
+	KeySmallTerminalNeeds
+	KeySmallTerminalCurrent
+	KeySmallTerminalResize
+
+	// 主菜单
+	KeyMenuActions
+	KeyMenuSelected
+	KeyMenuHowItWorks
+	KeyMenuSafetyRegistry
+	KeyMenuSafetySeparate
+	KeyMenuSafetyIncomplete
+	KeyMenuPackageTitle
+	KeyMenuPackageDescription
+	KeyMenuProjectTitle
+	KeyMenuProjectDescription
+	KeyMenuCompareTitle
+	KeyMenuCompareDescription
+	KeyMenuInventoryTitle
+	KeyMenuInventoryDescription
+	KeyMenuDemoTitle
+	KeyMenuDemoDescription
+	KeyMenuSettingsTitle
+	KeyMenuSettingsDescription
+	KeyNoticeScanCancelled
+
+	// 页脚提示
+	KeyFooterMenu
+	KeyFooterForm
+	KeyFooterCompareForm
+	KeyFooterInventory
+	KeyFooterDemo
+	KeyFooterSettings
+	KeyFooterLoading
+	KeyFooterReportOverview
+	KeyFooterReportFinding
+	KeyFooterReportScroll
+	KeyFooterComparison
+	KeyFooterError
+	KeyFooterHelp
+	KeyFooterDefault
+
+	// 表单
+	KeyFormPackageTitle
+	KeyFormPackageIntro
+	KeyFormPackageLabel
+	KeyFormPackageExamples
+	KeyFormDefaultEcosystem
+	KeyFormProjectTitle
+	KeyFormProjectIntro
+	KeyFormProjectLabel
+	KeyFormProjectHint
+	KeyFormCompareTitle
+	KeyFormCompareIntro
+	KeyFormCompareLeft
+	KeyFormCompareRight
+	KeyFormCompareHint
+	KeyFormCompareEcosystem
+	KeyFormPlaceholderPackage
+	KeyFormPlaceholderProject
+	KeyFormPlaceholderFirst
+	KeyFormPlaceholderSecond
+	KeyFormEditing
+	KeyFormErrorPackageRequired
+	KeyFormErrorProjectRequired
+	KeyFormErrorFirstPackage
+	KeyFormErrorLeftPrefix
+	KeyFormErrorRightPrefix
+	KeyFormErrorCannotParse
+	KeyFormErrorNoDemos
+
+	// 输入校验明细（与共享模型的错误文本一一对应）
+	KeyValidationPackageEmpty
+	KeyValidationPackageMissingName
+	KeyValidationPackageNameEmpty
+	KeyValidationVersionOuterWhitespace
+	KeyValidationVersionEmpty
+	KeyValidationWhitespace
+	KeyValidationScopedSlash
+	KeyValidationScopedParts
+	KeyValidationNpmInvalid
+	KeyValidationNpmUnscopedSlash
+	KeyValidationPyPIInvalid
+	KeyValidationUnsupportedEcosystem
+	KeyValidationVersionWhitespace
+	KeyValidationVersionControl
+	KeyValidationNotCanonical
+	KeyValidationProjectPathEmpty
+
+	// 全局清单确认
+	KeyInventoryTitle
+	KeyInventoryIntro
+	KeyInventoryNoExecute
+	KeyInventoryScope
+	KeyInventoryPressEnter
+
+	// 离线演示
+	KeyDemoTitle
+	KeyDemoIntro
+	KeyDemoEmpty
+	KeyDemoNote
+	KeyDemoScenarioVulnerableTitle
+	KeyDemoScenarioVulnerableDescription
+	KeyDemoScenarioScriptsTitle
+	KeyDemoScenarioScriptsDescription
+	KeyDemoScenarioCleanTitle
+	KeyDemoScenarioCleanDescription
+
+	// 设置
+	KeySettingsTitle
+	KeySettingsIntro
+	KeySettingsLanguageLabel
+	KeySettingsEcosystemLabel
+	KeySettingsColorLabel
+	KeySettingsAnimationLabel
+	KeySettingsBack
+	KeySettingsColorNote
+	KeySettingsAnimationNote
+	KeySettingsLanguageNote
+
+	// 加载与进度
+	KeyLoadingCheckingPackage
+	KeyLoadingScanningProject
+	KeyLoadingReadingInventory
+	KeyLoadingComparing
+	KeyLoadingBuildingDemo
+	KeyLoadingIntro
+	KeyLoadingCancelling
+	KeyLoadingNoPartial
+	KeyLoadingStageStart
+	KeyLoadingNoCountableTotal
+	KeyLoadingRecentStages
+	KeyLoadingPressEsc
+	KeyLoadingPreparing
+	KeyStageDetect
+	KeyStageParse
+	KeyStageResolve
+	KeyStageScan
+	KeyStageAssemble
+	KeyStageList
+
+	// 错误与帮助
+	KeyErrorTitle
+	KeyErrorNoSideEffects
+	KeyErrorRetry
+	KeyHelpTitle
+	KeyHelpIntro
+	KeyHelpCurrent
+	KeyHelpSectionMenus
+	KeyHelpMenusBody
+	KeyHelpSectionForms
+	KeyHelpFormsBody
+	KeyHelpSectionReports
+	KeyHelpReportsBody
+	KeyHelpSectionViews
+	KeyHelpViewsBody
+	KeyHelpSectionScrolling
+	KeyHelpScrollingBody
+	KeyHelpSectionAnyTime
+	KeyHelpAnyTimeBody
+	KeyHelpContextPackageForm
+	KeyHelpContextProjectForm
+	KeyHelpContextCompareForm
+	KeyHelpContextInventory
+	KeyHelpContextDemo
+	KeyHelpContextSettings
+	KeyHelpContextLoading
+	KeyHelpContextReport
+	KeyHelpContextComparison
+	KeyHelpContextMenu
+
+	// 报告构建
+	KeyReportPackageTitle
+	KeyReportProjectTitle
+	KeyReportInventoryTitle
+	KeyReportNotResolved
+	KeyReportSubtitleResolved
+	KeyReportSubtitleProject
+	KeyReportSubtitleInventory
+	KeyReportInventoryTarget
+	KeyReportFormatsTitle
+	KeyReportLockfileMissing
+	KeyReportManifestLine
+	KeyReportLockfileLine
+	KeyReportResolvedLine
+	KeyReportNoFormats
+	KeyReportInstalledLine
+	KeyReportNoInstalled
+	KeyReportMorePackages
+	KeyReportInstalledPackagesTitle
+	KeyReportOverviewTitle
+	KeyInventoryInstalledLabel
+	KeyInventoryInstalledValue
+	KeyInventoryAffectedLabel
+	KeyInventoryAffectedValue
+	KeyInventoryMatchesLabel
+	KeyInventoryMatchesValue
+	KeyInventorySeverityLabel
+	KeyInventoryPairsNote
+	KeyInventoryPairsNote2
+	KeyInventoryPairsNote3
+	KeyReportTreeUnresolved
+	KeyReportTreeRoot
+	KeyReportTreeDeclared
+
+	// 报告呈现
+	KeyReportHeadingAssessment
+	KeyReportLabelStatus
+	KeyReportLabelCompletedChecks
+	KeyReportCoverageSucceeded
+	KeyReportCoverageNoChecks
+	KeyReportLabelConfirmed
+	KeyReportLabelHeuristic
+	KeyReportLabelHighest
+	KeyReportLabelInterpretation
+	KeyReportInterpretationIncomplete
+	KeyReportHeadingCoverageGaps
+	KeyReportMoreLimitations
+	KeyReportEmptyFindingsIncomplete
+	KeyReportEmptyFindings
+	KeyReportHeadingFindings
+	KeyReportHeadingFindingsShort
+	KeyReportRiskSuffix
+	KeyReportHeadingFindingDetail
+	KeyReportLabelID
+	KeyReportLabelPackage
+	KeyReportLabelRisk
+	KeyReportRiskNotComputed
+	KeyReportHeadingRiskRationale
+	KeyReportHeadingEvidence
+	KeyReportEvidenceSource
+	KeyReportEvidenceReference
+	KeyReportHeadingRemediation
+	KeyReportHeadingChecks
+	KeyReportChecksCoverage
+	KeyReportChecksNone
+	KeyReportChecksSources
+	KeyReportHeadingDependencies
+	KeyReportDependenciesCount
+	KeyReportNoDependencyGraph
+	KeyReportDependencyNoRoot
+	KeyReportDependencyOrphans
+	KeyReportDependencyIncomplete
+	KeyReportDependencyCycle
+	KeyReportHeadingSources
+	KeyReportSourcesNone
+	KeyReportSourceLine
+	KeyReportSourceURL
+	KeyReportHeadingLimitations
+	KeyReportLimitationsNone
+	KeyReportHeadingDetails
+	KeyReportDetailsNone
+	KeyReportHeadingNextActions
+	KeyReportNoFindingSelected
+	KeyReportSourceLanguageNote
+	KeyReportHeadingSummary
+	KeyReportSummaryLine
+	KeyReportSummaryHighest
+	KeyReportSummaryNoFindings
+	KeyReportSummaryKeyFindings
+	KeyReportSummaryMoreFindings
+	KeyReportSummarySources
+	KeyReportSummaryDemo
+	KeyReportSummaryCoverageGaps
+	KeyReportHeaderDataMode
+	KeyReportHeaderScannedAt
+	KeyReportHeaderSources
+	KeyReportHeaderSourcesCount
+	KeyReportDemoBadge
+	KeyReportDemoNotice
+
+	// 后续操作
+	KeyActionReviewEvidenceContext
+	KeyActionReviewConfirmed
+	KeyActionLifecycle
+	KeyActionTyposquat
+	KeyActionIncomplete
+	KeyActionFailed
+	KeyActionClean
+	KeyActionReviewHeuristics
+	KeyActionReviewEvidence
+	KeyActionInspectLifecycle
+	KeyActionConfirmPublisher
+	KeyActionCompareEvidence
+
+	// 状态、严重性、类型、检查与数据模式标签
+	KeyStatusPending
+	KeyStatusRunning
+	KeyStatusClean
+	KeyStatusFindings
+	KeyStatusIncomplete
+	KeyStatusFailed
+	KeyStatusCancelled
+	KeySeverityCritical
+	KeySeverityHigh
+	KeySeverityMedium
+	KeySeverityLow
+	KeySeverityUnknown
+	KeyKindConfirmed
+	KeyKindHeuristic
+	KeyCheckOK
+	KeyCheckUnavailable
+	KeyCheckSkipped
+	KeyCheckFailed
+	KeyDataModeDemo
+	KeyDataModeLive
+
+	// 对比
+	KeyComparisonTitle
+	KeyComparisonVs
+	KeyComparisonDemoWarning
+	KeyComparisonLeft
+	KeyComparisonRight
+	KeyComparisonFindingsLeft
+	KeyComparisonFindingsRight
+	KeyComparisonSourceCoverage
+	KeyComparisonDataUnavailable
+	KeyComparisonNoReport
+	KeyComparisonNoFindingsPartial
+	KeyComparisonNoFindingsComplete
+	KeyComparisonQualityPartial
+	KeyComparisonQualityComplete
+	KeyComparisonQualityUnavailable
+	KeyComparisonStatusUnavailable
+	KeyComparisonNotResolved
+	KeyComparisonChecks
+	KeyComparisonYes
+	KeyComparisonNo
+	KeyComparisonSourcesNone
+	KeyComparisonSources
+	KeyComparisonUnavailable
+	KeyComparisonNoSourceRefs
+	KeyComparisonSourceRefs
+	KeyComparisonRowPackage
+	KeyComparisonRowVersion
+	KeyComparisonRowStatus
+	KeyComparisonRowQuality
+	KeyComparisonRowChecks
+	KeyComparisonRowConfirmed
+	KeyComparisonRowHeuristic
+	KeyComparisonRowHighest
+	KeyComparisonRowTopFinding
+	KeyComparisonRowLifecycle
+	KeyComparisonRowTyposquat
+	KeyComparisonRowSources
+	KeyComparisonRowDataMode
+
+	// KeyCount 是有效键的上界，不参与目录映射。
+	KeyCount
+)

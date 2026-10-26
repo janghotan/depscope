@@ -28,6 +28,11 @@ func Sanitize(value string) string {
 	return string(result)
 }
 
+// stripANSI 仅用于排版前去除已经应用过的样式，避免按显示宽度换行时切断转义序列。
+func stripANSI(value string) string {
+	return Sanitize(value)
+}
+
 // SanitizeMultiline 在 Sanitize 基础上压缩连续空行，适合简短的状态文本。
 func SanitizeMultiline(value string) string {
 	value = strings.TrimSpace(Sanitize(value))
