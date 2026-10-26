@@ -36,9 +36,6 @@ REPO = "janghotan/depscope"
 TAG = "v0.1.0"
 ASSET_VERSION = "0.1.0"
 
-# 合成 CLI 在 `version` 子命令下输出的内容，模拟真实二进制。
-FAKE_VERSION_OUTPUT = b"depscope 0.1.0\n"
-
 # 服务器状态：路径 -> (状态码, 字节内容)。测试可随时修改。
 routes: dict[str, tuple[int, bytes]] = {}
 fail_paths: set[str] = set()
@@ -65,7 +62,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def make_cli_tarball(os_name: str, arch: str, payload: bytes = FAKE_VERSION_OUTPUT) -> bytes:
+def make_cli_tarball(os_name: str, arch: str) -> bytes:
     """构造与 GoReleaser 布局一致的 CLI 归档：顶层目录 + depscope 可执行文件。"""
     top = f"depscope_cli_{ASSET_VERSION}_{os_name}_{arch}"
     buf = io.BytesIO()
@@ -79,7 +76,12 @@ def make_cli_tarball(os_name: str, arch: str, payload: bytes = FAKE_VERSION_OUTP
             info.size = len(data)
             info.mode = mode
             tf.addfile(info, io.BytesIO(data))
-        script = b"#!/bin/sh\n" + (b'if [ "$1" = version ]; then printf "depscope 0.1.0\\n"; fi\n') + payload
+        # 模拟真实 CLI：只有在 `version` 子命令下输出并返回 0，否则给出非零退出码。
+        script = (
+            b"#!/bin/sh\n"
+            b'if [ "$1" = version ]; then printf "depscope 0.1.0\\n"; exit 0; fi\n'
+            b"exit 2\n"
+        )
         info = tarfile.TarInfo(f"{top}/depscope")
         info.size = len(script)
         info.mode = 0o755
@@ -90,6 +92,19 @@ def make_cli_tarball(os_name: str, arch: str, payload: bytes = FAKE_VERSION_OUTP
         api.size = len(api_info)
         api.mode = 0o755
         tf.addfile(api, io.BytesIO(api_info))
+    return buf.getvalue()
+
+
+def make_cli_tarball_with_exit(os_name: str, arch: str, exit_code: int) -> bytes:
+    """构造 `version` 返回指定退出码的归档，用于回归测试。"""
+    top = f"depscope_cli_{ASSET_VERSION}_{os_name}_{arch}"
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tf:
+        script = f"#!/bin/sh\nprintf 'depscope 0.1.0\\n'\nexit {exit_code}\n".encode()
+        info = tarfile.TarInfo(f"{top}/depscope")
+        info.size = len(script)
+        info.mode = 0o755
+        tf.addfile(info, io.BytesIO(script))
     return buf.getvalue()
 
 
@@ -166,12 +181,11 @@ def run_ps1(base: str, install_dir: pathlib.Path, *extra: str,
             ca_path: pathlib.Path | None = None) -> subprocess.CompletedProcess:
     """在受控环境中用 PowerShell 运行 install.ps1。
 
-    install.ps1 固定使用官方 URL，因此测试通过 DEPSCOPE_PS1_RELEASE_BASE 与
-    DEPSCOPE_PS1_API_BASE 覆盖地址；这两个变量只存在于测试脚本的包装命令中，
-    通过参数覆盖传入生产脚本时会分别报错。
+    install.ps1 的发布与 API 地址默认指向官方 GitHub，测试通过
+    DEPSCOPE_RELEASE_BASE 与 DEPSCOPE_API_BASE 覆盖为本地模拟服务器。
 
-    注意：PowerShell 使用 .NET 的 TLS 实现，默认不读取 DEPSCOPE_CA_BUNDLE，
-    所以这里以临时 HOME 安装自签名 CA 证书，同时保留完整的证书校验。
+    注意：PowerShell 使用 .NET 的 TLS 实现，在 Linux/macOS 上读取 SSL_CERT_FILE，
+    在 Windows 上读取系统证书存储。这里分别处理，证书校验始终保持开启。
     """
     work_home = pathlib.Path(tempfile.mkdtemp(prefix="depscope-pshome-"))
     ca_dir = work_home / ".local" / "share" / "ca-certificates"
@@ -180,8 +194,21 @@ def run_ps1(base: str, install_dir: pathlib.Path, *extra: str,
         shutil.copy(ca_path, ca_dir / "depscope-test.crt")
         shutil.copy(ca_path, ca_dir / "depscope-test.pem")
 
-    # TLS 信任通过环境变量注入（.NET 会读取 SSL_CERT_FILE），参数通过 -File 传递，
-    # 避免 PowerShell 命令字符串中的引号被错误地当成参数名的一部分。
+    # .NET 在 Windows 上读取系统证书存储而不是 SSL_CERT_FILE，因此测试前把
+    # 测试 CA 导入当前用户 Root 存储，运行结束后移除；证书校验始终开启。
+    if ca_path is not None and os.name == "nt":
+        import_result = subprocess.run(
+            [str(PWSH), "-NoProfile", "-NonInteractive", "-Command",
+             f"Import-Certificate -FilePath '{ca_path}' -CertStoreLocation Cert:\\CurrentUser\\Root | Out-Null"],
+            capture_output=True, text=True,
+        )
+        if import_result.returncode != 0:
+            shutil.rmtree(work_home, ignore_errors=True)
+            raise RuntimeError(
+                f"could not import the test CA into the user root store: {import_result.stderr}"
+            )
+
+    # 参数通过 -File 传递，避免命令字符串中的引号被当成参数名的一部分。
     env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "HOME": str(work_home),
@@ -200,6 +227,15 @@ def run_ps1(base: str, install_dir: pathlib.Path, *extra: str,
         [str(PWSH), "-NoProfile", "-NonInteractive", "-File", str(INSTALL_PS1), *extra],
         capture_output=True, text=True, env=env, timeout=180,
     )
+    if ca_path is not None and os.name == "nt":
+        # 测试结束把临时信任的 CA 从当前用户 Root 存储中移除。
+        subprocess.run(
+            [str(PWSH), "-NoProfile", "-NonInteractive", "-Command",
+             "Get-ChildItem Cert:\\CurrentUser\\Root | "
+             "Where-Object { $_.Subject -like '*DepScope Test CA*' } | "
+             "Remove-Item -Force -ErrorAction SilentlyContinue"],
+            capture_output=True, text=True,
+        )
     shutil.rmtree(work_home, ignore_errors=True)
     return result
 
@@ -385,6 +421,29 @@ class UnixInstallerTests(ServerCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("missing required command", result.stderr)
         self.assertIn("curl", result.stderr)
+        self.assertFalse((self.install_dir / "depscope").exists())
+
+    def test_binary_with_failing_version_is_rejected(self) -> None:
+        """解压出的程序在 `version` 下返回非零退出码时拒绝安装。
+
+        回归测试：早期版本用 `A && B || true` 取值，会把失败当成空字符串放行。
+        """
+        key = f"/releases/download/{TAG}/depscope_cli_{ASSET_VERSION}_linux_amd64.tar.gz"
+        routes[key] = (200, make_cli_tarball_with_exit("linux", "amd64", exit_code=3))
+        # 同时更新 checksum，使校验通过，从而单独验证版本检查这一步。
+        entry = f"/releases/download/{TAG}/checksums.txt"
+        body = routes[entry][1].decode()
+        lines = []
+        for line in body.splitlines():
+            if line.endswith(f"  depscope_cli_{ASSET_VERSION}_linux_amd64.tar.gz"):
+                digest = hashlib.sha256(routes[key][1]).hexdigest()
+                line = f"{digest}  depscope_cli_{ASSET_VERSION}_linux_amd64.tar.gz"
+            lines.append(line)
+        routes[entry] = (200, ("\n".join(lines) + "\n").encode())
+
+        result = run_installer(self.base, self.install_dir, ca_path=self.ca_path)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("did not report a version", result.stderr)
         self.assertFalse((self.install_dir / "depscope").exists())
 
     def test_existing_install_is_replaced_and_temp_cleaned(self) -> None:

@@ -17,6 +17,10 @@ web/playwright-report/
 # 发布准备与本地校验产生的临时脚本、二进制与构建缓存。
 .scratch-prep/
 
+# Python 测试脚本的字节码缓存。
+__pycache__/
+*.pyc
+
 # 合成 npm 库存夹具属于源码数据，而非已安装依赖。
 !testdata/fixtures/inventory/npm/node_modules/
 !testdata/fixtures/inventory/npm/node_modules/**

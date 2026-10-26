@@ -256,7 +256,16 @@ main() {
 
 	# 5. 确认解压出的文件确实是可执行文件，再安装到目标目录。
 	[ -s "$staged" ] || fail "$BIN_NAME in $archive is empty"
-	reported_version="$(chmod +x "$staged" && "$staged" version 2>/dev/null || true)"
+
+	# 用 if 明确区分“chmod 失败”与“版本命令失败”，不使用 A && B || C 的写法。
+	reported_version=""
+	if chmod +x "$staged"; then
+		if reported_version="$("$staged" version 2>/dev/null)"; then
+			:
+		else
+			reported_version=""
+		fi
+	fi
 	case "$reported_version" in
 	"$BIN_NAME "*) ;;
 	*) fail "the extracted $BIN_NAME did not report a version; refusing to install it" ;;
