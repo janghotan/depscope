@@ -411,7 +411,7 @@ func (d Document) FindingDetail(index int, theme Theme) string {
 	w.blank()
 	d.writeFinding(w, index, d.Findings[index])
 	w.blank()
-	w.heading(theme.text(i18n.KeyReportHeadingNextActions))
+	w.headingWith(theme.Icons.Action, []string{ansiAccent}, theme.text(i18n.KeyReportHeadingNextActions))
 	actions := actionsForFinding(theme, d.Findings[index])
 	if len(actions) == 0 {
 		actions = []string{theme.text(i18n.KeyActionReviewEvidenceContext)}
@@ -435,7 +435,7 @@ func (d Document) DependenciesSection(theme Theme) string {
 	theme = d.themeWith(theme)
 	w := newWriter(theme)
 	if d.Tree == nil {
-		w.heading(theme.text(i18n.KeyReportHeadingDependencies))
+		w.headingWith(theme.Icons.Dependency, []string{ansiAccent}, theme.text(i18n.KeyReportHeadingDependencies))
 		w.paragraph(theme.text(i18n.KeyReportNoDependencyGraph), "  ")
 		return strings.TrimRight(w.b.String(), "\n")
 	}
@@ -486,12 +486,12 @@ func (d Document) CompactSummary(theme Theme) string {
 	w := newWriter(theme)
 	w.heading(theme.text(i18n.KeyReportHeadingSummary))
 	target := d.Target
-	status := theme.statusLabel(d.Status)
+	status := theme.statusText(d.Status)
 	succeeded, total := checkCoverage(d.Checks)
 	w.blockLine(theme.format(i18n.KeyReportSummaryLine, target, status, succeeded, total))
 	highest := theme.text(i18n.KeyValueNone)
 	if d.Summary.HighestSeverity != nil {
-		highest = theme.severityLabel(*d.Summary.HighestSeverity)
+		highest = theme.severityText(*d.Summary.HighestSeverity)
 	}
 	w.blockLine(theme.format(i18n.KeyReportSummaryHighest,
 		highest, d.Summary.ConfirmedFindings, d.Summary.HeuristicWarnings, theme.dataModeLabel(d.DataMode)))
@@ -504,7 +504,13 @@ func (d Document) CompactSummary(theme Theme) string {
 			limit = 5
 		}
 		for _, finding := range d.Findings[:limit] {
-			w.blockLine(fmt.Sprintf("- [%s] [%s] %s — %s", theme.severityLabel(finding.Severity), theme.kindLabel(finding.Kind), finding.ID, finding.Title))
+			severity := prependGlyph(theme.severityGlyph(finding.Severity), "["+theme.severityLabel(finding.Severity)+"]")
+			kindGlyph := theme.Icons.Confirmed
+			if finding.Kind == model.FindingHeuristic {
+				kindGlyph = theme.Icons.Heuristic
+			}
+			kind := prependGlyph(kindGlyph, "["+theme.kindLabel(finding.Kind)+"]")
+			w.blockLine(fmt.Sprintf("- %s %s %s — %s", severity, kind, finding.ID, finding.Title))
 		}
 		if len(d.Findings) > limit {
 			w.blockLine(theme.format(i18n.KeyReportSummaryMoreFindings, len(d.Findings)-limit))
@@ -515,7 +521,8 @@ func (d Document) CompactSummary(theme Theme) string {
 		w.blockLine(theme.format(i18n.KeyReportSummaryDemo, d.demoNoticeText(theme)))
 	}
 	if d.Status == model.StatusIncomplete || d.Status == model.StatusFailed {
-		w.blockLine(theme.format(i18n.KeyReportSummaryCoverageGaps, coverageGapList(theme, d.Checks)))
+		gaps := prependGlyph(theme.Icons.Warning, coverageGapList(theme, d.Checks))
+		w.blockLine(theme.format(i18n.KeyReportSummaryCoverageGaps, gaps))
 	}
 	return strings.TrimRight(w.b.String(), "\n")
 }
@@ -560,7 +567,17 @@ func (w *writer) blank() {
 }
 
 func (w *writer) heading(text string) {
-	w.line(w.theme.paint(strings.ToUpper(text), ansiBold, ansiAccent))
+	w.headingWith("", nil, text)
+}
+
+// headingWith 在区块标题前附加可选图标；图标独立着色，标题本身保持统一层级。
+// 图标为空时输出与既有标题完全一致。
+func (w *writer) headingWith(icon string, codes []string, text string) {
+	prefix := ""
+	if icon != "" {
+		prefix = icon + " "
+	}
+	w.line(w.theme.paint(prefix, codes...) + w.theme.paint(strings.ToUpper(text), ansiBold, ansiAccent))
 }
 
 func (w *writer) paragraph(text, prefix string) {
@@ -570,8 +587,13 @@ func (w *writer) paragraph(text, prefix string) {
 	}
 }
 
+// bullet 输出行动项。零值主题沿用既有圆点，启用图标时使用明确的方向图标。
 func (w *writer) bullet(text string) {
-	w.paragraph("• "+text, "  ")
+	if w.theme.Icons.Action == "" {
+		w.paragraph("• "+text, "  ")
+		return
+	}
+	w.prefixedStyled("  "+w.theme.paint(w.theme.Icons.Action, ansiAccent)+" ", text, nil)
 }
 
 // prefixed 输出带固定前缀的纯文本行；超宽时按显示宽度换行，续行对齐前缀。
@@ -661,8 +683,8 @@ func (d Document) writeHeader(w *writer) {
 	}
 	if d.DataMode == model.DataModeDemo {
 		w.blank()
-		badge := "[" + theme.text(i18n.KeyReportDemoBadge) + "]"
-		prefix := theme.paint(badge, ansiMedium, ansiBold) + " "
+		badge := theme.badgeText(theme.Icons.Demo, theme.text(i18n.KeyReportDemoBadge), ansiMedium, ansiBold)
+		prefix := badge + " "
 		width := theme.WidthForContent() - termtext.Width(badge) - 1
 		for _, line := range wrapText(d.demoNoticeText(theme), width) {
 			w.line(prefix + theme.paint(line, ansiMedium))
@@ -711,7 +733,7 @@ func (d Document) writeCoverageGaps(w *writer, limitationLimit int) {
 		return
 	}
 	w.blank()
-	w.heading(theme.text(i18n.KeyReportHeadingCoverageGaps))
+	w.headingWith(theme.Icons.Warning, []string{ansiMedium}, theme.text(i18n.KeyReportHeadingCoverageGaps))
 	for _, check := range gaps {
 		w.checkLine("  "+theme.checkBadge(check.Status)+" ", check.Name, check.ID)
 		w.paragraph(check.Message, "      ")
@@ -789,7 +811,7 @@ func (d Document) writeFinding(w *writer, index int, finding model.Finding) {
 	}
 	if len(finding.Evidence) > 0 {
 		w.blank()
-		w.heading(theme.text(i18n.KeyReportHeadingEvidence))
+		w.headingWith(theme.Icons.Source, []string{ansiDim}, theme.text(i18n.KeyReportHeadingEvidence))
 		for _, evidence := range finding.Evidence {
 			w.prefixed("  "+theme.dim("["+string(evidence.Kind)+"]")+" ", evidence.Summary)
 			details := theme.format(i18n.KeyReportEvidenceSource, evidence.SourceID)
@@ -801,7 +823,7 @@ func (d Document) writeFinding(w *writer, index int, finding model.Finding) {
 	}
 	if finding.Remediation != nil && strings.TrimSpace(*finding.Remediation) != "" {
 		w.blank()
-		w.heading(theme.text(i18n.KeyReportHeadingRemediation))
+		w.headingWith(theme.Icons.Action, []string{ansiAccent}, theme.text(i18n.KeyReportHeadingRemediation))
 		w.paragraph(*finding.Remediation, "  ")
 	}
 }
@@ -828,7 +850,7 @@ func (d Document) writeChecks(w *writer) {
 
 func (d Document) writeDependencies(w *writer) {
 	theme := w.theme
-	w.heading(theme.text(i18n.KeyReportHeadingDependencies))
+	w.headingWith(theme.Icons.Dependency, []string{ansiAccent}, theme.text(i18n.KeyReportHeadingDependencies))
 	w.paragraph(theme.format(i18n.KeyReportDependenciesCount, nodeCount(d.Tree)), "  ")
 	w.blank()
 	if d.Tree == nil {
@@ -909,24 +931,29 @@ func (d Document) writeTreeChildren(w *writer, children []string, prefix string,
 
 func (d Document) writeSources(w *writer) {
 	theme := w.theme
-	w.heading(theme.text(i18n.KeyReportHeadingSources))
+	w.headingWith(theme.Icons.Source, []string{ansiDim}, theme.text(i18n.KeyReportHeadingSources))
 	if len(d.Sources) == 0 {
 		w.paragraph(theme.text(i18n.KeyReportSourcesNone), "  ")
 		return
 	}
+	prefix := "  "
+	if theme.Icons.Source != "" {
+		prefix += theme.dim(theme.Icons.Source) + " "
+	}
+	urlIndent := strings.Repeat(" ", termtext.Width(prefix)+2)
 	for _, source := range d.Sources {
 		line := theme.format(i18n.KeyReportSourceLine,
 			source.ID, source.Provider, source.Identifier, source.RetrievedAt.UTC().Format(time.RFC3339))
-		w.paragraph(line, "  ")
+		w.paragraph(line, prefix)
 		if source.URL != nil {
-			w.paragraph(theme.format(i18n.KeyReportSourceURL, *source.URL), "    ")
+			w.paragraph(theme.format(i18n.KeyReportSourceURL, *source.URL), urlIndent)
 		}
 	}
 }
 
 func (d Document) writeLimitations(w *writer) {
 	theme := w.theme
-	w.heading(theme.text(i18n.KeyReportHeadingLimitations))
+	w.headingWith(theme.Icons.Warning, []string{ansiMedium}, theme.text(i18n.KeyReportHeadingLimitations))
 	if len(d.Limitations) == 0 {
 		w.paragraph(theme.text(i18n.KeyReportLimitationsNone), "  ")
 		return
@@ -939,7 +966,7 @@ func (d Document) writeLimitations(w *writer) {
 
 func (d Document) writeActions(w *writer) {
 	w.blank()
-	w.heading(w.theme.text(i18n.KeyReportHeadingNextActions))
+	w.headingWith(w.theme.Icons.Action, []string{ansiAccent}, w.theme.text(i18n.KeyReportHeadingNextActions))
 	for _, action := range d.actions(w.theme) {
 		w.bullet(action)
 	}

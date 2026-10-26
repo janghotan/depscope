@@ -139,6 +139,7 @@ func chineseCatalog() map[Key]string {
 		KeySettingsColorNote:      "即使设置为 always，NO_COLOR 与 TERM=dumb 也始终关闭颜色。设置会影响新扫描与界面显示。",
 		KeySettingsAnimationNote:  "也可以通过 DEPSCOPE_NO_ANIMATION=1 在单次会话中关闭动画。",
 		KeySettingsLanguageNote:   "语言更改立即生效，并仅保留在本次会话中。",
+		KeySettingsIconNote:       "图标始终与文字标签成对出现。设置 DEPSCOPE_NO_ICONS=1 可隐藏图标；DEPSCOPE_ASCII_ICONS、TERM=dumb 或非 UTF-8 locale 会切换为 ASCII 符号。",
 
 		KeyLoadingCheckingPackage:  "正在检查包",
 		KeyLoadingScanningProject:  "正在扫描项目",

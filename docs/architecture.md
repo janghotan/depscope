@@ -128,6 +128,14 @@ It delegates project parsing, dependency resolution, vulnerability matching, ris
 - `internal/termtext` provides display-cell width measurement, wrapping, truncation, padding, and cursor windows. Layout code must use it instead of rune counts because CJK characters occupy two cells.
 - The TUI language is a session-only setting. Switching it rebuilds the current report through the shared renderer without changing findings, sources, limitations, form input, menu selection, or scroll position. The non-interactive CLI, HTTP API, and website remain English.
 
+**Semantic terminal icons:**
+
+- `internal/tui/icons.go` is the single source of icon tokens. Each token maps to a Unicode glyph and an ASCII fallback, and layout code asks the model for a glyph instead of embedding symbols in views.
+- Icon mode resolves once at startup from an explicit `Options.Icons` value, then `DEPSCOPE_NO_ICONS`, `DEPSCOPE_ASCII_ICONS`, `TERM=dumb`, and the locale. `DEPSCOPE_NO_ICONS=1` removes icons without changing labels, values, status text, or navigation shortcuts.
+- Only the TUI populates `render.Theme.Icons`. The zero-value `render.IconSet` keeps non-interactive CLI output byte-compatible with earlier releases.
+- Every icon is rendered next to its text label, so color and glyphs never carry meaning alone. Severity and confirmation brackets such as `[CRITICAL]` and `[CONFIRMED]` remain intact.
+- Prefix widths come from `internal/termtext` display-cell measurement, so CJK and ASCII glyphs align and never push a line past the terminal edge. Static icons do not trigger redraws; only the existing loading spinner animates, under the same generation guard and reduced-motion rules.
+
 The implemented command surface is `scan`, `project`, `compare`, `inventory`, `demo`, `help`, and `version`, with global color flags. Command names and flags are now fixed for this phase; adding machine-readable output remains open (D14).
 
 ### 4.3 HTTP API (Go)

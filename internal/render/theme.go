@@ -16,7 +16,7 @@ const (
 	ansiDim      = "\x1b[38;5;245m"
 	ansiAccent   = "\x1b[38;5;114m"
 	ansiDanger   = "\x1b[1;38;5;203m"
-	ansiHigh     = "\x1b[1;38;5;215m"
+	ansiHigh     = "\x1b[38;5;203m"
 	ansiMedium   = "\x1b[38;5;221m"
 	ansiLow      = "\x1b[38;5;117m"
 	ansiUnknown  = "\x1b[38;5;245m"
@@ -26,12 +26,36 @@ const (
 	defaultWidth = 80
 )
 
-// Theme 控制内容宽度、是否输出 ANSI 颜色与展示语言。
+// IconSet 提供可选的语义图标。零值表示不输出任何图标，
+// 因此非交互式 CLI 与既有纯文本输出保持不变；图标由终端界面按需填充。
+type IconSet struct {
+	Demo             string
+	Confirmed        string
+	Heuristic        string
+	Critical         string
+	High             string
+	Medium           string
+	Low              string
+	Unknown          string
+	Clean            string
+	Warning          string
+	Error            string
+	CheckOK          string
+	CheckUnavailable string
+	CheckSkipped     string
+	CheckFailed      string
+	Source           string
+	Dependency       string
+	Action           string
+}
+
+// Theme 控制内容宽度、是否输出 ANSI 颜色、展示语言与可选语义图标。
 // Language 留空时按英语处理，保证 CLI 与机器输出的默认行为不变。
 type Theme struct {
 	Color    bool
 	Width    int
 	Language i18n.Language
+	Icons    IconSet
 }
 
 // Lang 返回归一化后的展示语言。
@@ -169,57 +193,119 @@ func (t Theme) dataModeLabel(mode model.DataMode) string {
 	}
 }
 
-func (t Theme) statusBadge(status model.ScanStatus) string {
-	label := "[" + t.statusLabel(status) + "]"
+// badgeText 在方括号标签前附加可选图标；图标为空时输出与既有标签完全一致。
+// 图标放在方括号之外，因此 [CRITICAL]、[CONFIRMED] 等文字标签保持不变。
+func (t Theme) badgeText(glyph, label string, codes ...string) string {
+	prefix := ""
+	if glyph != "" {
+		prefix = glyph + " "
+	}
+	return t.paint(prefix+"["+label+"]", codes...)
+}
+
+// statusGlyph 返回与扫描状态对应的图标；调用方保证文字标签仍然存在。
+func (t Theme) statusGlyph(status model.ScanStatus) string {
 	switch status {
 	case model.StatusClean:
-		return t.paint(label, ansiSuccess)
+		return t.Icons.Clean
 	case model.StatusFindings:
-		return t.paint(label, ansiHigh)
+		return t.Icons.Warning
 	case model.StatusIncomplete:
-		return t.paint(label, ansiMedium)
+		return t.Icons.Warning
 	case model.StatusFailed, model.StatusCancelled:
-		return t.paint(label, ansiDanger)
+		return t.Icons.Error
 	default:
-		return label
+		return ""
+	}
+}
+
+// severityGlyph 返回与严重性对应的图标；颜色与文字标签仍承担主要语义。
+func (t Theme) severityGlyph(severity model.Severity) string {
+	switch severity {
+	case model.SeverityCritical:
+		return t.Icons.Critical
+	case model.SeverityHigh:
+		return t.Icons.High
+	case model.SeverityMedium:
+		return t.Icons.Medium
+	case model.SeverityLow:
+		return t.Icons.Low
+	default:
+		return t.Icons.Unknown
+	}
+}
+
+// statusText 返回带可选图标的扫描状态文字，用于对比表等没有徽标的位置。
+func (t Theme) statusText(status model.ScanStatus) string {
+	return prependGlyph(t.statusGlyph(status), t.statusLabel(status))
+}
+
+// severityText 返回带可选图标的严重性文字。
+func (t Theme) severityText(severity model.Severity) string {
+	return prependGlyph(t.severityGlyph(severity), t.severityLabel(severity))
+}
+
+// prependGlyph 只在图标存在时添加一个空格，保证零值输出不变。
+func prependGlyph(glyph, text string) string {
+	if glyph == "" {
+		return text
+	}
+	return glyph + " " + text
+}
+
+func (t Theme) statusBadge(status model.ScanStatus) string {
+	label := t.statusLabel(status)
+	switch status {
+	case model.StatusClean:
+		return t.badgeText(t.Icons.Clean, label, ansiSuccess)
+	case model.StatusFindings:
+		return t.badgeText(t.Icons.Warning, label, ansiMedium)
+	case model.StatusIncomplete:
+		return t.badgeText(t.Icons.Warning, label, ansiMedium)
+	case model.StatusFailed, model.StatusCancelled:
+		return t.badgeText(t.Icons.Error, label, ansiDanger)
+	default:
+		return t.badgeText("", label)
 	}
 }
 
 func (t Theme) severityBadge(severity model.Severity) string {
-	label := "[" + t.severityLabel(severity) + "]"
+	label := t.severityLabel(severity)
 	switch severity {
 	case model.SeverityCritical:
-		return t.paint(label, ansiDanger)
+		return t.badgeText(t.Icons.Critical, label, ansiDanger)
 	case model.SeverityHigh:
-		return t.paint(label, ansiHigh)
+		return t.badgeText(t.Icons.High, label, ansiHigh)
 	case model.SeverityMedium:
-		return t.paint(label, ansiMedium)
+		return t.badgeText(t.Icons.Medium, label, ansiMedium)
 	case model.SeverityLow:
-		return t.paint(label, ansiLow)
+		return t.badgeText(t.Icons.Low, label, ansiLow)
 	default:
-		return t.paint(label, ansiUnknown)
+		return t.badgeText(t.Icons.Unknown, label, ansiUnknown)
 	}
 }
 
 func (t Theme) kindBadge(kind model.FindingKind) string {
-	label := "[" + t.kindLabel(kind) + "]"
+	label := t.kindLabel(kind)
 	if kind == model.FindingHeuristic {
-		return t.paint(label, ansiInfo)
+		return t.badgeText(t.Icons.Heuristic, label, ansiInfo)
 	}
-	return t.paint(label, ansiDim)
+	return t.badgeText(t.Icons.Confirmed, label, ansiDim)
 }
 
 func (t Theme) checkBadge(status model.CheckStatus) string {
-	label := "[" + t.checkLabel(status) + "]"
+	label := t.checkLabel(status)
 	switch status {
 	case model.CheckSucceeded:
-		return t.paint(label, ansiSuccess)
-	case model.CheckUnavailable, model.CheckSkipped:
-		return t.paint(label, ansiMedium)
+		return t.badgeText(t.Icons.CheckOK, label, ansiSuccess)
+	case model.CheckUnavailable:
+		return t.badgeText(t.Icons.CheckUnavailable, label, ansiMedium)
+	case model.CheckSkipped:
+		return t.badgeText(t.Icons.CheckSkipped, label, ansiMedium)
 	case model.CheckFailed:
-		return t.paint(label, ansiDanger)
+		return t.badgeText(t.Icons.CheckFailed, label, ansiDanger)
 	default:
-		return label
+		return t.badgeText("", label)
 	}
 }
 

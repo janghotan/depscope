@@ -138,6 +138,7 @@ func englishCatalog() map[Key]string {
 		KeySettingsColorNote:      "NO_COLOR and TERM=dumb always disable color, even when the setting is always. Settings affect new scans and the interface.",
 		KeySettingsAnimationNote:  "Animations can also be disabled for a session with DEPSCOPE_NO_ANIMATION=1.",
 		KeySettingsLanguageNote:   "Language changes apply immediately and last for this session only.",
+		KeySettingsIconNote:       "Icons are always paired with text. Set DEPSCOPE_NO_ICONS=1 to hide them; DEPSCOPE_ASCII_ICONS, TERM=dumb, or a non-UTF-8 locale switches to ASCII symbols.",
 
 		KeyLoadingCheckingPackage:  "CHECKING PACKAGE",
 		KeyLoadingScanningProject:  "SCANNING PROJECT",

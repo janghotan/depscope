@@ -149,6 +149,7 @@ const (
 	KeySettingsColorNote
 	KeySettingsAnimationNote
 	KeySettingsLanguageNote
+	KeySettingsIconNote
 
 	// 加载与进度
 	KeyLoadingCheckingPackage

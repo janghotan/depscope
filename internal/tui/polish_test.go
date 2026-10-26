@@ -261,7 +261,11 @@ func TestColorLayoutKeepsHeaderAndNavigationIntact(t *testing.T) {
 				t.Fatalf("%dx%d: navigation entry %q is clipped in color mode", dimensions[0], dimensions[1], title)
 			}
 		}
-		if !strings.Contains(plain, "› 1  "+model.text(menuEntries[0].titleKey)) {
+		selectedPrefix := "› 1  "
+		if icon := model.icons.glyph(menuEntries[0].icon); icon != "" {
+			selectedPrefix += icon + " "
+		}
+		if !strings.Contains(plain, selectedPrefix+model.text(menuEntries[0].titleKey)) {
 			t.Fatalf("%dx%d: selected navigation row is clipped in color mode:\n%s", dimensions[0], dimensions[1], plain)
 		}
 	}

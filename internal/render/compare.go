@@ -26,9 +26,9 @@ func Comparison(leftRequest, rightRequest string, left, right *model.ScanReport,
 	w.paragraph(leftRequest+theme.text(i18n.KeyComparisonVs)+rightRequest, "")
 	if isDemoReport(left) || isDemoReport(right) {
 		w.blank()
-		badge := "[" + theme.text(i18n.KeyReportDemoBadge) + "] "
+		badge := theme.badgeText(theme.Icons.Demo, theme.text(i18n.KeyReportDemoBadge), ansiMedium, ansiBold) + " "
 		w.prefixedStyled(
-			theme.paint(badge, ansiMedium, ansiBold),
+			badge,
 			theme.text(i18n.KeyComparisonDemoWarning),
 			func(value string) string { return theme.paint(value, ansiMedium) },
 		)
@@ -53,13 +53,13 @@ func Comparison(leftRequest, rightRequest string, left, right *model.ScanReport,
 	}
 
 	w.blank()
-	w.heading(theme.text(i18n.KeyComparisonFindingsLeft))
+	w.headingWith(theme.Icons.Warning, []string{ansiMedium}, theme.text(i18n.KeyComparisonFindingsLeft))
 	writeSideFindings(w, leftData)
 	w.blank()
-	w.heading(theme.text(i18n.KeyComparisonFindingsRight))
+	w.headingWith(theme.Icons.Warning, []string{ansiMedium}, theme.text(i18n.KeyComparisonFindingsRight))
 	writeSideFindings(w, rightData)
 	w.blank()
-	w.heading(theme.text(i18n.KeyComparisonSourceCoverage))
+	w.headingWith(theme.Icons.Source, []string{ansiDim}, theme.text(i18n.KeyComparisonSourceCoverage))
 	w.paragraph(padRight(leftData.label, 7)+sourceCoverage(theme, leftData), "  ")
 	w.paragraph(padRight(rightData.label, 7)+sourceCoverage(theme, rightData), "  ")
 	return strings.TrimRight(w.b.String(), "\n")
@@ -126,18 +126,24 @@ func summarizeSide(theme Theme, labelKey i18n.Key, request string, report *model
 	if report.Target.ResolvedVersion != nil && *report.Target.ResolvedVersion != "" {
 		side.version = *report.Target.ResolvedVersion
 	}
-	side.status = theme.statusLabel(report.Status)
+	side.status = theme.statusText(report.Status)
 	succeeded, total := checkCoverage(report.Checks)
 	side.checks = theme.format(i18n.KeyComparisonChecks, succeeded, total)
 	side.confirmed = fmt.Sprint(report.Summary.ConfirmedFindings)
 	side.heuristic = fmt.Sprint(report.Summary.HeuristicWarnings)
 	if report.Summary.HighestSeverity != nil {
-		side.highest = theme.severityLabel(*report.Summary.HighestSeverity)
+		side.highest = theme.severityText(*report.Summary.HighestSeverity)
 	}
 	side.findings = report.Findings
 	if len(report.Findings) > 0 {
 		top := report.Findings[0]
-		side.topFinding = fmt.Sprintf("[%s] %s — %s", theme.severityLabel(top.Severity), theme.kindLabel(top.Kind), top.Title)
+		severity := prependGlyph(theme.severityGlyph(top.Severity), "["+theme.severityLabel(top.Severity)+"]")
+		kindGlyph := theme.Icons.Confirmed
+		if top.Kind == model.FindingHeuristic {
+			kindGlyph = theme.Icons.Heuristic
+		}
+		kind := prependGlyph(kindGlyph, theme.kindLabel(top.Kind))
+		side.topFinding = fmt.Sprintf("%s %s — %s", severity, kind, top.Title)
 	}
 	lifecycle := findingsWithPrefix(report.Findings, "LIFECYCLE-")
 	typosquat := findingsWithPrefix(report.Findings, "TYPOSQUAT-")
@@ -155,17 +161,20 @@ func summarizeSide(theme Theme, labelKey i18n.Key, request string, report *model
 		side.sources = theme.text(i18n.KeyComparisonSourcesNone)
 	}
 	side.dataMode = theme.dataModeLabel(report.DataMode)
+	if report.DataMode == model.DataModeDemo {
+		side.dataMode = prependGlyph(theme.Icons.Demo, side.dataMode)
+	}
 	return side
 }
 
 func qualityLabel(theme Theme, quality sideQuality) string {
 	switch quality {
 	case qualityPartial:
-		return theme.text(i18n.KeyComparisonQualityPartial)
+		return prependGlyph(theme.Icons.Warning, theme.text(i18n.KeyComparisonQualityPartial))
 	case qualityComplete:
-		return theme.text(i18n.KeyComparisonQualityComplete)
+		return prependGlyph(theme.Icons.Clean, theme.text(i18n.KeyComparisonQualityComplete))
 	default:
-		return theme.text(i18n.KeyComparisonQualityUnavailable)
+		return prependGlyph(theme.Icons.Warning, theme.text(i18n.KeyComparisonQualityUnavailable))
 	}
 }
 
@@ -236,13 +245,15 @@ func sideDataQuality(report model.ScanReport) sideQuality {
 }
 
 func sourceCoverage(theme Theme, side sideSummary) string {
-	if side.err != nil || side.report == nil {
-		return theme.text(i18n.KeyComparisonUnavailable)
+	switch {
+	case side.err != nil || side.report == nil:
+		return prependGlyph(theme.Icons.Warning, theme.text(i18n.KeyComparisonUnavailable))
+	case len(side.report.Sources) == 0:
+		return prependGlyph(theme.Icons.Warning, theme.text(i18n.KeyComparisonNoSourceRefs))
+	default:
+		return prependGlyph(theme.Icons.Source,
+			theme.format(i18n.KeyComparisonSourceRefs, strings.Join(side.uniqueSources, ", "), len(side.report.Sources)))
 	}
-	if len(side.report.Sources) == 0 {
-		return theme.text(i18n.KeyComparisonNoSourceRefs)
-	}
-	return theme.format(i18n.KeyComparisonSourceRefs, strings.Join(side.uniqueSources, ", "), len(side.report.Sources))
 }
 
 func compareColumnWidth(theme Theme) int {

@@ -233,6 +233,8 @@ The interactive app animates a short brand reveal, navigation feedback, a loadin
 
 The interactive app can display English or Simplified Chinese. Open **Settings** from the main menu, select **Language**, and press `enter` or `left`/`right` to switch immediately. The choice is session-only: it is never written to disk, and a new session starts in English. Menus, forms, help, loading states, reports, and comparisons are localized, while package names, versions, advisory IDs, URLs, and raw advisory text stay unchanged. Layout, wrapping, and input focus use terminal display cells, so Chinese text aligns and wraps correctly. The non-interactive CLI, HTTP API, and website remain English.
 
+The terminal interface pairs each workflow, report status, severity, and check outcome with a semantic icon and text. Icons are measured in display cells, never convey meaning alone, and do not require a Nerd Font. `DEPSCOPE_NO_ICONS=1` hides them without changing labels or values; `DEPSCOPE_ASCII_ICONS=1`, `TERM=dumb`, or a non-UTF-8 locale switches to ASCII symbols. The shield logo, `DEPSCOPE` wordmark, and spinner behavior are unchanged, and non-interactive CLI output remains icon-free.
+
 | Exit code | Meaning |
 | --- | --- |
 | `0` | Command completed; report status was not `failed` or `cancelled` (an `incomplete` report still exits `0`) |
@@ -480,6 +482,7 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 | --- | --- |
 | Go engine, CLI, TUI, offline demo | Implemented and covered by tests |
 | TUI languages | English and Simplified Chinese, selected in Settings; session-only. CLI, API, and website remain English |
+| TUI icons | Semantic glyphs paired with text; ASCII and icon-free modes. CLI output remains icon-free |
 | Local HTTP API | Implemented; local, unauthenticated, process-local limits |
 | Website (single scan, comparison, demo records) | Implemented locally; not deployed |
 | CI and GoReleaser configuration | CI and the release workflow run on GitHub; tagged releases publish CLI and API archives with a SHA-256 `checksums.txt` (not signed) |

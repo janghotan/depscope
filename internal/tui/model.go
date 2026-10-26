@@ -54,18 +54,19 @@ const (
 )
 
 type menuEntry struct {
+	icon           iconToken
 	titleKey       i18n.Key
 	descriptionKey i18n.Key
 	target         screen
 }
 
 var menuEntries = []menuEntry{
-	{titleKey: i18n.KeyMenuPackageTitle, descriptionKey: i18n.KeyMenuPackageDescription, target: screenPackageForm},
-	{titleKey: i18n.KeyMenuProjectTitle, descriptionKey: i18n.KeyMenuProjectDescription, target: screenProjectForm},
-	{titleKey: i18n.KeyMenuCompareTitle, descriptionKey: i18n.KeyMenuCompareDescription, target: screenCompareForm},
-	{titleKey: i18n.KeyMenuInventoryTitle, descriptionKey: i18n.KeyMenuInventoryDescription, target: screenInventoryConfirm},
-	{titleKey: i18n.KeyMenuDemoTitle, descriptionKey: i18n.KeyMenuDemoDescription, target: screenDemoPicker},
-	{titleKey: i18n.KeyMenuSettingsTitle, descriptionKey: i18n.KeyMenuSettingsDescription, target: screenSettings},
+	{icon: iconPackage, titleKey: i18n.KeyMenuPackageTitle, descriptionKey: i18n.KeyMenuPackageDescription, target: screenPackageForm},
+	{icon: iconProject, titleKey: i18n.KeyMenuProjectTitle, descriptionKey: i18n.KeyMenuProjectDescription, target: screenProjectForm},
+	{icon: iconCompare, titleKey: i18n.KeyMenuCompareTitle, descriptionKey: i18n.KeyMenuCompareDescription, target: screenCompareForm},
+	{icon: iconInventory, titleKey: i18n.KeyMenuInventoryTitle, descriptionKey: i18n.KeyMenuInventoryDescription, target: screenInventoryConfirm},
+	{icon: iconDemo, titleKey: i18n.KeyMenuDemoTitle, descriptionKey: i18n.KeyMenuDemoDescription, target: screenDemoPicker},
+	{icon: iconSettings, titleKey: i18n.KeyMenuSettingsTitle, descriptionKey: i18n.KeyMenuSettingsDescription, target: screenSettings},
 }
 
 // demoTitleKeys 与 demoDescriptionKeys 把稳定的场景 ID 映射到本地化文案；
@@ -100,6 +101,9 @@ type Options struct {
 	Context          context.Context
 	// Animations 显式控制动画；留空时由 DEPSCOPE_NO_ANIMATION、TERM 与 CI 决定。
 	Animations string
+	// Icons 显式控制语义图标；留空时由 DEPSCOPE_NO_ICONS、DEPSCOPE_ASCII_ICONS、
+	// TERM 与 locale 决定。on/ascii/off 可覆盖环境变量。
+	Icons string
 	// Language 是本次会话的初始界面语言；留空时使用英语。
 	Language i18n.Language
 }
@@ -151,6 +155,8 @@ type Model struct {
 	anim animation
 	// motionMode 是构造时的动画设置，保留用于设置页展示。
 	motionMode string
+	// icons 决定是否显示语义图标以及是否使用 ASCII 回退。
+	icons iconMode
 }
 
 // New 创建界面模型；构造过程不会访问网络或执行包管理器命令。
@@ -189,6 +195,7 @@ func New(service app.Service, opts Options) *Model {
 	m.styles = newStyles(m.color)
 	m.motionMode = opts.Animations
 	m.anim.enabled = animationsEnabled(opts.Animations, lookupEnv)
+	m.icons = resolveIconMode(opts.Icons, lookupEnv)
 	if service != nil {
 		m.demos = service.DemoScenarios()
 	}
@@ -867,7 +874,12 @@ func (m *Model) startScan(cmd tea.Cmd) tea.Cmd {
 }
 
 func (m *Model) theme() render.Theme {
-	return render.Theme{Color: m.color, Width: m.contentWidth(), Language: m.language}
+	return render.Theme{
+		Color:    m.color,
+		Width:    m.contentWidth(),
+		Language: m.language,
+		Icons:    m.reportIcons(),
+	}
 }
 
 func (m *Model) contentWidth() int {

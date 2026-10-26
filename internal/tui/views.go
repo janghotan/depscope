@@ -223,8 +223,9 @@ func (m *Model) menuView() string {
 
 	if notice := m.noticeText(); notice != "" {
 		lines = append(lines, "")
-		for _, line := range wrapBlock(notice, width, 2) {
-			lines = append(lines, m.styles.successText(line))
+		prefix := "  " + m.icons.prefix(iconError)
+		for _, line := range wrapPlain(notice, width-displayWidth(prefix)) {
+			lines = append(lines, m.styles.warningText(prefix+line))
 		}
 	}
 	return strings.Join(lines, "\n")
@@ -248,20 +249,29 @@ func (m *Model) menuNavLines(width int) []string {
 			marker = "› "
 		}
 		shortcut := fmt.Sprintf("%d", index+1)
+		icon := m.icons.prefix(entry.icon)
 		focus := ""
 		if selected && m.anim.focus > 0 && m.anim.enabled {
 			focus = " ◂"
 		}
 		// 先按可见文本截断标题，再应用样式；否则 ANSI 序列会被计入宽度并截掉标题。
-		titleWidth := width - displayWidth(marker) - displayWidth(shortcut) - 2 - displayWidth(focus)
+		titleWidth := width - displayWidth(marker) - displayWidth(shortcut) - 2 - displayWidth(icon) - displayWidth(focus)
 		title := truncatePlain(m.text(entry.titleKey), titleWidth)
+		styledIcon := ""
+		if icon != "" {
+			if selected {
+				styledIcon = m.styles.accentText(icon)
+			} else {
+				styledIcon = m.styles.subtleText(icon)
+			}
+		}
 		if selected {
 			marker = m.styles.accentText(marker)
 			title = m.styles.selectedText(title)
 		} else {
 			title = m.styles.boldText(title)
 		}
-		line := marker + m.styles.subtleText(shortcut) + "  " + title
+		line := marker + m.styles.subtleText(shortcut) + "  " + styledIcon + title
 		// 选中行附带焦点指示，保证在无色环境下也一眼可辨。
 		if focus != "" {
 			line += m.styles.accentText(focus)
@@ -274,7 +284,11 @@ func (m *Model) menuNavLines(width int) []string {
 // menuContextLines 生成右侧的上下文说明与安全信息。
 func (m *Model) menuContextLines(width int) []string {
 	lines := []string{m.sectionLabel(m.text(i18n.KeyMenuSelected)), ""}
-	lines = append(lines, m.styles.boldText(m.text(menuEntries[m.menuIndex].titleKey)))
+	title := m.styles.boldText(m.text(menuEntries[m.menuIndex].titleKey))
+	if icon := m.icons.glyph(menuEntries[m.menuIndex].icon); icon != "" {
+		title = m.styles.accentText(icon) + " " + title
+	}
+	lines = append(lines, title)
 	lines = append(lines, "")
 	lines = append(lines, wrapBlock(m.text(menuEntries[m.menuIndex].descriptionKey), width, 0)...)
 	lines = append(lines, "")
@@ -290,7 +304,8 @@ func (m *Model) safetyLines(width int) []string {
 		m.text(i18n.KeyMenuSafetySeparate),
 		m.text(i18n.KeyMenuSafetyIncomplete),
 	} {
-		wrapped := wrapBlock(text, width, 0)
+		// 项目符号与续行缩进都占两列，先扣除后再换行，避免右边缘被裁切。
+		wrapped := wrapBlock(text, width-2, 0)
 		for index, line := range wrapped {
 			prefix := "  "
 			if index == 0 {
@@ -309,9 +324,27 @@ func (m *Model) sectionLabel(text string) string {
 	return m.styles.accentText(strings.ToUpper(text))
 }
 
+// titleWithIcon 在粗体标题前附加可选强调图标；关闭图标时只返回原标题。
+func (m *Model) titleWithIcon(token iconToken, text string) string {
+	title := m.styles.boldText(text)
+	if icon := m.icons.glyph(token); icon != "" {
+		title = m.styles.accentText(icon) + " " + title
+	}
+	return title
+}
+
+// dangerTitleWithIcon 用于错误标题，图标与文字共享危险语义色。
+func (m *Model) dangerTitleWithIcon(token iconToken, text string) string {
+	title := m.styles.dangerText(text)
+	if icon := m.icons.glyph(token); icon != "" {
+		title = m.styles.dangerText(icon) + " " + title
+	}
+	return title
+}
+
 func (m *Model) packageFormView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText(m.text(i18n.KeyFormPackageTitle)))
+	b.WriteString(m.titleWithIcon(iconPackage, m.text(i18n.KeyFormPackageTitle)))
 	b.WriteString("\n")
 	b.WriteString(m.wrappedDim(m.text(i18n.KeyFormPackageIntro)))
 	b.WriteString("\n\n")
@@ -325,7 +358,7 @@ func (m *Model) packageFormView() string {
 
 func (m *Model) projectFormView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText(m.text(i18n.KeyFormProjectTitle)))
+	b.WriteString(m.titleWithIcon(iconProject, m.text(i18n.KeyFormProjectTitle)))
 	b.WriteString("\n")
 	b.WriteString(m.wrappedDim(m.text(i18n.KeyFormProjectIntro)))
 	b.WriteString("\n\n")
@@ -337,7 +370,7 @@ func (m *Model) projectFormView() string {
 
 func (m *Model) compareFormView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText(m.text(i18n.KeyFormCompareTitle)))
+	b.WriteString(m.titleWithIcon(iconCompare, m.text(i18n.KeyFormCompareTitle)))
 	b.WriteString("\n")
 	b.WriteString(m.wrappedDim(m.text(i18n.KeyFormCompareIntro)))
 	b.WriteString("\n\n")
@@ -353,11 +386,11 @@ func (m *Model) compareFormView() string {
 
 func (m *Model) inventoryView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText(m.text(i18n.KeyInventoryTitle)))
+	b.WriteString(m.titleWithIcon(iconInventory, m.text(i18n.KeyInventoryTitle)))
 	b.WriteString("\n")
 	b.WriteString(m.wrappedDim(m.text(i18n.KeyInventoryIntro)))
 	b.WriteString("\n\n")
-	b.WriteString(m.wrappedStyled(m.text(i18n.KeyInventoryNoExecute), m.styles.warningText))
+	b.WriteString(m.wrappedPrefixed(iconWarning, m.text(i18n.KeyInventoryNoExecute), m.styles.warningText))
 	b.WriteString("\n\n")
 	b.WriteString(m.wrappedDim(m.text(i18n.KeyInventoryScope)))
 	b.WriteString("\n\n")
@@ -368,7 +401,7 @@ func (m *Model) inventoryView() string {
 
 func (m *Model) demoView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText(m.text(i18n.KeyDemoTitle)))
+	b.WriteString(m.titleWithIcon(iconDemo, m.text(i18n.KeyDemoTitle)))
 	b.WriteString("\n")
 	b.WriteString(m.wrappedDim(m.text(i18n.KeyDemoIntro)))
 	b.WriteString("\n\n")
@@ -383,13 +416,16 @@ func (m *Model) demoView() string {
 			marker = m.styles.accentText("› ")
 			title = m.styles.selectedText(title)
 		}
-		fmt.Fprintf(&b, "%s%d  %s\n", marker, index+1, title)
-		width := m.contentWidth() - 6
-		if width < 10 {
-			width = 10
+		iconText := m.demoIconText(scenario.ID)
+		// 窄终端下按显示宽度截断标题，避免图标把标题推出右边缘。
+		titleWidth := m.contentWidth() - displayWidth(marker) - 1 - 2 - displayWidth(iconText)
+		if titleWidth < 1 {
+			titleWidth = 1
 		}
-		for _, line := range wrapPlain(m.demoDescription(scenario), width) {
-			b.WriteString("      " + m.styles.dimText(line) + "\n")
+		fmt.Fprintf(&b, "%s%d  %s%s\n", marker, index+1, iconText, truncatePlain(title, titleWidth))
+		indent := strings.Repeat(" ", 6+displayWidth(iconText))
+		for _, line := range wrapPlain(m.demoDescription(scenario), m.contentWidth()-displayWidth(indent)) {
+			b.WriteString(indent + m.styles.dimText(line) + "\n")
 		}
 	}
 	b.WriteString("\n")
@@ -398,21 +434,51 @@ func (m *Model) demoView() string {
 	return strings.TrimRight(b.String(), "\n")
 }
 
+// demoScenarioIcon 把演示场景映射为稳定语义图标；未知场景按风险场景处理。
+func demoScenarioIcon(id string) iconToken {
+	switch id {
+	case "clean":
+		return iconClean
+	case "install-scripts":
+		return iconHeuristic
+	default:
+		return iconCritical
+	}
+}
+
+// demoIconText 返回带语义色的场景图标；关闭图标时为空串。
+func (m *Model) demoIconText(id string) string {
+	glyph := m.icons.glyph(demoScenarioIcon(id))
+	if glyph == "" {
+		return ""
+	}
+	text := glyph + " "
+	switch demoScenarioIcon(id) {
+	case iconClean:
+		return m.styles.successText(text)
+	case iconHeuristic:
+		return m.styles.warningText(text)
+	default:
+		return m.styles.dangerText(text)
+	}
+}
+
 func (m *Model) settingsView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText(m.text(i18n.KeySettingsTitle)))
+	b.WriteString(m.titleWithIcon(iconSettings, m.text(i18n.KeySettingsTitle)))
 	b.WriteString("\n")
 	b.WriteString(m.wrappedDim(m.text(i18n.KeySettingsIntro)))
 	b.WriteString("\n\n")
 	rows := []struct {
+		icon  iconToken
 		label string
 		value string
 	}{
-		{m.text(i18n.KeySettingsLanguageLabel), m.language.NativeName()},
-		{m.text(i18n.KeySettingsEcosystemLabel), string(m.ecosystem)},
-		{m.text(i18n.KeySettingsColorLabel), m.colorDescription()},
-		{m.text(i18n.KeySettingsAnimationLabel), m.animationDescription()},
-		{"", m.text(i18n.KeySettingsBack)},
+		{iconLanguage, m.text(i18n.KeySettingsLanguageLabel), m.language.NativeName()},
+		{iconPackage, m.text(i18n.KeySettingsEcosystemLabel), string(m.ecosystem)},
+		{iconColor, m.text(i18n.KeySettingsColorLabel), m.colorDescription()},
+		{iconAnimation, m.text(i18n.KeySettingsAnimationLabel), m.animationDescription()},
+		{iconHome, "", m.text(i18n.KeySettingsBack)},
 	}
 	for index, row := range rows {
 		marker := "  "
@@ -420,19 +486,30 @@ func (m *Model) settingsView() string {
 		if selected {
 			marker = m.styles.accentText("› ")
 		}
+		iconText := ""
+		if glyph := m.icons.glyph(row.icon); glyph != "" {
+			// 语言图标“文”占两列，其余设置图标补齐到同一列宽，保证标签对齐。
+			iconText = padPlain(glyph, 2) + " "
+			if selected {
+				iconText = m.styles.accentText(iconText)
+			} else {
+				iconText = m.styles.subtleText(iconText)
+			}
+		}
 		if row.label == "" {
 			text := row.value
 			if selected {
 				text = m.styles.selectedText(text)
 			}
-			b.WriteString(marker + text + "\n")
+			b.WriteString(marker + iconText + text + "\n")
 			continue
 		}
 		// 窄终端下把超长取值换行到下一行，避免隐藏颜色或动画的决定信息。
-		prefix := marker + padPlain(row.label, 20)
+		labelText := padPlain(row.label, 20)
 		if selected {
-			prefix = m.styles.selectedText(prefix)
+			labelText = m.styles.selectedText(labelText)
 		}
+		prefix := marker + iconText + labelText
 		width := m.contentWidth() - displayWidth(prefix)
 		if width < 1 {
 			width = 1
@@ -453,17 +530,22 @@ func (m *Model) settingsView() string {
 	b.WriteString(m.wrappedDim(m.text(i18n.KeySettingsColorNote)))
 	b.WriteString("\n")
 	b.WriteString(m.wrappedDim(m.text(i18n.KeySettingsAnimationNote)))
+	// 最小终端高度不足以显示全部说明时省略图标控制提示，避免裁掉更重要的决定信息。
+	if m.contentHeight() >= 20 {
+		b.WriteString("\n")
+		b.WriteString(m.wrappedDim(m.text(i18n.KeySettingsIconNote)))
+	}
 	return strings.TrimRight(b.String(), "\n")
 }
 
 func (m *Model) loadingView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText(m.loadingName))
+	b.WriteString(m.titleWithIcon(iconLoading, m.loadingName))
 	b.WriteString("\n")
 	b.WriteString(m.wrappedDim(m.text(i18n.KeyLoadingIntro)))
 	b.WriteString("\n\n")
 	if m.cancelling {
-		b.WriteString(m.wrappedStyled(m.text(i18n.KeyLoadingCancelling), m.styles.warningText))
+		b.WriteString(m.wrappedPrefixed(iconWarning, m.text(i18n.KeyLoadingCancelling), m.styles.warningText))
 		b.WriteString("\n")
 		b.WriteString(m.wrappedDim(m.text(i18n.KeyLoadingNoPartial)))
 		b.WriteString("\n")
@@ -563,7 +645,7 @@ func (m *Model) comparisonView() string {
 
 func (m *Model) errorView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.dangerText(m.text(i18n.KeyErrorTitle)))
+	b.WriteString(m.dangerTitleWithIcon(iconError, m.text(i18n.KeyErrorTitle)))
 	b.WriteString("\n")
 	for _, line := range wrapPlain(m.errorText, m.contentWidth()) {
 		b.WriteString(line)
@@ -579,7 +661,7 @@ func (m *Model) errorView() string {
 // helpView 说明当前画面可用的按键，并列出全局快捷键。
 func (m *Model) helpView() string {
 	var b strings.Builder
-	b.WriteString(m.styles.boldText(m.text(i18n.KeyHelpTitle)))
+	b.WriteString(m.titleWithIcon(iconKeyboard, m.text(i18n.KeyHelpTitle)))
 	b.WriteString("\n")
 	b.WriteString(m.wrappedDim(m.text(i18n.KeyHelpIntro)))
 	b.WriteString("\n\n")
@@ -734,11 +816,32 @@ func (m *Model) formErrorView() string {
 	if strings.TrimSpace(m.formError) == "" {
 		return ""
 	}
+	prefix := "! "
+	if glyph := m.icons.glyph(iconError); glyph != "" {
+		prefix = glyph + " "
+	}
 	var b strings.Builder
 	b.WriteString("\n")
-	for _, line := range wrapPlain("! "+m.formError, m.contentWidth()-2) {
+	for _, line := range wrapPlain(prefix+m.formError, m.contentWidth()) {
 		b.WriteString(m.styles.dangerText(line))
 		b.WriteString("\n")
+	}
+	return b.String()
+}
+
+// wrappedPrefixed 在首行前附加图标并按剩余显示宽度换行；
+// 关闭图标时输出与无前缀版本一致，不会改变原有文案。
+func (m *Model) wrappedPrefixed(token iconToken, text string, style func(string) string) string {
+	prefix := m.icons.prefix(token)
+	indent := strings.Repeat(" ", displayWidth(prefix))
+	var b strings.Builder
+	for index, line := range wrapPlain(text, m.contentWidth()-displayWidth(prefix)) {
+		if index > 0 {
+			b.WriteString("\n")
+			b.WriteString(style(indent + line))
+			continue
+		}
+		b.WriteString(style(prefix + line))
 	}
 	return b.String()
 }
