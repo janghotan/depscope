@@ -197,9 +197,16 @@ def run_ps1(base: str, install_dir: pathlib.Path, *extra: str,
     # .NET 在 Windows 上读取系统证书存储而不是 SSL_CERT_FILE，因此测试前把
     # 测试 CA 导入当前用户 Root 存储，运行结束后移除；证书校验始终开启。
     if ca_path is not None and os.name == "nt":
+        # 使用 .NET X509Store 直接写入，避免 Import-Certificate 在无交互会话中
+        # 要求 UI 确认（"UI is not allowed in this operation"）。
+        import_script = (
+            "$store = New-Object System.Security.Cryptography.X509Certificates.X509Store('Root','CurrentUser'); "
+            "$store.Open('ReadWrite'); "
+            f"$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2('{ca_path}'); "
+            "$store.Add($cert); $store.Close(); Write-Output 'imported'"
+        )
         import_result = subprocess.run(
-            [str(PWSH), "-NoProfile", "-NonInteractive", "-Command",
-             f"Import-Certificate -FilePath '{ca_path}' -CertStoreLocation Cert:\\CurrentUser\\Root | Out-Null"],
+            [str(PWSH), "-NoProfile", "-NonInteractive", "-Command", import_script],
             capture_output=True, text=True,
         )
         if import_result.returncode != 0:
@@ -229,11 +236,15 @@ def run_ps1(base: str, install_dir: pathlib.Path, *extra: str,
     )
     if ca_path is not None and os.name == "nt":
         # 测试结束把临时信任的 CA 从当前用户 Root 存储中移除。
+        remove_script = (
+            "$store = New-Object System.Security.Cryptography.X509Certificates.X509Store('Root','CurrentUser'); "
+            "$store.Open('ReadWrite'); "
+            "foreach ($c in $store.Certificates) { "
+            "if ($c.Subject -like '*DepScope Test CA*') { $store.Remove($c) } }; "
+            "$store.Close()"
+        )
         subprocess.run(
-            [str(PWSH), "-NoProfile", "-NonInteractive", "-Command",
-             "Get-ChildItem Cert:\\CurrentUser\\Root | "
-             "Where-Object { $_.Subject -like '*DepScope Test CA*' } | "
-             "Remove-Item -Force -ErrorAction SilentlyContinue"],
+            [str(PWSH), "-NoProfile", "-NonInteractive", "-Command", remove_script],
             capture_output=True, text=True,
         )
     shutil.rmtree(work_home, ignore_errors=True)
