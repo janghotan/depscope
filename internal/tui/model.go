@@ -106,6 +106,8 @@ type Options struct {
 	DefaultEcosystem model.Ecosystem
 	LookupEnv        func(string) string
 	Context          context.Context
+	// Animations 显式控制动画；留空时由 DEPSCOPE_NO_ANIMATION、TERM 与 CI 决定。
+	Animations string
 }
 
 // Model 是 Bubble Tea 的界面状态；所有扫描通过 app.Service 完成。
@@ -146,6 +148,11 @@ type Model struct {
 	scroll    int
 	errorText string
 	notice    string
+
+	// anim 保存动画进度；没有动画时所有字段为 0，界面保持静态。
+	anim animation
+	// motionMode 是构造时的动画设置，保留用于设置页展示。
+	motionMode string
 }
 
 // New 创建界面模型；构造过程不会访问网络或执行包管理器命令。
@@ -181,14 +188,16 @@ func New(service app.Service, opts Options) *Model {
 	}
 	m.color = render.ColorEnabled(mode, true, lookupEnv)
 	m.styles = newStyles(m.color)
+	m.motionMode = opts.Animations
+	m.anim.enabled = animationsEnabled(opts.Animations, lookupEnv)
 	if service != nil {
 		m.demos = service.DemoScenarios()
 	}
 	return m
 }
 
-// Init 不执行后台工作；扫描只在用户确认后启动。
-func (m *Model) Init() tea.Cmd { return nil }
+// Init 只启动品牌入场动画，不执行任何后台扫描工作。
+func (m *Model) Init() tea.Cmd { return m.startBrand() }
 
 // Update 处理窗口、键盘、进度与扫描结果消息。
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -205,6 +214,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case tea.KeyMsg:
 		return m.handleKey(msg)
+	case tickMsg:
+		return m, m.handleTick(msg)
 	case progressMsg:
 		if msg.id != m.scanID || m.screen != screenLoading {
 			return m, nil
@@ -298,6 +309,9 @@ func (m *Model) openScreen(target screen) tea.Cmd {
 	m.notice = ""
 	m.formError = ""
 	m.scroll = 0
+	// 切换画面时让在途动画帧失效，随后开始新的导航强调。
+	m.stopAnimations()
+	m.advanceGeneration()
 	m.screen = target
 	m.formIndex = 0
 	switch target {
@@ -317,23 +331,26 @@ func (m *Model) openScreen(target screen) tea.Cmd {
 	case screenSettings:
 		m.settingsAt = 0
 	}
-	return nil
+	return m.startFocus()
 }
 
-func (m *Model) returnToMenu() {
+// returnToMenu 回到主菜单；返回的返回值供调用方启动品牌入场动画。
+func (m *Model) returnToMenu() tea.Cmd {
+	m.stopAnimations()
+	m.advanceGeneration()
 	m.screen = screenMenu
 	m.formError = ""
 	m.errorText = ""
 	m.scroll = 0
 	m.cancelling = false
 	m.cancel = nil
+	return m.startBrand()
 }
 
 func (m *Model) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.Type {
 	case tea.KeyEsc:
-		m.returnToMenu()
-		return m, nil
+		return m, m.returnToMenu()
 	case tea.KeyTab:
 		m.formIndex = wrapIndex(m.formIndex+1, len(m.formFields))
 		m.formError = ""
@@ -436,7 +453,7 @@ func (m *Model) submitForm() (tea.Model, tea.Cmd) {
 func (m *Model) handleInventoryKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.Type {
 	case tea.KeyEsc:
-		m.returnToMenu()
+		return m, m.returnToMenu()
 	case tea.KeyEnter:
 		return m, m.startScan(m.beginInventoryScan())
 	}
@@ -446,7 +463,7 @@ func (m *Model) handleInventoryKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleDemoKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc":
-		m.returnToMenu()
+		return m, m.returnToMenu()
 	case "up", "k":
 		if len(m.demos) > 0 {
 			m.demoAt = wrapIndex(m.demoAt-1, len(m.demos))
@@ -467,25 +484,26 @@ func (m *Model) handleDemoKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) handleSettingsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	const rowCount = 3
+	const rowCount = 4
 	switch msg.String() {
 	case "esc":
-		m.returnToMenu()
+		return m, m.returnToMenu()
 	case "up", "k":
 		m.settingsAt = wrapIndex(m.settingsAt-1, rowCount)
 	case "down", "j":
 		m.settingsAt = wrapIndex(m.settingsAt+1, rowCount)
 	case "enter", " ":
-		m.changeSetting(false)
+		return m, m.changeSetting(false)
 	case "left", "h":
-		m.changeSetting(true)
+		return m, m.changeSetting(true)
 	case "right", "l":
-		m.changeSetting(false)
+		return m, m.changeSetting(false)
 	}
 	return m, nil
 }
 
-func (m *Model) changeSetting(backward bool) {
+// changeSetting 修改当前设置项；返回的命令用于在主菜单重新播放品牌动画。
+func (m *Model) changeSetting(backward bool) tea.Cmd {
 	switch m.settingsAt {
 	case 0:
 		if m.ecosystem == model.EcosystemNPM {
@@ -511,8 +529,18 @@ func (m *Model) changeSetting(backward bool) {
 		m.color = render.ColorEnabled(m.colorMode, true, m.lookupEnv)
 		m.styles = newStyles(m.color)
 	case 2:
-		m.returnToMenu()
+		// 动画开关切换后立即生效：关闭时清除所有进行中的动画。
+		m.anim.enabled = !m.anim.enabled
+		if !m.anim.enabled {
+			m.stopAnimations()
+			m.advanceGeneration()
+		} else {
+			return m.startFocus()
+		}
+	case 3:
+		return m.returnToMenu()
 	}
+	return nil
 }
 
 func (m *Model) handleReportKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -525,8 +553,7 @@ func (m *Model) handleReportKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.scroll = 0
 			return m, nil
 		}
-		m.returnToMenu()
-		return m, nil
+		return m, m.returnToMenu()
 	case "up", "k":
 		if m.reportView == viewOverview && m.document != nil && len(m.document.Findings) > 0 {
 			m.findingIndex = wrapIndex(m.findingIndex-1, len(m.document.Findings))
@@ -607,7 +634,7 @@ func (m *Model) handleComparisonKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q":
 		return m, tea.Quit
 	case "esc":
-		m.returnToMenu()
+		return m, m.returnToMenu()
 	case "up", "k":
 		m.scrollBy(-1)
 	case "down", "j":
@@ -629,7 +656,7 @@ func (m *Model) handleErrorKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q":
 		return m, tea.Quit
 	case "esc":
-		m.returnToMenu()
+		return m, m.returnToMenu()
 	}
 	return m, nil
 }
@@ -653,9 +680,9 @@ func (m *Model) handleScanResult(msg scanResultMsg) (tea.Model, tea.Cmd) {
 	m.cancelling = false
 	if msg.err != nil {
 		if errors.Is(msg.err, context.Canceled) {
-			m.returnToMenu()
+			cmd := m.returnToMenu()
 			m.notice = "Scan cancelled. No results were kept."
-			return m, nil
+			return m, cmd
 		}
 		m.screen = screenError
 		m.errorText = render.SanitizeMultiline(msg.err.Error())
@@ -664,46 +691,53 @@ func (m *Model) handleScanResult(msg scanResultMsg) (tea.Model, tea.Cmd) {
 	switch msg.kind {
 	case scanPackage, scanDemo:
 		if msg.report.Status == model.StatusCancelled {
-			m.returnToMenu()
+			cmd := m.returnToMenu()
 			m.notice = "Scan cancelled. No results were kept."
-			return m, nil
+			return m, cmd
 		}
 		document := render.FromReport(msg.report)
-		m.showDocument(document, screenMenu)
+		return m, m.showDocument(document, screenMenu)
 	case scanProject:
 		if msg.project.Status == model.StatusCancelled {
-			m.returnToMenu()
+			cmd := m.returnToMenu()
 			m.notice = "Scan cancelled. No results were kept."
-			return m, nil
+			return m, cmd
 		}
 		document := render.FromProject(msg.project)
-		m.showDocument(document, screenMenu)
+		return m, m.showDocument(document, screenMenu)
 	case scanInventory:
 		if msg.inventory.Status == model.StatusCancelled {
-			m.returnToMenu()
+			cmd := m.returnToMenu()
 			m.notice = "Scan cancelled. No results were kept."
-			return m, nil
+			return m, cmd
 		}
 		document := render.FromInventory(msg.inventory)
-		m.showDocument(document, screenMenu)
+		return m, m.showDocument(document, screenMenu)
 	case scanCompare:
 		comparison := msg.comparison
 		m.comparison = &comparison
+		m.stopAnimations()
+		m.advanceGeneration()
 		m.screen = screenComparison
 		m.scroll = 0
 		m.notice = ""
+		return m, m.startComplete()
 	}
 	return m, nil
 }
 
-func (m *Model) showDocument(document render.Document, returnScreen screen) {
+// showDocument 展示报告；结果立即可见，完成过渡只是短暂的高亮提示。
+func (m *Model) showDocument(document render.Document, returnScreen screen) tea.Cmd {
 	m.document = &document
+	m.stopAnimations()
+	m.advanceGeneration()
 	m.screen = screenReport
 	m.reportView = viewOverview
 	m.findingIndex = 0
 	m.scroll = 0
 	m.returnScreen = returnScreen
 	m.notice = ""
+	return m.startComplete()
 }
 
 func (m *Model) scrollBy(delta int) {
@@ -820,6 +854,25 @@ func clamp(value, low, high int) int {
 		return high
 	}
 	return value
+}
+
+// animationDescription 描述动画当前状态与决定方式。
+func (m *Model) animationDescription() string {
+	state := "off"
+	if m.anim.enabled {
+		state = "on"
+	}
+	description := state
+	if strings.TrimSpace(m.motionMode) != "" {
+		description += " (" + strings.TrimSpace(m.motionMode) + ")"
+	}
+	if strings.EqualFold(strings.TrimSpace(m.lookupEnv("TERM")), "dumb") {
+		description += " · TERM=dumb"
+	}
+	if strings.TrimSpace(m.lookupEnv("CI")) != "" {
+		description += " · CI"
+	}
+	return description
 }
 
 func (m *Model) colorDescription() string {

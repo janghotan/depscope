@@ -147,9 +147,10 @@ func TestCancellationPropagatesToService(t *testing.T) {
 	if model.screen != screenLoading || model.cancel == nil {
 		t.Fatal("scan did not enter the loading state")
 	}
+	// beginScan 现在返回批处理命令（扫描 + 加载指示），需要依次运行其子命令。
 	done := make(chan tea.Msg, 1)
 	go func() {
-		done <- command()
+		done <- runScanCommand(command)
 	}()
 	select {
 	case <-service.started:
@@ -173,6 +174,33 @@ func TestCancellationPropagatesToService(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("cancellation did not stop the scan command")
 	}
+}
+
+// runScanCommand 执行批处理命令中的扫描子命令，忽略动画帧命令。
+// tea.Batch 返回一个 tea.Cmd，其执行结果即批处理；这里展开批处理并优先运行
+// 会产生扫描结果的那一个命令。
+func runScanCommand(command tea.Cmd) tea.Msg {
+	if command == nil {
+		return nil
+	}
+	first := command()
+	batch, ok := first.(tea.BatchMsg)
+	if !ok {
+		return first
+	}
+	var spinnerMsg tea.Msg
+	for _, sub := range batch {
+		if sub == nil {
+			continue
+		}
+		message := sub()
+		if _, isTick := message.(tickMsg); isTick {
+			spinnerMsg = message
+			continue
+		}
+		return message
+	}
+	return spinnerMsg
 }
 
 func TestProgressMessagesUpdateLoadingState(t *testing.T) {

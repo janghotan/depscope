@@ -94,6 +94,8 @@ func Run(ctx context.Context, opts Options) int {
 			DefaultEcosystem: defaultEcosystem,
 			LookupEnv:        lookupEnv,
 			Context:          ctx,
+			// 留空表示由 DEPSCOPE_NO_ANIMATION、TERM=dumb 与 CI 环境决定。
+			Animations: "",
 		})
 		if err != nil {
 			if errors.Is(err, tea.ErrInterrupted) || errors.Is(err, context.Canceled) {

@@ -229,6 +229,8 @@ All commands and exit codes:
 
 Global flags go before the command: `--no-color`, `--color=auto|always|never`, `--help`, and `--version`. Without a terminal, `depscope` prints help instead of starting the interactive app.
 
+The interactive app animates a short brand reveal, navigation feedback, a loading indicator, and a completion transition. Animations are disabled by `DEPSCOPE_NO_ANIMATION=1`, by `TERM=dumb`, and in CI environments; every screen stays fully usable with animation and color disabled. `NO_COLOR` disables color only and never affects navigation.
+
 | Exit code | Meaning |
 | --- | --- |
 | `0` | Command completed; report status was not `failed` or `cancelled` (an `incomplete` report still exits `0`) |

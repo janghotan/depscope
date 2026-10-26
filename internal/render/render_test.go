@@ -401,6 +401,42 @@ func TestInventoryOverviewSeparatesCounts(t *testing.T) {
 	}
 }
 
+// TestInventoryOverviewAppearsOnFirstScreen 回归测试：全局清单的分类计数必须出现在
+// 报告首屏总览中，而不是只存在于详细信息页。
+func TestInventoryOverviewAppearsOnFirstScreen(t *testing.T) {
+	urllib3, err := model.NewPackageIdentity(model.EcosystemPyPI, "urllib3")
+	if err != nil {
+		t.Fatalf("identity: %v", err)
+	}
+	version := "1.26.5"
+	result := inventory.Result{
+		ScannedAt: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+		Status:    model.StatusFindings,
+		Packages: []inventory.InstalledPackage{
+			{Package: urllib3, Version: version, Manager: "pip", Ecosystem: model.EcosystemPyPI},
+		},
+		Findings: []model.Finding{{
+			ID: "VULN-GHSA-qccp-gfcp-xxvc", Kind: model.FindingConfirmed, Title: "Advisory",
+			Severity: model.SeverityHigh, Package: urllib3, Version: &version,
+		}},
+		Overview: inventory.InventoryOverview{
+			InstalledPackages: 1, AffectedPackages: 1, AdvisoryMatches: 1,
+			FindingsBySeverity: map[model.Severity]int{model.SeverityHigh: 1},
+		},
+	}
+	overview := render.FromInventory(result).Overview(render.Theme{Width: 90}, 0)
+	for _, want := range []string{"OVERVIEW", "Installed packages      1", "Affected packages       1", "Advisory matches        1"} {
+		if !strings.Contains(overview, want) {
+			t.Fatalf("first-screen overview is missing %q:\n%s", want, overview)
+		}
+	}
+	// 计数必须出现在发现列表之前，确保重要信息先看到。
+	// 使用行首标题定位，避免误匹配到说明文字中的同名字样。
+	if strings.Index(overview, "Advisory matches") > strings.Index(overview, "\nFINDINGS") {
+		t.Fatalf("counts appear after the finding list:\n%s", overview)
+	}
+}
+
 func mustIdentity(t *testing.T, name string) model.PackageIdentity {
 	t.Helper()
 	identity, err := model.NewPackageIdentity(model.EcosystemPyPI, name)

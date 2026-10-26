@@ -51,8 +51,10 @@ func (m *Model) beginScan(kind scanKind, title string, run func(context.Context,
 	m.formError = ""
 	m.errorText = ""
 	m.scroll = 0
+	// 加载页开始时启动不确定进度指示；真实进度仍由 app.Progress 提供。
+	spinner := m.startSpinner()
 	channel := m.progressCh
-	return func() tea.Msg {
+	runCmd := func() tea.Msg {
 		result := run(ctx, func(item app.Progress) {
 			select {
 			case channel <- progressMsg{id: id, progress: item}:
@@ -63,6 +65,7 @@ func (m *Model) beginScan(kind scanKind, title string, run func(context.Context,
 		result.kind = kind
 		return result
 	}
+	return tea.Batch(runCmd, spinner)
 }
 
 func (m *Model) beginPackageScan(request app.PackageRequest) tea.Cmd {

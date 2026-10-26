@@ -32,11 +32,8 @@ func (m *Model) smallTerminalView() string {
 
 func (m *Model) header() string {
 	title := m.screenTitle()
-	brand := m.styles.brandText("DEPSCOPE")
-	brandWidth := runeLen("DEPSCOPE")
-	if m.color {
-		brandWidth += 2
-	}
+	brand := m.headerBrand()
+	brandWidth := runeLen(brand)
 	available := m.width - brandWidth - 2
 	if available < 1 {
 		available = 1
@@ -46,9 +43,21 @@ func (m *Model) header() string {
 	if gap < 1 {
 		gap = 1
 	}
-	line := brand + strings.Repeat(" ", gap) + m.styles.dimText(title)
-	rule := m.styles.dimText(strings.Repeat("─", m.width))
+	line := brand + strings.Repeat(" ", gap) + m.styles.subtleText(title)
+	rule := m.styles.ruleText(strings.Repeat("─", m.width))
 	return line + "\n" + rule
+}
+
+// headerBrand 生成页眉左侧的品牌文本；窄终端退化为纯文本名称。
+func (m *Model) headerBrand() string {
+	size := logoInline
+	if m.width < logoWidth(logoInline)+24 {
+		size = logoCompact
+	}
+	if m.width < logoWidth(logoCompact)+12 {
+		size = logoNone
+	}
+	return renderLogo(m.styles, size)
 }
 
 func (m *Model) screenTitle() string {
@@ -180,36 +189,118 @@ func (m *Model) windowContent(content string) string {
 	return strings.Join(visible, "\n")
 }
 
+// menuView 渲染主菜单：品牌、操作导航、上下文说明与只读安全说明。
+// 宽度充足时使用双列布局，窄终端退化为单列并压缩描述。
 func (m *Model) menuView() string {
-	var b strings.Builder
-	b.WriteString(m.styles.boldText("Check dependency risk before you install."))
-	b.WriteString("\n")
-	b.WriteString(m.styles.dimText("Read-only metadata. Evidence-first results."))
-	b.WriteString("\n\n")
-	compact := m.contentHeight() < 18
+	width := m.contentWidth()
+	height := m.contentHeight()
+	size := selectLogoSize(width, height)
+	lines := []string{}
+
+	// 品牌块：大标识只在空间充足时出现，否则用紧凑形式，避免挤压导航。
+	if size == logoFull {
+		lines = append(lines, strings.Split(m.brandedLogo(size), "\n")...)
+		lines = append(lines, "")
+	} else {
+		lines = append(lines, m.brandedLogo(size))
+		lines = append(lines, m.styles.subtleText(tagline))
+		lines = append(lines, "")
+	}
+
+	layout := layoutFor(width, height)
+	if layout == layoutTwoColumn {
+		leftWidth, rightWidth := columnWidths(width)
+		left := m.menuNavLines(leftWidth)
+		right := m.menuContextLines(rightWidth)
+		lines = append(lines, joinColumns(left, right, leftWidth)...)
+	} else {
+		lines = append(lines, m.menuNavLines(width)...)
+		// 单列时只保留当前选中项的说明，避免整屏文字。
+		lines = append(lines, "")
+		lines = append(lines, wrapBlock(menuEntries[m.menuIndex].description, width, 2)...)
+		if height >= 22 {
+			lines = append(lines, "")
+			lines = append(lines, m.safetyLines(width)...)
+		}
+	}
+
+	if m.notice != "" {
+		lines = append(lines, "")
+		for _, line := range wrapBlock(m.notice, width, 2) {
+			lines = append(lines, m.styles.successText(line))
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// brandedLogo 渲染带入场动画的品牌标识；动画结束后完全静态。
+func (m *Model) brandedLogo(size logoSize) string {
+	if size != logoFull && m.brandVisible() && size == logoInline {
+		return m.styles.brandAccentText(shieldMark) + " " + m.styles.brandWordText(m.revealWord("DEPSCOPE"))
+	}
+	return renderLogo(m.styles, size)
+}
+
+// menuNavLines 生成导航列表。选中项同时使用箭头与高亮，无颜色时箭头仍可辨识。
+func (m *Model) menuNavLines(width int) []string {
+	lines := []string{m.sectionLabel("ACTIONS"), ""}
 	for index, entry := range menuEntries {
+		selected := index == m.menuIndex
 		marker := "  "
 		title := entry.title
-		if index == m.menuIndex {
+		shortcut := fmt.Sprintf("%d", index+1)
+		if selected {
 			marker = m.styles.accentText("› ")
 			title = m.styles.selectedText(title)
+		} else {
+			title = m.styles.boldText(title)
 		}
-		fmt.Fprintf(&b, "%s%d  %s\n", marker, index+1, title)
-		if compact {
-			continue
+		line := fmt.Sprintf("%s%s  %s", marker, m.styles.subtleText(shortcut), title)
+		// 选中行附带焦点指示，保证在无色环境下也一眼可辨。
+		if selected && m.anim.focus > 0 && m.anim.enabled {
+			line += m.styles.accentText(" ◂")
 		}
-		width := m.contentWidth() - 6
-		if width < 10 {
-			width = 10
-		}
-		for _, line := range wrapPlain(entry.description, width) {
-			b.WriteString("      " + m.styles.dimText(line) + "\n")
+		lines = append(lines, truncatePlain(line, width))
+	}
+	return lines
+}
+
+// menuContextLines 生成右侧的上下文说明与安全信息。
+func (m *Model) menuContextLines(width int) []string {
+	lines := []string{m.sectionLabel("SELECTED"), ""}
+	lines = append(lines, m.styles.boldText(menuEntries[m.menuIndex].title))
+	lines = append(lines, "")
+	lines = append(lines, wrapBlock(menuEntries[m.menuIndex].description, width, 0)...)
+	lines = append(lines, "")
+	lines = append(lines, m.safetyLines(width)...)
+	return lines
+}
+
+// safetyLines 是只读、证据优先的简短说明；不包含任何统计或健康指标。
+func (m *Model) safetyLines(width int) []string {
+	lines := []string{m.sectionLabel("HOW IT WORKS"), ""}
+	for _, text := range []string{
+		"Reads registry metadata and advisories. Never installs or executes packages.",
+		"Confirmed advisories and heuristic signals are reported separately.",
+		"Missing or failed checks are shown, never counted as clean.",
+	} {
+		wrapped := wrapBlock(text, width, 0)
+		for index, line := range wrapped {
+			prefix := "  "
+			if index == 0 {
+				prefix = m.styles.accentText("· ")
+			} else {
+				prefix = "  "
+			}
+			lines = append(lines, prefix+m.styles.subtleText(line))
 		}
 	}
-	if m.notice != "" {
-		b.WriteString("\n" + m.styles.successText(m.notice) + "\n")
-	}
-	return strings.TrimRight(b.String(), "\n")
+	return lines
+}
+
+// sectionLabel 渲染统一的区块标题，保持全应用一致的层级。
+func (m *Model) sectionLabel(text string) string {
+	return m.styles.accentText(strings.ToUpper(text))
 }
 
 func (m *Model) packageFormView() string {
@@ -247,6 +338,8 @@ func (m *Model) compareFormView() string {
 	b.WriteString(m.fieldBlock("Left package", 0))
 	b.WriteString("\n")
 	b.WriteString(m.fieldBlock("Right package", 1))
+	b.WriteString(m.wrappedDim("Tab or shift+tab switches fields · enter moves to the next empty field, then scans."))
+	b.WriteString("\n")
 	b.WriteString(m.wrappedDim("Both sides use the default ecosystem unless a package has an npm: or pypi: prefix."))
 	b.WriteString(m.formErrorView())
 	return strings.TrimRight(b.String(), "\n")
@@ -258,11 +351,11 @@ func (m *Model) inventoryView() string {
 	b.WriteString("\n")
 	b.WriteString(m.wrappedDim("DepScope will ask npm and pip for their installed package lists, then match exact installed versions against the configured security sources."))
 	b.WriteString("\n\n")
-	b.WriteString(m.styles.warningText("It will not install, upgrade, import, or execute any package."))
+	b.WriteString(m.wrappedStyled("It will not install, upgrade, import, or execute any package.", m.styles.warningText))
 	b.WriteString("\n\n")
 	b.WriteString(m.wrappedDim("Top-level npm global packages and the selected Python interpreter's default environment are covered. Other environments are not."))
 	b.WriteString("\n\n")
-	b.WriteString(m.styles.accentText("Press enter to start the read-only scan."))
+	b.WriteString(m.wrappedStyled("Press enter to start the read-only scan.", m.styles.accentText))
 	b.WriteString("\n")
 	return b.String()
 }
@@ -306,8 +399,9 @@ func (m *Model) settingsView() string {
 	b.WriteString(m.wrappedDim("Session-only preferences. Nothing is written to disk."))
 	b.WriteString("\n\n")
 	rows := []string{
-		"Default ecosystem   " + string(m.ecosystem),
-		"Color               " + m.colorDescription(),
+		labelValue("Default ecosystem", string(m.ecosystem), 20),
+		labelValue("Color", m.colorDescription(), 20),
+		labelValue("Animation", m.animationDescription(), 20),
 		"Back",
 	}
 	for index, row := range rows {
@@ -320,6 +414,8 @@ func (m *Model) settingsView() string {
 	}
 	b.WriteString("\n")
 	b.WriteString(m.wrappedDim("NO_COLOR and TERM=dumb always disable color, even when the setting is always. Settings affect new scans and the interface."))
+	b.WriteString("\n")
+	b.WriteString(m.wrappedDim("Animations can also be disabled for a session with DEPSCOPE_NO_ANIMATION=1."))
 	return strings.TrimRight(b.String(), "\n")
 }
 
@@ -330,17 +426,26 @@ func (m *Model) loadingView() string {
 	b.WriteString(m.wrappedDim("Real read-only requests are in progress. DepScope does not estimate or fabricate progress."))
 	b.WriteString("\n\n")
 	if m.cancelling {
-		b.WriteString(m.styles.warningText("Cancelling..."))
+		b.WriteString(m.wrappedStyled("Cancellation requested · waiting for in-flight requests to stop.", m.styles.warningText))
+		b.WriteString("\n")
+		b.WriteString(m.wrappedDim("No partial result will be shown. Press ctrl+c to quit immediately."))
 		b.WriteString("\n")
 	}
 	stage := strings.ToUpper(strings.TrimSpace(m.loading.Stage))
 	if stage == "" {
 		stage = "START"
 	}
-	fmt.Fprintf(&b, "%s  %s\n", m.styles.accentText("["+stage+"]"), m.styles.boldText(sanitizeLine(m.loading.Message)))
+	// 指示字符只表示“正在等待”，不代表完成的百分比；真实进度另行显示。
+	glyph := m.styles.accentText(m.spinnerGlyph())
+	fmt.Fprintf(&b, "%s %s  %s\n", glyph, m.styles.accentText("["+stage+"]"), m.styles.boldText(sanitizeLine(m.loading.Message)))
 	if m.loading.Total > 0 {
+		// 只有引擎给出真实完成数与总数时才显示进度条。
 		b.WriteString("\n")
-		b.WriteString(progressBar(m.loading.Completed, m.loading.Total, m.progressBarWidth()))
+		b.WriteString(m.styles.accentText(progressBar(m.loading.Completed, m.loading.Total, m.progressBarWidth())))
+		b.WriteString("\n")
+	} else {
+		b.WriteString("\n")
+		b.WriteString(m.wrappedDim("Work in progress; this request does not report a countable total."))
 		b.WriteString("\n")
 	}
 	if len(m.progressLog) > 0 {
@@ -417,15 +522,27 @@ func (m *Model) errorView() string {
 	return strings.TrimRight(b.String(), "\n")
 }
 
+// helpView 说明当前画面可用的按键，并列出全局快捷键。
 func (m *Model) helpView() string {
 	var b strings.Builder
 	b.WriteString(m.styles.boldText("KEYBOARD"))
 	b.WriteString("\n")
+	b.WriteString(m.wrappedDim("The section marked CURRENT applies to the screen you came from."))
+	b.WriteString("\n\n")
+
+	current := m.helpContext()
+	currentTitle := m.screenName(m.helpReturn)
+	b.WriteString(m.wrappedStyled("Current · "+currentTitle, m.styles.accentText))
+	b.WriteString("\n")
+	for _, line := range wrapPlain(current, m.contentWidth()-2) {
+		b.WriteString("  " + m.styles.boldText(line) + "\n")
+	}
+
 	sections := [][2]string{
-		{"Menus", "↑/↓ or j/k move · enter select · 1-6 jump · q quit"},
-		{"Forms", "tab next · enter continue · esc back · ctrl+u clear field"},
-		{"Reports", "↑/↓ select findings or scroll · enter opens finding detail"},
-		{"Report views", "c checks · d dependencies · i details · s summary · v sources · o overview"},
+		{"Menus", "↑/↓ or j/k move · enter select · 1-6 jump · esc back · q quit"},
+		{"Forms", "tab / shift+tab switch fields · enter continue · esc back · ctrl+u clear field"},
+		{"Reports", "↑/↓ select or scroll · enter opens the selected finding · esc overview"},
+		{"Report views", "o overview · c checks · d dependencies · i details · s summary · v sources · tab cycles"},
 		{"Scrolling", "pgup/pgdn page · home/end jump"},
 		{"Any time", "? opens this help · ctrl+c cancels and quits"},
 	}
@@ -440,6 +557,62 @@ func (m *Model) helpView() string {
 	return strings.TrimRight(b.String(), "\n")
 }
 
+// helpContext 返回来源画面可用的按键说明。
+func (m *Model) helpContext() string {
+	switch m.helpReturn {
+	case screenPackageForm:
+		return "type a package · enter scans · tab is not needed for a single field"
+	case screenProjectForm:
+		return "type a directory · enter scans · the default is the current directory"
+	case screenCompareForm:
+		return "tab moves between left and right · enter advances to the empty field, then scans"
+	case screenInventoryConfirm:
+		return "enter starts the read-only inventory scan"
+	case screenDemoPicker:
+		return "↑/↓ choose a scenario · enter runs it offline"
+	case screenSettings:
+		return "↑/↓ choose a row · ←/→ or enter changes the value"
+	case screenLoading:
+		return "esc requests cancellation · ctrl+c quits"
+	case screenReport:
+		return "↑/↓ moves through findings · enter opens detail · esc returns to the menu from the overview"
+	case screenComparison:
+		return "↑/↓ scroll · esc returns to the menu"
+	default:
+		return "↑/↓ move · enter selects the highlighted action · 1-6 open a workflow directly"
+	}
+}
+
+// screenName 返回画面的人类可读名称，用于帮助与页眉。
+func (m *Model) screenName(value screen) string {
+	switch value {
+	case screenMenu:
+		return "Start"
+	case screenPackageForm:
+		return "Check a single package"
+	case screenProjectForm:
+		return "Scan my project"
+	case screenCompareForm:
+		return "Compare two packages"
+	case screenInventoryConfirm:
+		return "Check my global installs"
+	case screenDemoPicker:
+		return "Offline demo"
+	case screenSettings:
+		return "Settings"
+	case screenLoading:
+		return "Working"
+	case screenReport:
+		return "Report"
+	case screenComparison:
+		return "Comparison"
+	case screenError:
+		return "Error"
+	default:
+		return "Help"
+	}
+}
+
 func (m *Model) fieldBlock(label string, index int) string {
 	if index >= len(m.formFields) {
 		return ""
@@ -450,7 +623,13 @@ func (m *Model) fieldBlock(label string, index int) string {
 		marker = m.styles.accentText("› ")
 		label = m.styles.selectedText(label)
 	} else {
-		label = m.styles.dimText(label)
+		label = m.styles.subtleText(label)
+	}
+	if len(m.formFields) > 1 {
+		label = fmt.Sprintf("%s %d/%d", label, index+1, len(m.formFields))
+	}
+	if focused {
+		label += m.styles.subtleText("  editing")
 	}
 	return marker + label + "\n" + "  " + m.fieldView(m.formFields[index], focused) + "\n"
 }
@@ -497,6 +676,19 @@ func (m *Model) formErrorView() string {
 	for _, line := range wrapPlain("! "+m.formError, m.contentWidth()-2) {
 		b.WriteString(m.styles.dangerText(line))
 		b.WriteString("\n")
+	}
+	return b.String()
+}
+
+// wrappedStyled 按当前内容宽度换行后用指定样式渲染每一行，
+// 避免带颜色的长句在窄终端中被终端自动折行而破坏布局。
+func (m *Model) wrappedStyled(text string, style func(string) string) string {
+	var b strings.Builder
+	for index, line := range wrapPlain(text, m.contentWidth()) {
+		if index > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString(style(line))
 	}
 	return b.String()
 }

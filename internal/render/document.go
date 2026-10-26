@@ -266,10 +266,36 @@ func (d Document) Overview(theme Theme, selected int) string {
 	w := newWriter(theme)
 	d.writeHeader(w)
 	d.writeAssessment(w)
+	d.writeOverviewSections(w)
 	d.writeCoverageGaps(w, 3)
 	d.writeFindingList(w, selected)
 	d.writeActions(w)
 	return strings.TrimRight(w.b.String(), "\n")
+}
+
+// writeOverviewSections 在总览中呈现概览类信息块（例如全局清单的分类计数），
+// 让最重要的数字出现在首屏，而不是埋在详细信息页里。
+// 安装包列表等长列表仍保留在详细信息页，避免总览被撑满。
+func (d Document) writeOverviewSections(w *writer) {
+	for _, section := range d.Sections {
+		if !isOverviewSection(section.Title) {
+			continue
+		}
+		w.blank()
+		w.heading(section.Title)
+		for _, line := range section.Lines {
+			if strings.TrimSpace(line) == "" {
+				w.blank()
+				continue
+			}
+			w.raw(line)
+		}
+	}
+}
+
+// isOverviewSection 判断信息块是否属于首屏需要的关键概览。
+func isOverviewSection(title string) bool {
+	return strings.EqualFold(strings.TrimSpace(title), "overview")
 }
 
 // Full 返回包含所有细节的完整纯文本报告。

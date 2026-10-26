@@ -229,6 +229,8 @@ depscope
 
 全局参数需写在命令之前：`--no-color`、`--color=auto|always|never`、`--help` 与 `--version`。没有终端时，`depscope` 会打印帮助信息，而不会启动交互式应用。
 
+交互式应用包含短暂的品牌入场、导航反馈、加载指示与完成过渡动画。设置 `DEPSCOPE_NO_ANIMATION=1`、`TERM=dumb` 或在 CI 环境中运行时，动画会自动关闭；关闭动画与颜色后所有界面仍然完整可用。`NO_COLOR` 只关闭颜色，不影响导航。
+
 | 退出码 | 含义 |
 | --- | --- |
 | `0` | 命令完成；报告状态不是 `failed` 或 `cancelled`（状态为 `incomplete` 时同样返回 `0`） |
