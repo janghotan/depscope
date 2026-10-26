@@ -15,7 +15,7 @@ DEPSCOPE_API_ADDR=127.0.0.1:8080 ./depscope-api
 
 The binary listens on `127.0.0.1:8080` by default and logs JSON to stderr. Construction does not contact npm, PyPI, or OSV; network access happens only when a scan request is served. `SIGTERM` and interrupt trigger graceful shutdown, waiting up to `DEPSCOPE_API_SHUTDOWN_TIMEOUT` for in-flight requests before forcing the listener closed.
 
-In this development environment, Go VCS stamping fails because of a broken `.git` directory above the repository. Use `go build -buildvcs=false -o depscope-api ./cmd/depscope-api` here. A normal checkout can use plain `go build`.
+Build the API with `go build -o depscope-api ./cmd/depscope-api`. A checkout with an invalid parent Git directory can use `-buildvcs=false` as an environment-specific workaround.
 
 ## Endpoints
 
