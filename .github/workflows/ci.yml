@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+      - name: Test
+        run: go test -count=1 ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Build
+        run: go build -trimpath ./...
+      - name: Scan Go dependencies and call paths
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+
+  go-cross-build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - name: Build CLI and API for target platform
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          go build -trimpath -ldflags='-buildid=' -o /tmp/depscope-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/depscope
+          go build -trimpath -ldflags='-buildid=' -o /tmp/depscope-api-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/depscope-api
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .nvmrc
+      - name: Install pnpm
+        run: npm install --global pnpm@12.14.0
+      - name: Install frontend dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+      - name: Check schema and generated types
+        working-directory: web
+        run: pnpm check:contract
+      - name: Lint
+        working-directory: web
+        run: pnpm lint
+      - name: Type check
+        working-directory: web
+        run: pnpm typecheck
+      - name: Unit and integration tests
+        working-directory: web
+        run: pnpm test
+      - name: Audit production dependencies
+        working-directory: web
+        run: pnpm audit --prod --audit-level high
+      - name: Build production site
+        working-directory: web
+        run: pnpm build
+      - name: Install browser for end-to-end tests
+        working-directory: web
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run browser tests
+        working-directory: web
+        run: pnpm test:e2e

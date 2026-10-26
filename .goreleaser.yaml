@@ -1,0 +1,104 @@
+version: 2
+project_name: depscope
+
+builds:
+  - id: cli
+    main: ./cmd/depscope
+    binary: depscope
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -buildid= -X main.version={{ .Version }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+  - id: api
+    main: ./cmd/depscope-api
+    binary: depscope-api
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -buildid=
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: cli
+    ids:
+      - cli
+    name_template: "{{ .ProjectName }}_cli_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+    wrap_in_directory: true
+    builds_info:
+      mtime: 2008-01-02T15:04:05Z
+    files:
+      - src: README.md
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+      - src: LICENSE*
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+      - src: docs/*.md
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+      - src: schemas/*.json
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+  - id: api
+    ids:
+      - api
+    name_template: "{{ .ProjectName }}_api_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+    wrap_in_directory: true
+    builds_info:
+      mtime: 2008-01-02T15:04:05Z
+    files:
+      - src: README.md
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+      - src: LICENSE*
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+      - src: docs/*.md
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+      - src: schemas/*.json
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
