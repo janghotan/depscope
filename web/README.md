@@ -7,7 +7,7 @@ The Next.js App Router website presents the shared Go scan report contract. Live
 - Node.js 24.x
 - pnpm 12.x
 - The Go API from the repository root for live scans and comparisons
-- Google Chrome or Chromium for browser tests; set `CHROMIUM_PATH` if it is not at `/usr/bin/google-chrome`
+- Playwright-managed Chromium for browser tests; set `CHROMIUM_PATH` only when using a custom browser executable
 
 Versions are pinned in `package.json`, `pnpm-lock.yaml`, and the repository `.nvmrc`.
 
@@ -53,10 +53,11 @@ pnpm typecheck
 pnpm test
 pnpm check:contract
 pnpm build
+pnpm exec playwright install chromium
 pnpm test:e2e
 ```
 
-Vitest tests use deterministic fixtures and mocked fetches. Playwright starts the built Next.js production server and uses the installed Chrome/Chromium executable; its live scan journey stubs only the browser-to-site response with a schema-valid report. The demo browser test verifies that it sends no scan or comparison request; the shared header may still check the same-origin health route. Go API provider behavior remains covered by the repository's offline Go tests.
+Vitest tests use deterministic fixtures and mocked fetches. Playwright starts the built Next.js production server and uses the Chromium executable installed by Playwright; its live scan journey stubs only the browser-to-site response with a schema-valid report. The demo browser test verifies that it sends no scan or comparison request; the shared header may still check the same-origin health route. Go API provider behavior remains covered by the repository's offline Go tests.
 
 ## Scope and limitations
 

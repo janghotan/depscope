@@ -11,7 +11,9 @@ export default defineConfig({
     baseURL,
     ...devices["Desktop Chrome"],
     launchOptions: {
-      executablePath: process.env.CHROMIUM_PATH ?? "/usr/bin/google-chrome",
+      ...(process.env.CHROMIUM_PATH
+        ? { executablePath: process.env.CHROMIUM_PATH }
+        : {}),
       args: ["--no-sandbox"],
     },
     trace: "retain-on-failure",
