@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { ScanReport } from "@/generated/report-types";
 import { CopyIcon, InfoIcon } from "@/components/icons";
+import { serializeReport } from "@/lib/export";
 import { plainTextReport } from "@/lib/format";
 
 type CopyState = "idle" | "copied" | "failed";
@@ -37,6 +38,20 @@ export function RecordActions({ report }: { report: ScanReport }) {
     timer.current = setTimeout(() => setState("idle"), 3000);
   }
 
+  function downloadJSON() {
+    const output = serializeReport(report);
+    const blob = new Blob([output.body], { type: output.contentType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = output.filename;
+    link.hidden = true;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
   return (
     <div data-no-print className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -55,6 +70,13 @@ export function RecordActions({ report }: { report: ScanReport }) {
         >
           Print record
         </button>
+        <button
+          type="button"
+          onClick={downloadJSON}
+          className="button-secondary text-xs"
+        >
+          Download JSON
+        </button>
         <span
           role="status"
           className="font-mono text-[0.6875rem] tracking-[0.08em] text-ink-soft uppercase"
@@ -72,7 +94,7 @@ export function RecordActions({ report }: { report: ScanReport }) {
           <InfoIcon className="h-3.5 w-3.5" />
           Plain-text record
         </summary>
-        <pre className="mt-2 max-h-72 overflow-auto border border-rule bg-paper p-3 font-mono text-xs leading-5 whitespace-pre-wrap">
+        <pre className="mt-2 max-h-72 overflow-auto border border-rule bg-paper-deep p-3 font-mono text-xs leading-5 whitespace-pre-wrap">
           {text}
         </pre>
       </details>

@@ -59,7 +59,7 @@ function DemoComparisonPreview() {
   ];
 
   return (
-    <div className="border border-rule-strong bg-paper-deep/40 p-4">
+    <div className="min-w-0 border border-rule-strong bg-paper-deep/40 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rule pb-2">
         <p className="rule-label text-ink-soft">Demo comparison preview</p>
         <span className="tag tag-medium">Demo data</span>
@@ -163,6 +163,16 @@ export default function HomePage() {
             </div>
             <div className="px-4 py-5 sm:px-6">
               <ScanForm />
+              <div className="mt-5 border-t border-rule pt-4">
+                <p className="rule-label text-ink-soft">Prefer the terminal?</p>
+                <p className="data-value mt-2 break-all text-xs text-ink">
+                  go install ./cmd/depscope
+                </p>
+                <Link href="/about#installation" className="link-arrow mt-3 w-fit text-sm">
+                  CLI quick start
+                  <ArrowRightIcon className="h-4 w-4" />
+                </Link>
+              </div>
             </div>
           </div>
 

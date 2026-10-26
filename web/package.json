@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit",
     "pretest": "pnpm run sync:contract",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "test:watch": "vitest",
     "sync:contract": "node scripts/sync-contract.mjs",
     "generate:types": "node scripts/generate-types.mjs",
@@ -32,6 +33,7 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@tailwindcss/turbopack": "4.3.3",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",

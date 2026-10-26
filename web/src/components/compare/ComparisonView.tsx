@@ -97,7 +97,7 @@ function SideError({ side }: { side: CompareSide }) {
     return null;
   }
   return (
-    <div className="mt-4 border border-oxide-deep bg-paper px-3 py-3">
+    <div className="mt-4 border border-oxide-deep bg-paper-deep px-3 py-3">
       <p className="rule-label text-oxide-deep">Side error</p>
       <p className="mt-1 text-sm leading-6">{side.error.message}</p>
       <p className="data-value mt-2 text-[0.6875rem] text-ink-soft">

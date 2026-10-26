@@ -79,8 +79,11 @@ function ScanAttempt({
           signal: controller.signal,
           cache: "no-store",
         });
+        if (!active || controller.signal.aborted) {
+          return;
+        }
         const payload: unknown = await response.json().catch(() => null);
-        if (!active) {
+        if (!active || controller.signal.aborted) {
           return;
         }
         if (!response.ok) {
@@ -177,7 +180,10 @@ function ScanAttempt({
             <button
               type="button"
               className="button-secondary text-xs"
-              onClick={() => controllerRef.current?.abort()}
+              onClick={() => {
+                controllerRef.current?.abort();
+                setState({ kind: "cancelled" });
+              }}
             >
               Cancel request
             </button>

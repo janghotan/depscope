@@ -116,7 +116,7 @@ export default async function ComparePage({
                 </div>
               </div>
               <div className="space-y-4 px-4 py-4">
-                <p className="data-value border border-rule bg-paper px-3 py-2 text-sm">
+                <p className="data-value border border-rule bg-paper-deep px-3 py-2 text-sm">
                   {parsed.issue.message}
                 </p>
                 <p className="text-sm leading-6 text-ink-soft">
@@ -152,7 +152,7 @@ export default async function ComparePage({
                   missing result.
                 </p>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <div className="border border-rule bg-paper px-4 py-3">
+                  <div className="border border-rule bg-paper-deep px-4 py-3">
                     <p className="rule-label text-ink-soft">The view shows</p>
                     <ul className="mt-2 space-y-1.5 text-sm leading-5">
                       <li>Recorded condition and findings counts</li>
@@ -161,7 +161,7 @@ export default async function ComparePage({
                       <li>Each side&apos;s full condition record</li>
                     </ul>
                   </div>
-                  <div className="border border-rule bg-paper px-4 py-3">
+                  <div className="border border-rule bg-paper-deep px-4 py-3">
                     <p className="rule-label text-ink-soft">The view does not</p>
                     <ul className="mt-2 space-y-1.5 text-sm leading-5">
                       <li>Choose a package for you</li>

@@ -5,11 +5,14 @@
 *.out
 coverage.*
 
-# Node.js 与 Next.js 产物（后续阶段使用）
+# 网页与 Node.js 构建产物
 node_modules/
 .next/
 out/
 *.tsbuildinfo
+web/test-results/
+web/playwright-report/
+.impeccable/review/
 
 # 合成 npm 库存夹具属于源码数据，而非已安装依赖。
 !testdata/fixtures/inventory/npm/node_modules/

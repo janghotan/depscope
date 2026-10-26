@@ -78,6 +78,32 @@ describe("ReportView", () => {
     ).toBeInTheDocument();
   });
 
+  it("lets keyboard users inspect a dependency node and open its evidence", async () => {
+    const user = userEvent.setup();
+    render(<ReportView report={demoFindingsReport()} />);
+
+    const packageButton = screen.getByRole("button", {
+      name: /Inspect package @depscope-demo\/transitive-package/,
+    });
+    packageButton.focus();
+    await user.keyboard("{Enter}");
+
+    const details = screen.getByRole("region", {
+      name: /Package details for @depscope-demo\/transitive-package/,
+    });
+    expect(within(details).getByText("direct")).toBeInTheDocument();
+
+    const evidenceButton = within(details).getByRole("button", {
+      name: /Open evidence/,
+    });
+    evidenceButton.focus();
+    await user.keyboard("{Enter}");
+
+    expect(
+      screen.getByRole("region", { name: /Evidence for/ }),
+    ).toBeInTheDocument();
+  });
+
   it("renders untrusted text as text, never as markup", () => {
     const base = demoFindingsReport();
     const report: ScanReport = {

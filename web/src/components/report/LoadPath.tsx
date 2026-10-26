@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import type {
   DependencyGraph,
   DependencyNode,
@@ -76,6 +78,8 @@ function NodeRecord({
   anchorFor,
   openIds,
   onOpenFinding,
+  selectedNodeId,
+  onSelectNode,
   descendants,
 }: {
   node: DependencyNode;
@@ -84,10 +88,14 @@ function NodeRecord({
   anchorFor: ReadonlyMap<string, string>;
   openIds: ReadonlySet<string>;
   onOpenFinding: (id: string) => void;
+  selectedNodeId: string | null;
+  onSelectNode: (id: string | null) => void;
   descendants: TreeItem[];
 }) {
   const nodeFindings = findingsForNode(node, findings);
   const path = pathLabel(node, graph);
+  const selected = selectedNodeId === node.id;
+  const detailsId = `load-node-details-${encodeURIComponent(node.id)}`;
 
   return (
     <li className={`load-node ${node.relationship === "root" ? "load-root" : ""}`}>
@@ -95,11 +103,19 @@ function NodeRecord({
         <span className="rule-label text-ink-soft">
           {node.relationship}
         </span>
-        <span className="data-value text-sm font-semibold break-all text-ink">
+        <button
+          type="button"
+          aria-label={`Inspect package ${node.package.name}`}
+          aria-expanded={selected}
+          aria-controls={detailsId}
+          onClick={() => onSelectNode(selected ? null : node.id)}
+          className="data-value text-left text-sm font-semibold break-all text-ink underline decoration-rule-strong underline-offset-4 hover:decoration-ink"
+        >
+          <span className="sr-only">Inspect package </span>
           {node.package.name}
-        </span>
+        </button>
         <span className="data-value text-xs text-ink-soft">
-          {node.version ?? "unresolved"}
+          {node.version ? `@ ${node.version}` : "version unresolved"}
         </span>
         {nodeFindings.length > 0 ? (
           <span className="rule-label text-safety-deep">
@@ -146,6 +162,65 @@ function NodeRecord({
         </ul>
       ) : null}
 
+      <div
+        id={detailsId}
+        role="region"
+        aria-label={`Package details for ${node.package.name}`}
+        hidden={!selected}
+        className="mt-3 border border-rule bg-paper-deep/60 p-3"
+      >
+          <dl className="grid gap-x-5 gap-y-2 text-xs sm:grid-cols-2">
+            <div>
+              <dt className="rule-label text-ink-soft">Package</dt>
+              <dd className="data-value mt-1 break-all text-ink">
+                {node.package.ecosystem} · {node.package.name}
+              </dd>
+            </div>
+            <div>
+              <dt className="rule-label text-ink-soft">Relationship</dt>
+              <dd className="mt-1 text-ink">{node.relationship}</dd>
+            </div>
+            <div>
+              <dt className="rule-label text-ink-soft">Resolved version</dt>
+              <dd className="data-value mt-1 text-ink">
+                {node.version ?? "unresolved"}
+              </dd>
+            </div>
+            <div>
+              <dt className="rule-label text-ink-soft">Dependency path</dt>
+              <dd className="mt-1 break-words text-ink">
+                {path ?? node.package.name}
+              </dd>
+            </div>
+          </dl>
+          <div className="mt-3 border-t border-rule pt-3">
+            <p className="rule-label text-ink-soft">Associated evidence</p>
+            {nodeFindings.length > 0 ? (
+              <ul className="mt-2 space-y-2">
+                {nodeFindings.map((finding) => (
+                  <li key={`detail-${node.id}-${finding.id}`}>
+                    <button
+                      type="button"
+                      className="link-quiet text-left text-sm font-semibold text-ink"
+                      aria-label={`Open evidence for ${finding.title}`}
+                      onClick={() => onOpenFinding(finding.id)}
+                    >
+                      {finding.kind === "confirmed"
+                        ? "Confirmed · "
+                        : "Heuristic · "}
+                      {finding.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-sm text-ink-soft">
+                No finding is associated with this package in the report.
+              </p>
+            )}
+          </div>
+      </div>
+
       {descendants.length > 0 ? (
         <ol className="mt-4 space-y-4">
           {descendants.map((child) => (
@@ -157,6 +232,8 @@ function NodeRecord({
               anchorFor={anchorFor}
               openIds={openIds}
               onOpenFinding={onOpenFinding}
+              selectedNodeId={selectedNodeId}
+              onSelectNode={onSelectNode}
               descendants={child.children}
             />
           ))}
@@ -182,6 +259,7 @@ export function LoadPath({
   idPrefix?: string;
 }) {
   const { root, truncated } = buildTree(graph);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const headingId = `${idPrefix}load-path-heading`;
 
   return (
@@ -205,6 +283,8 @@ export function LoadPath({
             anchorFor={anchorFor}
             openIds={openIds}
             onOpenFinding={onOpenFinding}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={setSelectedNodeId}
             descendants={root.children}
           />
         </ol>

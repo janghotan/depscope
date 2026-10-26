@@ -76,7 +76,7 @@ export default async function ScanPage({ searchParams }: PageProps<"/scan">) {
                 </div>
               </div>
               <div className="space-y-4 px-4 py-4">
-                <p className="data-value border border-rule bg-paper px-3 py-2 text-sm">
+                <p className="data-value border border-rule bg-paper-deep px-3 py-2 text-sm">
                   {parsed.issue.message}
                 </p>
                 <p className="text-sm leading-6 text-ink-soft">

@@ -3,26 +3,26 @@
 @import "tailwindcss";
 
 @theme {
-  --color-shell: #16232b;
-  --color-shell-raised: #1e3039;
-  --color-shell-line: #33474f;
-  --color-paper: #f4efe4;
-  --color-sheet: #fbf7ed;
-  --color-paper-deep: #e8e0cf;
-  --color-ink: #1d2328;
-  --color-ink-soft: #46535a;
-  --color-ink-faint: #59636a;
-  --color-rule: #c9bfab;
-  --color-rule-strong: #9d927d;
-  --color-safety: #d95b2b;
-  --color-safety-deep: #a8431c;
-  --color-amber: #d9a441;
-  --color-amber-deep: #7a530c;
-  --color-inspection: #3e7a63;
-  --color-inspection-deep: #2f6452;
-  --color-oxide: #a23b2a;
-  --color-oxide-deep: #7f2d20;
-  --color-night: #0e1519;
+  --color-shell: #0d1519;
+  --color-shell-raised: #17252c;
+  --color-shell-line: #33434a;
+  --color-paper: #dce5e5;
+  --color-sheet: #152229;
+  --color-paper-deep: #203039;
+  --color-ink: #e5eceb;
+  --color-ink-soft: #b8c5c8;
+  --color-ink-faint: #91a1a6;
+  --color-rule: #394a51;
+  --color-rule-strong: #586b72;
+  --color-safety: #f1855c;
+  --color-safety-deep: #ffad8c;
+  --color-amber: #f0c46a;
+  --color-amber-deep: #f0c46a;
+  --color-inspection: #74b997;
+  --color-inspection-deep: #8ed0ad;
+  --color-oxide: #f1855c;
+  --color-oxide-deep: #ffad8c;
+  --color-night: #0b1114;
 
   --font-sans: "Overpass Variable", "Overpass", ui-sans-serif, system-ui,
     sans-serif;
@@ -46,7 +46,7 @@
 
   body {
     min-height: 100%;
-    background-color: var(--color-paper);
+    background-color: var(--color-shell);
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-synthesis: none;
@@ -220,8 +220,8 @@
 
   .button-primary:disabled {
     cursor: not-allowed;
-    color: var(--color-rule-strong);
-    background-color: var(--color-paper-deep);
+    color: var(--color-ink-faint);
+    background-color: var(--color-shell-raised);
     border-color: var(--color-rule-strong);
   }
 
@@ -242,7 +242,7 @@
 
   .button-secondary:hover:not(:disabled) {
     border-color: var(--color-ink);
-    background-color: var(--color-paper-deep);
+    background-color: var(--color-shell-raised);
   }
 
   .button-secondary:disabled {
@@ -356,7 +356,7 @@
   }
 
   .segmented label:hover span {
-    background-color: var(--color-paper-deep);
+    background-color: var(--color-shell-raised);
     color: var(--color-ink);
   }
 

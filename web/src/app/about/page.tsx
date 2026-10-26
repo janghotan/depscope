@@ -75,6 +75,9 @@ const SECTIONS = [
   { id: "demo", label: "Demo data" },
   { id: "api", label: "API and access" },
   { id: "accessibility", label: "Accessibility" },
+  { id: "installation", label: "CLI installation" },
+  { id: "sources", label: "Sources and methodology" },
+  { id: "contributing", label: "Contributing" },
 ];
 
 export default function AboutPage() {
@@ -222,7 +225,9 @@ export default function AboutPage() {
               and every demo surface is labelled <strong>DEMO DATA</strong>.
             </p>
             <p>
-              Demo pages make no network request. A demo record is not a live
+              Demo pages make no scan or comparison request; the shared header
+              may check the local API health status. Fixture records remain
+              available when the API is offline. A demo record is not a live
               scan and must never be used as a security result.{" "}
               <Link href="/demo" className="link-quiet">
                 Open the demo specimens
@@ -287,6 +292,63 @@ export default function AboutPage() {
               Motion is limited and respects <code>prefers-reduced-motion</code>.
               The record can be printed or copied as plain text. No formal
               conformance certification is claimed.
+            </p>
+          </section>
+
+          <section aria-labelledby="installation">
+            <h2 id="installation">7. Install the CLI</h2>
+            <p>
+              From a checkout at the repository root, install and run the Go CLI:
+            </p>
+            <pre className="overflow-x-auto border border-rule bg-shell p-4 text-sm text-paper">
+              <code>{"go install ./cmd/depscope\ndepscope scan lodash"}</code>
+            </pre>
+            <p>
+              Use <code>depscope help</code> for available commands. The CLI
+              and website both use the same Go security engine. The scan checks
+              a package record and does not install or execute the package.
+            </p>
+          </section>
+
+          <section aria-labelledby="sources">
+            <h2 id="sources">8. Sources and methodology</h2>
+            <p>
+              Live records use the npm Registry or PyPI for package metadata and
+              OSV.dev for version-specific vulnerability advisories. Each
+              record lists the sources and checks it actually completed. The
+              API and engine documentation in the repository describe request
+              limits, matching semantics, and provider failure behavior.
+            </p>
+            <p>
+              Confirmed findings come from matched advisory evidence. Typosquat
+              similarity and inspected npm lifecycle scripts are heuristic
+              signals. Maintenance metadata is context, not a security finding.
+              Missing, failed, or unavailable checks remain visible and make
+              coverage incomplete; they are never interpreted as clean.
+            </p>
+            <p>
+              The site currently scans a single npm or PyPI package and
+              compares two package records. It does not scan local projects,
+              lockfiles, or installed environments. Project scan support is
+              limited to npm lockfile v2/v3 and exact-pinned Python
+              <code>requirements.txt</code> in the CLI; Python transitives,
+              workspaces, and peer dependencies are not resolved.
+            </p>
+          </section>
+
+          <section aria-labelledby="contributing">
+            <h2 id="contributing">9. Contributing</h2>
+            <p>
+              Contributions should preserve the canonical report schema and
+              shared Go engine boundary. The repository includes architecture,
+              contract, risk-rule, and API documentation, plus deterministic
+              fixtures and offline tests. Start with <code>AGENTS.md</code> and
+              run the Go and web checks described in the repository README.
+            </p>
+            <p>
+              Do not add public network calls to default tests, execute package
+              code, or present unavailable evidence as safe. Report new source
+              behavior with sanitized fixtures and contract validation.
             </p>
           </section>
 

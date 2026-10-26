@@ -1,8 +1,11 @@
 import Link from "next/link";
 
 import { ScopeMark } from "@/components/icons";
+import { repositoryUrl } from "@/lib/repository-url";
 
 export function SiteFooter() {
+  const repository = repositoryUrl(process.env.DEPSCOPE_REPOSITORY_URL);
+
   return (
     <footer
       data-site-footer
@@ -58,6 +61,21 @@ export function SiteFooter() {
               <Link href="/about#accessibility" className="link-quiet hover:text-paper">
                 Accessibility
               </Link>
+            </li>
+            <li>
+              {repository ? (
+                <a
+                  href={repository}
+                  className="link-quiet hover:text-paper"
+                  rel="noreferrer"
+                >
+                  Source repository
+                </a>
+              ) : (
+                <Link href="/about#contributing" className="link-quiet hover:text-paper">
+                  Contribution guide
+                </Link>
+              )}
             </li>
           </ul>
         </div>
