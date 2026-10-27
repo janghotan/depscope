@@ -1,0 +1,16 @@
+{
+  "name": "context-app",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "prod-parent": "^1.0.0",
+    "shared-lib": "^1.0.0"
+  },
+  "devDependencies": {
+    "dev-tool": "^2.0.0",
+    "shared-dev": "^1.0.0"
+  },
+  "optionalDependencies": {
+    "optional-addon": "^3.0.0"
+  }
+}

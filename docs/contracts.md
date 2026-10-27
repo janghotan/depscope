@@ -245,8 +245,9 @@ Scan(ctx context.Context, root string, opts Options) (Result, error)
 | Field | Purpose |
 | --- | --- |
 | `Root` | Absolute project root that was scanned |
-| `Formats` | Each detected format with resolved and unresolved package counts |
+| `Formats` | Each detected format with resolved and unresolved package counts and a `complete`/`partial`/`unknown` resolution state |
 | `Dependencies` | Synthetic root ID `project`, shared dependency nodes, and per-node declared constraints |
+| `FindingContexts` | Dependency context keyed by project finding ID; project-internal and not part of the v1 wire report |
 
 `DependencyNode` values keep the shared shape: stable ID, package identity, nullable version, relationship, path, outgoing edges. Findings carry dependency-path evidence from the project root to the flagged package.
 
@@ -277,6 +278,27 @@ A missing lockfile produces `LOCKFILE_MISSING`, unresolved direct nodes, and an 
 Representative limitation codes include `NO_SUPPORTED_MANIFEST`, `UNSUPPORTED_FORMAT`, `MANIFEST_MISSING`, `MALFORMED_MANIFEST`, `MALFORMED_LOCKFILE`, `UNSUPPORTED_LOCKFILE_VERSION`, `LOCKFILE_MISSING`, `DIRECT_DEPENDENCY_UNRESOLVED`, `TRANSITIVE_DEPENDENCY_UNRESOLVED`, `PYTHON_TRANSITIVE_UNAVAILABLE`, `ENVIRONMENT_MARKER_UNSUPPORTED`, `UNSUPPORTED_REQUIREMENT_SOURCE`, `EDITABLE_UNSUPPORTED`, `WORKSPACES_NOT_SCANNED`, `PEER_DEPENDENCIES_NOT_SCANNED`, `CONFLICTING_PROJECT_METADATA`, `CONFLICTING_DEPENDENCY_METADATA`, `CYCLIC_DEPENDENCY`, `DEPENDENCY_DEPTH_EXCEEDED`, `NODE_LIMIT_EXCEEDED`, `FILE_LIMIT_EXCEEDED`, and the include-safety codes `INCLUDE_CYCLE`, `INCLUDE_LIMIT_EXCEEDED`, `INCLUDE_OUTSIDE_ROOT`, and `INCLUDE_UNREADABLE`.
 
 Every unresolved version is reported explicitly and prevents a clean result.
+
+### Dependency context
+
+Each finding produced from a resolved project dependency gets an entry in `Result.FindingContexts`, keyed by the finding ID after project namespacing. `DependencyContext` contains:
+
+| Field | Meaning |
+| --- | --- |
+| `Relationship` | `direct` when any matching graph node is a direct dependency, otherwise `transitive` |
+| `Scopes` | `production`, `development`, `optional`, or `unknown`, sorted; one package can carry more than one scope |
+| `Resolution` | `complete` when the format's `:dependency-resolution` check succeeded, `partial` when it did not, `unknown` when no such check exists |
+| `Evidence` | Manifest or lockfile path, plus the field that supplied the classification when one exists |
+
+Rules:
+
+- npm direct scopes come from the `dependencies`, `devDependencies`, and `optionalDependencies` sections. Resolved direct entries are unioned with the lockfile entry's `dev`, `optional`, or `devOptional` flags so production reachability is not understated.
+- npm transitive scopes come only from lockfile flags. An entry with no flag is `production` under npm's own semantics; an unresolved transitive edge is `unknown`.
+- Python `requirements.txt` has no section or lockfile flag metadata, so every Python node is `unknown`. Python resolution is always `partial` because transitive dependencies are not resolved.
+- Classification is never inferred from package names, install locations, or conventions. Missing classification is never presented as production.
+- Dependency paths are enumerated from the synthetic `project` root with a per-node bound. Node `DependencyPath` remains the single traversal path; findings additionally carry up to five `dependency-path` evidence records. A cycle cannot repeat a node within a path.
+- Context is descriptive only. It does not alter finding IDs, advisory text, severity, risk score, or status, and it never suppresses or downgrades a development or transitive finding. It must not be presented as exploitability or code reachability.
+- Project results still do not enter the v1 wire schema (D16). The terminal renders context from `Result.FindingContexts`; the HTTP API and website do not expose project results.
 
 ## 6.3 Global inventory contract
 

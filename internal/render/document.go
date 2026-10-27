@@ -55,6 +55,8 @@ type Document struct {
 	Sources     []model.SourceReference
 	Limitations []model.Limitation
 	Sections    []Section
+	// FindingContexts 保存项目扫描提供的依赖上下文；包与清单报告保持为空。
+	FindingContexts map[string]project.DependencyContext
 }
 
 // presentationLanguage 解析可选语言；未提供时使用英语，保证 CLI 输出不变。
@@ -122,6 +124,7 @@ func FromProject(result project.Result, languages ...i18n.Language) Document {
 			catalog.Format(i18n.KeyReportManifestLine, format.ManifestPath),
 			catalog.Format(i18n.KeyReportLockfileLine, lockfile),
 			catalog.Format(i18n.KeyReportResolvedLine, format.ResolvedPackages, format.UnresolvedPackages),
+			catalog.Format(i18n.KeyReportFormatResolutionLine, resolutionLabel(catalog, format.Resolution)),
 		)
 	}
 	if len(formats) == 0 {
@@ -129,20 +132,21 @@ func FromProject(result project.Result, languages ...i18n.Language) Document {
 	}
 	sections := []Section{{Title: catalog.Text(i18n.KeyReportFormatsTitle), Lines: formats}}
 	return sanitizeDocument(Document{
-		Language:    language,
-		Title:       catalog.Text(i18n.KeyReportProjectTitle),
-		Target:      result.Root,
-		Subtitle:    catalog.Text(i18n.KeyReportSubtitleProject),
-		DataMode:    model.DataModeLive,
-		ScannedAt:   result.ScannedAt,
-		Status:      result.Status,
-		Summary:     result.Summary,
-		Findings:    result.Findings,
-		Checks:      result.Checks,
-		Tree:        treeFromProject(result.Dependencies, language),
-		Sources:     result.Sources,
-		Limitations: result.Limitations,
-		Sections:    sections,
+		Language:        language,
+		Title:           catalog.Text(i18n.KeyReportProjectTitle),
+		Target:          result.Root,
+		Subtitle:        catalog.Text(i18n.KeyReportSubtitleProject),
+		DataMode:        model.DataModeLive,
+		ScannedAt:       result.ScannedAt,
+		Status:          result.Status,
+		Summary:         result.Summary,
+		Findings:        result.Findings,
+		Checks:          result.Checks,
+		Tree:            treeFromProject(result.Dependencies, language),
+		Sources:         result.Sources,
+		Limitations:     result.Limitations,
+		Sections:        sections,
+		FindingContexts: result.FindingContexts,
 	})
 }
 
@@ -318,6 +322,7 @@ func treeFromProject(graph project.Graph, language i18n.Language) *Tree {
 		if node.Constraint != "" {
 			label += catalog.Format(i18n.KeyReportTreeDeclared, node.Constraint)
 		}
+		label += treeScopeTag(catalog, node.Scopes)
 		nodes[node.ID] = TreeNode{Label: label, Children: append([]string(nil), node.Dependencies...)}
 	}
 	for _, node := range graph.Nodes {
@@ -782,6 +787,9 @@ func (d Document) writeFindingList(w *writer, selected int) {
 		if finding.Risk != nil {
 			line += theme.format(i18n.KeyReportRiskSuffix, finding.Risk.Score)
 		}
+		if context, ok := d.FindingContexts[finding.ID]; ok {
+			line += " · " + compactContextLabel(i18n.For(theme.Lang()), context)
+		}
 		w.paragraph(line, "     ")
 	}
 }
@@ -801,6 +809,10 @@ func (d Document) writeFinding(w *writer, index int, finding model.Finding) {
 		w.keyValue(theme.text(i18n.KeyReportLabelRisk), fmt.Sprintf("%.0f/100", finding.Risk.Score))
 	} else {
 		w.keyValue(theme.text(i18n.KeyReportLabelRisk), theme.text(i18n.KeyReportRiskNotComputed))
+	}
+	if context, ok := d.FindingContexts[finding.ID]; ok {
+		w.blank()
+		d.writeDependencyContext(w, context)
 	}
 	w.blank()
 	w.paragraph(finding.Description, "  ")
@@ -826,6 +838,28 @@ func (d Document) writeFinding(w *writer, index int, finding model.Finding) {
 		w.headingWith(theme.Icons.Action, []string{ansiAccent}, theme.text(i18n.KeyReportHeadingRemediation))
 		w.paragraph(*finding.Remediation, "  ")
 	}
+}
+
+func (d Document) writeDependencyContext(w *writer, context project.DependencyContext) {
+	theme := w.theme
+	catalog := i18n.For(theme.Lang())
+	w.heading(theme.text(i18n.KeyReportHeadingDependencyContext))
+	w.keyValue(theme.text(i18n.KeyReportLabelRelationship), relationshipLabel(catalog, context.Relationship))
+	w.keyValue(theme.text(i18n.KeyReportLabelScope), scopeLabels(catalog, context.Scopes))
+	if hasUnknownScope(context.Scopes) {
+		w.paragraph(theme.text(i18n.KeyReportScopeUnknownNote), "      ")
+	}
+	w.keyValue(theme.text(i18n.KeyReportLabelResolution), resolutionLabel(catalog, context.Resolution))
+	switch context.Resolution {
+	case project.DependencyResolutionPartial:
+		w.paragraph(theme.text(i18n.KeyReportResolutionPartialNote), "      ")
+	case project.DependencyResolutionUnknown:
+		w.paragraph(theme.text(i18n.KeyReportResolutionUnknownNote), "      ")
+	}
+	if evidence := contextEvidenceLabels(context.Evidence); evidence != "" {
+		w.keyValue(theme.text(i18n.KeyReportLabelContextEvidence), evidence)
+	}
+	w.paragraph(theme.text(i18n.KeyReportContextDisclaimer), "  ")
 }
 
 func (d Document) writeChecks(w *writer) {

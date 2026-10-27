@@ -96,6 +96,12 @@ func parsePythonProject(ctx context.Context, root string, candidate Candidate, b
 	}
 
 	nodes, resolved, unresolved, conflicts := buildPythonNodes(parser)
+	// requirements.txt 没有生产/开发分节，也没有锁文件标记；
+	// 因此依赖分类只能是 unknown，证据仅指向被读取的清单文件。
+	for index := range nodes {
+		nodes[index].Scopes = []DependencyScope{DependencyScopeUnknown}
+		nodes[index].ScopeEvidence = []DependencyEvidence{{Path: candidate.ManifestPath}}
+	}
 	result.nodes = nodes
 	manifestStatus := model.CheckSucceeded
 	manifestMessage := fmt.Sprintf("Read requirements.txt with %d direct requirement(s): %d exact version(s) resolved and %d unresolved.", len(nodes), resolved, unresolved)

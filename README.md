@@ -50,7 +50,7 @@ A scan that could not read OSV is not a scan that found nothing. DepScope report
 
 - **Interactive terminal UI (Bubble Tea)** — menu-driven scans, comparisons, project scans, and global inventory, with real progress from the engine, cancellable scans, and keyboard-only navigation.
 - **Single-package scans** — `npm` and `PyPI` releases, optionally pinned to an exact version, from the CLI or TUI.
-- **Project dependency scans** — npm `package.json` + `package-lock.json` (lockfile version 2 or 3) resolved through the lockfile graph, and Python `requirements.txt` with exact `==`/`===` pins.
+- **Project dependency scans** — npm `package.json` + `package-lock.json` (lockfile version 2 or 3) resolved through the lockfile graph, and Python `requirements.txt` with exact `==`/`===` pins. Each finding includes evidence-backed dependency context: direct or transitive, production/development/optional/unknown, a bounded path from the project root, the manifest or lockfile field used, and whether resolution was complete or partial.
 - **Global inventory** — read-only listing of top-level global npm packages and the selected Python interpreter's pip environment, with an overview that separates installed packages, affected packages, and advisory matches.
 - **Comparison** — scan two packages side by side with independent side failures preserved.
 - **Local HTTP API** — `GET /healthz`, `POST /api/v1/scan`, and `POST /api/v1/compare`, returning canonical `ScanReport` v1 values validated before they leave the process.
@@ -343,6 +343,7 @@ DepScope does **not** provide:
 - comprehensive malware detection;
 - maintainer account-takeover detection;
 - exploitability analysis or proof-of-concept validation;
+- code-reachability analysis — dependency context shows how a package enters a project, not whether vulnerable code is reachable;
 - package code inspection — it never downloads or executes the packages it scans;
 - popularity or download-count data.
 
@@ -361,6 +362,8 @@ Known format limitations:
 - npm and PyPI are the only supported ecosystems.
 
 Unsupported or unresolved input is reported as `incomplete` — never approximated with the latest version.
+
+Dependency context comes only from supported metadata. npm scopes use manifest sections and lockfile `dev`/`optional` flags; `requirements.txt` has no scope metadata, so Python scope is reported as `unknown` and its resolution as `partial`. Context never changes advisory severity, finding identity, or risk, and it does not imply exploitability or code reachability.
 
 ## Architecture
 
