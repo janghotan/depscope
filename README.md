@@ -54,6 +54,7 @@ A scan that could not read OSV is not a scan that found nothing. DepScope report
 - **Global inventory** — read-only listing of top-level global npm packages and the selected Python interpreter's pip environment, with an overview that separates installed packages, affected packages, and advisory matches.
 - **Comparison** — scan two packages side by side with independent side failures preserved.
 - **Local HTTP API** — `GET /healthz`, `POST /api/v1/scan`, and `POST /api/v1/compare`, returning canonical `ScanReport` v1 values validated before they leave the process.
+- **Model Context Protocol (MCP) server** — `depscope mcp` and dedicated `depscope-mcp` binary running over `stdio` using the official Go SDK, exposing `scan_project`, `scan_package`, `get_finding_details`, and `get_scan_summary` with strict directory allowlisting and defensive boundaries (see [docs/mcp.md](docs/mcp.md)).
 - **Website** — Next.js app for single scans, two-package comparison, and offline demo records that make no API requests.
 - **Offline demo** — deterministic, network-free scenarios that run entirely through the shared engine, clearly labelled on every surface.
 - **Shared report contract** — one JSON Schema (`schemas/scan-report.v1.schema.json`) drives Go validation and generated TypeScript types, so the terminal, API, and website interpret status the same way.
@@ -161,6 +162,7 @@ Install Go 1.26.10 or later, check out this repository, then build:
 ```sh
 go build -trimpath -o bin/depscope ./cmd/depscope
 go build -trimpath -o bin/depscope-api ./cmd/depscope-api
+go build -trimpath -o bin/depscope-mcp ./cmd/depscope-mcp
 ```
 
 Verify the build:
@@ -224,6 +226,7 @@ All commands and exit codes:
 | `depscope inventory` | List global npm and Python packages |
 | `depscope demo [scenario]` | Run an offline deterministic demo |
 | `depscope demo list` | List demo scenarios |
+| `depscope mcp [--allowed-path DIR]` | Run local Model Context Protocol (MCP) server over stdio |
 | `depscope help` | Show usage |
 | `depscope version` | Show the version |
 

@@ -14,6 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/janghotan/depscope/internal/app"
+	"github.com/janghotan/depscope/internal/mcp"
 	"github.com/janghotan/depscope/internal/model"
 	"github.com/janghotan/depscope/internal/render"
 	"github.com/janghotan/depscope/internal/tui"
@@ -142,6 +143,8 @@ func Run(ctx context.Context, opts Options) int {
 		return environment.inventory(rest)
 	case "demo":
 		return environment.demo(rest)
+	case "mcp":
+		return environment.mcp(rest)
 	default:
 		fmt.Fprintf(errOut, "depscope: unknown command %q\n", render.Sanitize(command))
 		fmt.Fprintln(errOut, "Run 'depscope help' to see available commands.")
@@ -364,6 +367,46 @@ func (e commandEnvironment) demo(args []string) int {
 	return statusExitCode(report.Status)
 }
 
+func (e commandEnvironment) mcp(args []string) int {
+	var allowedPaths []string
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch {
+		case arg == "--allowed-path" || arg == "-allowed-path":
+			if i+1 >= len(args) {
+				return e.usage("usage: depscope mcp [--allowed-path <dir>]...", "Flag --allowed-path requires a directory path.")
+			}
+			allowedPaths = append(allowedPaths, args[i+1])
+			i++
+		case strings.HasPrefix(arg, "--allowed-path="):
+			allowedPaths = append(allowedPaths, strings.TrimPrefix(arg, "--allowed-path="))
+		case strings.HasPrefix(arg, "-allowed-path="):
+			allowedPaths = append(allowedPaths, strings.TrimPrefix(arg, "-allowed-path="))
+		default:
+			return e.usage(fmt.Sprintf("unknown flag %q", arg), "Usage: depscope mcp [--allowed-path <dir>]...")
+		}
+	}
+
+	server, err := mcp.NewServer(mcp.ServerOptions{
+		Service:      e.service,
+		AllowedPaths: allowedPaths,
+		LogOutput:    e.errOut,
+	})
+	if err != nil {
+		printError(e.errOut, err)
+		return 1
+	}
+
+	if err := server.ServeStdio(e.ctx); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return 130
+		}
+		printError(e.errOut, err)
+		return 1
+	}
+	return 0
+}
+
 func (e commandEnvironment) usage(message, hint string) int {
 	fmt.Fprintf(e.errOut, "depscope: %s\n", render.Sanitize(message))
 	if hint != "" {
@@ -437,6 +480,7 @@ Usage:
   depscope inventory                List global npm and Python packages
   depscope demo [scenario]          Run an offline deterministic demo
   depscope demo list                List demo scenarios
+  depscope mcp [--allowed-path DIR] Run local MCP server over stdio
   depscope help                     Show this help
   depscope version                  Show the version
 
