@@ -55,10 +55,16 @@ func ecosystemCheckID(ecosystem model.Ecosystem, suffix string) string {
 
 func mergeBatchResults(result *Result, parsed []parsedProject, batch []engine.PackageScanResult) {
 	nodes := make(map[string]Node)
-	paths := make(map[string][][]string)
 	stats := make(map[model.Ecosystem]*projectScanStats)
 	projectSources := make(map[model.Ecosystem]string)
 	resolvedSeen := make(map[model.Ecosystem]map[string]struct{})
+	formats := make(map[model.Ecosystem]FormatInfo, len(result.Formats))
+	for _, format := range result.Formats {
+		formats[format.Ecosystem] = format
+	}
+	if result.FindingContexts == nil {
+		result.FindingContexts = map[string]DependencyContext{}
+	}
 
 	for _, project := range parsed {
 		ecosystem := project.candidate.Ecosystem
@@ -82,7 +88,6 @@ func mergeBatchResults(result *Result, parsed []parsedProject, batch []engine.Pa
 				resolvedSeen[ecosystem][key] = struct{}{}
 				item.resolved++
 			}
-			paths[key] = append(paths[key], node.DependencyPath)
 		}
 		for _, check := range project.checks {
 			if check.ID == ecosystemCheckID(ecosystem, "dependency-resolution") && check.Status != model.CheckSucceeded {
@@ -91,10 +96,7 @@ func mergeBatchResults(result *Result, parsed []parsedProject, batch []engine.Pa
 		}
 	}
 
-	for key := range paths {
-		sortPaths(paths[key])
-		paths[key] = dedupePaths(paths[key])
-	}
+	paths := make(map[string][][]string)
 
 	for _, item := range batch {
 		ecosystem := item.Package.Ecosystem
@@ -130,7 +132,21 @@ func mergeBatchResults(result *Result, parsed []parsedProject, batch []engine.Pa
 			if finding.Version != nil {
 				key += "@" + *finding.Version
 			}
-			addDependencyPathEvidence(&finding, paths[key], nodes, projectSources[finding.Package.Ecosystem], result)
+			findingPaths, computed := paths[key]
+			if !computed {
+				targets := findingNodeIDs(nodes, finding.Package, finding.Version)
+				findingPaths = dependencyPaths(nodes, rootNodeID, targets, maxDependencyPathEvidence)
+				if len(findingPaths) == 0 {
+					findingPaths = nodePathFallback(nodes, targets, maxDependencyPathEvidence)
+				}
+				paths[key] = findingPaths
+			}
+			addDependencyPathEvidence(&finding, findingPaths, nodes, projectSources[finding.Package.Ecosystem], result)
+			if format, exists := formats[finding.Package.Ecosystem]; exists {
+				if context, available := findingDependencyContext(nodes, finding, format); available {
+					result.FindingContexts[finding.ID] = context
+				}
+			}
 			for _, evidence := range finding.Evidence {
 				if !sourceExists(result, evidence.SourceID) {
 					addResultLimitation(result, "INVALID_SOURCE_REFERENCE", fmt.Sprintf("Finding %q has evidence with an unknown source reference %q.", finding.ID, evidence.SourceID))
@@ -297,26 +313,6 @@ func pathLabels(path []string, nodes map[string]Node) []string {
 		labels = append(labels, node.Package.String()+"@"+*node.Version)
 	}
 	return labels
-}
-
-func sortPaths(paths [][]string) {
-	sort.SliceStable(paths, func(i, j int) bool {
-		return strings.Join(paths[i], "\x00") < strings.Join(paths[j], "\x00")
-	})
-}
-
-func dedupePaths(paths [][]string) [][]string {
-	result := make([][]string, 0, len(paths))
-	seen := make(map[string]struct{}, len(paths))
-	for _, path := range paths {
-		key := strings.Join(path, "\x00")
-		if _, exists := seen[key]; exists {
-			continue
-		}
-		seen[key] = struct{}{}
-		result = append(result, path)
-	}
-	return result
 }
 
 func dedupeStrings(values []string) []string {

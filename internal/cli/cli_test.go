@@ -93,6 +93,20 @@ func TestScanUsageErrors(t *testing.T) {
 	}
 }
 
+func TestMCPCLICommandValidation(t *testing.T) {
+	// 1. 无效选项
+	code, _, errOut := runCLI(t, &fakeService{}, nil, false, "mcp", "--bogus")
+	if code != 2 || !strings.Contains(errOut, "unknown flag") {
+		t.Fatalf("code = %d stderr = %q", code, errOut)
+	}
+
+	// 2. 缺少 --allowed-path 参数值
+	code, _, errOut = runCLI(t, &fakeService{}, nil, false, "mcp", "--allowed-path")
+	if code != 2 || !strings.Contains(errOut, "requires a directory path") {
+		t.Fatalf("code = %d stderr = %q", code, errOut)
+	}
+}
+
 func TestScanPlainOutputDisablesColor(t *testing.T) {
 	service := &fakeService{report: liveReport(t, domain.StatusFindings)}
 	code, out, errOut := runCLI(t, service, nil, false, "--no-color", "scan", "npm:fixture-package")

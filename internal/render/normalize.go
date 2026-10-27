@@ -1,6 +1,9 @@
 package render
 
-import "github.com/janghotan/depscope/internal/model"
+import (
+	"github.com/janghotan/depscope/internal/model"
+	"github.com/janghotan/depscope/internal/project"
+)
 
 // sanitizeDocument 复制并清理展示文档中的不可信文本，避免污染原始报告。
 func sanitizeDocument(document Document) Document {
@@ -32,6 +35,15 @@ func sanitizeDocument(document Document) Document {
 		findings[index] = finding
 	}
 	document.Findings = findings
+
+	// 发现 ID 会被清理后再用于查找上下文，因此映射键必须同步清理。
+	if len(document.FindingContexts) > 0 {
+		contexts := make(map[string]project.DependencyContext, len(document.FindingContexts))
+		for id, context := range document.FindingContexts {
+			contexts[Sanitize(id)] = context
+		}
+		document.FindingContexts = contexts
+	}
 
 	checks := make([]model.CheckResult, len(document.Checks))
 	for index, check := range document.Checks {

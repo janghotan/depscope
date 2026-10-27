@@ -36,6 +36,9 @@ type npmLockPackage struct {
 	Name                 string            `json:"name"`
 	Version              string            `json:"version"`
 	Link                 bool              `json:"link"`
+	Dev                  bool              `json:"dev"`
+	Optional             bool              `json:"optional"`
+	DevOptional          bool              `json:"devOptional"`
 	Dependencies         map[string]string `json:"dependencies"`
 	DevDependencies      map[string]string `json:"devDependencies"`
 	OptionalDependencies map[string]string `json:"optionalDependencies"`
@@ -45,6 +48,8 @@ type npmDeclaredDependency struct {
 	name       string
 	constraint string
 	section    string
+	scopes     []DependencyScope
+	fields     []string
 }
 
 type npmDependencyRequirement struct {
@@ -252,13 +257,14 @@ func parseNPMProject(ctx context.Context, root string, candidate Candidate, budg
 	})
 
 	builder := npmGraphBuilder{
-		packages: lock.Packages,
-		limits:   budget.limits,
-		nodes:    []Node{},
-		nodeIDs:  make(map[string]struct{}),
-		visited:  make(map[string]struct{}),
-		queue:    []npmQueueItem{},
-		addLimit: addLimit,
+		packages:     lock.Packages,
+		lockfilePath: candidate.LockfilePath,
+		limits:       budget.limits,
+		nodes:        []Node{},
+		nodeIDs:      make(map[string]struct{}),
+		visited:      make(map[string]struct{}),
+		queue:        []npmQueueItem{},
+		addLimit:     addLimit,
 	}
 	builder.build(declared)
 	result.nodes = builder.nodes
@@ -314,12 +320,13 @@ func npmDeclaredDependencies(manifest npmManifest, add func(code, message string
 	declared := make(map[string]npmDeclaredDependency)
 	incomplete := false
 	sections := []struct {
-		name string
-		deps map[string]string
+		name  string
+		deps  map[string]string
+		scope DependencyScope
 	}{
-		{"dependencies", manifest.Dependencies},
-		{"optionalDependencies", manifest.OptionalDependencies},
-		{"devDependencies", manifest.DevDependencies},
+		{"dependencies", manifest.Dependencies, DependencyScopeProduction},
+		{"optionalDependencies", manifest.OptionalDependencies, DependencyScopeOptional},
+		{"devDependencies", manifest.DevDependencies, DependencyScopeDevelopment},
 	}
 	for _, section := range sections {
 		for _, name := range sortedKeys(section.deps) {
@@ -329,9 +336,18 @@ func npmDeclaredDependencies(manifest npmManifest, add func(code, message string
 					add("CONFLICTING_DEPENDENCY_METADATA", fmt.Sprintf("package.json declares %q as %q in %s and %q in %s.", name, existing.constraint, existing.section, constraint, section.name))
 					incomplete = true
 				}
+				existing.scopes = appendUniqueScope(existing.scopes, section.scope)
+				existing.fields = appendUniqueString(existing.fields, section.name)
+				declared[name] = existing
 				continue
 			}
-			declared[name] = npmDeclaredDependency{name: name, constraint: constraint, section: section.name}
+			declared[name] = npmDeclaredDependency{
+				name:       name,
+				constraint: constraint,
+				section:    section.name,
+				scopes:     []DependencyScope{section.scope},
+				fields:     []string{section.name},
+			}
 		}
 	}
 	if len(manifest.PeerDependencies) > 0 {
@@ -355,23 +371,99 @@ func hasWorkspaces(raw json.RawMessage) bool {
 	}
 }
 
+// appendUniqueScope 追加尚未存在的依赖分类。
+func appendUniqueScope(values []DependencyScope, scope DependencyScope) []DependencyScope {
+	for _, value := range values {
+		if value == scope {
+			return values
+		}
+	}
+	return append(values, scope)
+}
+
+// appendUniqueString 追加尚未存在的字符串，用于记录清单字段名。
+func appendUniqueString(values []string, value string) []string {
+	for _, existing := range values {
+		if existing == value {
+			return values
+		}
+	}
+	return append(values, value)
+}
+
+// npmEntryScopes 只依据锁文件条目的 dev/optional 标记推导依赖分类。
+// 未出现任何标记的已安装条目按 npm 语义视为非 dev、非 optional。
+func npmEntryScopes(entry npmLockPackage) ([]DependencyScope, []string) {
+	if entry.DevOptional {
+		return []DependencyScope{DependencyScopeDevelopment, DependencyScopeOptional}, []string{"devOptional"}
+	}
+	scopes := []DependencyScope{}
+	fields := []string{}
+	if entry.Dev {
+		scopes = append(scopes, DependencyScopeDevelopment)
+		fields = append(fields, "dev")
+	}
+	if entry.Optional {
+		scopes = append(scopes, DependencyScopeOptional)
+		fields = append(fields, "optional")
+	}
+	if len(scopes) == 0 {
+		scopes = append(scopes, DependencyScopeProduction)
+	}
+	return scopes, fields
+}
+
+// npmManifestEvidence 构造清单分节证据。
+func npmManifestEvidence(fields []string) []DependencyEvidence {
+	evidence := make([]DependencyEvidence, 0, len(fields))
+	for _, field := range fields {
+		evidence = append(evidence, DependencyEvidence{Path: manifestPackageJSON, Field: field})
+	}
+	return evidence
+}
+
+// npmLockEvidence 构造锁文件证据；空字段表示该条目没有 dev/optional 标记。
+func npmLockEvidence(path string, fields []string) []DependencyEvidence {
+	if strings.TrimSpace(path) == "" {
+		return nil
+	}
+	if len(fields) == 0 {
+		return []DependencyEvidence{{Path: path}}
+	}
+	evidence := make([]DependencyEvidence, 0, len(fields))
+	for _, field := range fields {
+		evidence = append(evidence, DependencyEvidence{Path: path, Field: field})
+	}
+	return evidence
+}
+
 func npmMetadataConflicts(manifest npmManifest, rootEntry npmLockPackage) []string {
 	manifestDeps, _ := npmDeclaredDependencies(manifest, func(string, string) {})
 	lockDeps := make(map[string]npmDeclaredDependency)
 	sections := []struct {
-		name string
-		deps map[string]string
+		name  string
+		deps  map[string]string
+		scope DependencyScope
 	}{
-		{"dependencies", rootEntry.Dependencies},
-		{"optionalDependencies", rootEntry.OptionalDependencies},
-		{"devDependencies", rootEntry.DevDependencies},
+		{"dependencies", rootEntry.Dependencies, DependencyScopeProduction},
+		{"optionalDependencies", rootEntry.OptionalDependencies, DependencyScopeOptional},
+		{"devDependencies", rootEntry.DevDependencies, DependencyScopeDevelopment},
 	}
 	for _, section := range sections {
 		for _, name := range sortedKeys(section.deps) {
-			if _, exists := lockDeps[name]; exists {
+			if existing, exists := lockDeps[name]; exists {
+				existing.scopes = appendUniqueScope(existing.scopes, section.scope)
+				existing.fields = appendUniqueString(existing.fields, section.name)
+				lockDeps[name] = existing
 				continue
 			}
-			lockDeps[name] = npmDeclaredDependency{name: name, constraint: strings.TrimSpace(section.deps[name]), section: section.name}
+			lockDeps[name] = npmDeclaredDependency{
+				name:       name,
+				constraint: strings.TrimSpace(section.deps[name]),
+				section:    section.name,
+				scopes:     []DependencyScope{section.scope},
+				fields:     []string{section.name},
+			}
 		}
 	}
 
@@ -404,6 +496,7 @@ type npmQueueItem struct {
 
 type npmGraphBuilder struct {
 	packages          map[string]npmLockPackage
+	lockfilePath      string
 	limits            Limits
 	nodes             []Node
 	nodeIDs           map[string]struct{}
@@ -434,30 +527,32 @@ func (b *npmGraphBuilder) build(declared map[string]npmDeclaredDependency) {
 		entryKey := "node_modules/" + pkg.Name
 		entry, exists := b.packages[entryKey]
 		if !exists {
-			b.addUnresolvedDirect(pkg, entryKey, dep.constraint)
+			b.addUnresolvedDirect(pkg, entryKey, dep)
 			b.missingDirect = append(b.missingDirect, dep.name)
 			b.incomplete = true
 			continue
 		}
 		if entry.Link {
-			b.addUnresolvedDirect(pkg, entryKey, dep.constraint)
+			b.addUnresolvedDirect(pkg, entryKey, dep)
 			b.linked = append(b.linked, dep.name)
 			b.incomplete = true
 			continue
 		}
 		if entry.Name != "" && entry.Name != pkg.Name {
-			b.addUnresolvedDirect(pkg, entryKey, dep.constraint)
+			b.addUnresolvedDirect(pkg, entryKey, dep)
 			b.invalid = append(b.invalid, dep.name)
 			b.incomplete = true
 			continue
 		}
 		if strings.TrimSpace(entry.Version) == "" {
-			b.addUnresolvedDirect(pkg, entryKey, dep.constraint)
+			b.addUnresolvedDirect(pkg, entryKey, dep)
 			b.empty = append(b.empty, dep.name)
 			b.incomplete = true
 			continue
 		}
 		nodeID := "npm:" + entryKey
+		lockScopes, lockFields := npmEntryScopes(entry)
+		evidence := append(npmManifestEvidence(dep.fields), npmLockEvidence(b.lockfilePath, lockFields)...)
 		node := Node{
 			DependencyNode: model.DependencyNode{
 				ID:             nodeID,
@@ -467,7 +562,9 @@ func (b *npmGraphBuilder) build(declared map[string]npmDeclaredDependency) {
 				DependencyPath: []string{rootNodeID, nodeID},
 				Dependencies:   []string{},
 			},
-			Constraint: dep.constraint,
+			Constraint:    dep.constraint,
+			Scopes:        mergeScopes(dep.scopes, lockScopes),
+			ScopeEvidence: normalizeEvidence(evidence),
 		}
 		if !b.appendNode(node) {
 			return
@@ -527,6 +624,7 @@ func (b *npmGraphBuilder) build(declared map[string]npmDeclaredDependency) {
 				b.addEdge(item.parentID, nodeID)
 				continue
 			}
+			lockScopes, lockFields := npmEntryScopes(entry)
 			node := Node{
 				DependencyNode: model.DependencyNode{
 					ID:             nodeID,
@@ -536,7 +634,9 @@ func (b *npmGraphBuilder) build(declared map[string]npmDeclaredDependency) {
 					DependencyPath: append(append([]string(nil), item.path...), nodeID),
 					Dependencies:   []string{},
 				},
-				Constraint: requirement.constraint,
+				Constraint:    requirement.constraint,
+				Scopes:        lockScopes,
+				ScopeEvidence: npmLockEvidence(b.lockfilePath, lockFields),
 			}
 			if !b.appendNode(node) {
 				break
@@ -584,7 +684,7 @@ func (b *npmGraphBuilder) appendNode(node Node) bool {
 	return true
 }
 
-func (b *npmGraphBuilder) addUnresolvedDirect(pkg model.PackageIdentity, entryKey string, constraint string) {
+func (b *npmGraphBuilder) addUnresolvedDirect(pkg model.PackageIdentity, entryKey string, dep npmDeclaredDependency) {
 	nodeID := "npm:unresolved:" + entryKey
 	if _, exists := b.nodeIDs[nodeID]; exists {
 		return
@@ -598,7 +698,9 @@ func (b *npmGraphBuilder) addUnresolvedDirect(pkg model.PackageIdentity, entryKe
 			DependencyPath: []string{rootNodeID, nodeID},
 			Dependencies:   []string{},
 		},
-		Constraint: constraint,
+		Constraint:    dep.constraint,
+		Scopes:        dep.scopes,
+		ScopeEvidence: npmManifestEvidence(dep.fields),
 	}) {
 		return
 	}
@@ -619,7 +721,9 @@ func (b *npmGraphBuilder) appendUnresolvedTransitive(item npmQueueItem, nodeID s
 			DependencyPath: append(append([]string(nil), item.path...), nodeID),
 			Dependencies:   []string{},
 		},
-		Constraint: constraint,
+		Constraint:    constraint,
+		Scopes:        []DependencyScope{DependencyScopeUnknown},
+		ScopeEvidence: npmLockEvidence(b.lockfilePath, nil),
 	}
 	if !b.appendNode(node) {
 		return false
@@ -703,7 +807,9 @@ func npmUnresolvedDirectNodes(result *parsedProject, declared map[string]npmDecl
 				DependencyPath: []string{rootNodeID, nodeID},
 				Dependencies:   []string{},
 			},
-			Constraint: declared[name].constraint,
+			Constraint:    declared[name].constraint,
+			Scopes:        declared[name].scopes,
+			ScopeEvidence: npmManifestEvidence(declared[name].fields),
 		})
 	}
 }

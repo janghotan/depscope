@@ -266,10 +266,54 @@ type Options struct {
 	Progress func(Progress)
 }
 
-// Node 在共享依赖节点模型上附加清单声明的版本约束。
+// DependencyScope 表示依赖进入项目的方式。取值只来自清单分节或锁文件记录的
+// dev/optional 标记，不根据包名、安装路径或命名习惯推测。
+type DependencyScope string
+
+const (
+	// DependencyScopeProduction 表示生产依赖或未被标记为 dev/optional 的已安装依赖。
+	DependencyScopeProduction DependencyScope = "production"
+	// DependencyScopeDevelopment 表示开发依赖或锁文件标记为 dev 的依赖。
+	DependencyScopeDevelopment DependencyScope = "development"
+	// DependencyScopeOptional 表示可选依赖或锁文件标记为 optional 的依赖。
+	DependencyScopeOptional DependencyScope = "optional"
+	// DependencyScopeUnknown 表示来源格式没有提供可用的分类依据。
+	DependencyScopeUnknown DependencyScope = "unknown"
+)
+
+// DependencyResolution 表示依赖树解析的完整程度。
+type DependencyResolution string
+
+const (
+	// DependencyResolutionComplete 表示依赖树中所有已知节点都已解析。
+	DependencyResolutionComplete DependencyResolution = "complete"
+	// DependencyResolutionPartial 表示部分依赖未解析或来源格式只覆盖直接依赖。
+	DependencyResolutionPartial DependencyResolution = "partial"
+	// DependencyResolutionUnknown 表示没有可用的解析检查结果。
+	DependencyResolutionUnknown DependencyResolution = "unknown"
+)
+
+// DependencyEvidence 记录支持依赖分类的清单或锁文件字段。
+type DependencyEvidence struct {
+	Path  string
+	Field string
+}
+
+// DependencyContext 汇总一条发现对应的依赖上下文；
+// 它只描述依赖如何进入项目，不表示漏洞可利用性或代码可达性。
+type DependencyContext struct {
+	Relationship model.DependencyRelationship
+	Scopes       []DependencyScope
+	Resolution   DependencyResolution
+	Evidence     []DependencyEvidence
+}
+
+// Node 在共享依赖节点模型上附加清单声明的版本约束与依赖分类。
 type Node struct {
 	model.DependencyNode
-	Constraint string
+	Constraint    string
+	Scopes        []DependencyScope
+	ScopeEvidence []DependencyEvidence
 }
 
 // Graph 表示以项目为根节点的依赖图；根节点不对应虚构的包标识。
@@ -286,6 +330,7 @@ type FormatInfo struct {
 	LockfilePath       string
 	ResolvedPackages   int
 	UnresolvedPackages int
+	Resolution         DependencyResolution
 }
 
 // Result 复用共享的发现、检查、来源与限制模型，并附加项目依赖图。
@@ -300,6 +345,8 @@ type Result struct {
 	Sources      []model.SourceReference
 	Limitations  []model.Limitation
 	Summary      model.Summary
+	// FindingContexts 以发现 ID 为键保存依赖上下文；项目结果不进入 v1 线协议。
+	FindingContexts map[string]DependencyContext
 }
 
 // Scan 在项目根目录内检测受支持格式，解析已安装版本并调用共享引擎查询漏洞。
@@ -326,10 +373,11 @@ func Scan(ctx context.Context, root string, opts Options) (Result, error) {
 			RootID: rootNodeID,
 			Nodes:  []Node{},
 		},
-		Findings:    []model.Finding{},
-		Checks:      []model.CheckResult{},
-		Sources:     []model.SourceReference{},
-		Limitations: []model.Limitation{},
+		Findings:        []model.Finding{},
+		Checks:          []model.CheckResult{},
+		Sources:         []model.SourceReference{},
+		Limitations:     []model.Limitation{},
+		FindingContexts: map[string]DependencyContext{},
 	}
 	if err := ctx.Err(); err != nil {
 		result.Status = model.StatusCancelled
@@ -402,6 +450,7 @@ func Scan(ctx context.Context, root string, opts Options) (Result, error) {
 			LockfilePath:       candidate.LockfilePath,
 			ResolvedPackages:   resolvedCount,
 			UnresolvedPackages: unresolvedCount,
+			Resolution:         resolutionFromChecks(project.checks, candidate.Ecosystem),
 		})
 		if project.source.ID != "" {
 			addResultSource(&result, project.source)

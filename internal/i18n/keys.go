@@ -235,6 +235,27 @@ const (
 	KeyReportTreeUnresolved
 	KeyReportTreeRoot
 	KeyReportTreeDeclared
+	KeyReportTreeScope
+	KeyReportFormatResolutionLine
+	KeyReportHeadingDependencyContext
+	KeyReportLabelRelationship
+	KeyReportLabelScope
+	KeyReportLabelResolution
+	KeyReportLabelContextEvidence
+	KeyReportRelationshipRoot
+	KeyReportRelationshipDirect
+	KeyReportRelationshipTransitive
+	KeyReportScopeProduction
+	KeyReportScopeDevelopment
+	KeyReportScopeOptional
+	KeyReportScopeUnknown
+	KeyReportResolutionComplete
+	KeyReportResolutionPartial
+	KeyReportResolutionUnknown
+	KeyReportScopeUnknownNote
+	KeyReportResolutionPartialNote
+	KeyReportResolutionUnknownNote
+	KeyReportContextDisclaimer
 
 	// 报告呈现
 	KeyReportHeadingAssessment

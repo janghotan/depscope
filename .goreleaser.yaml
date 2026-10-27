@@ -36,6 +36,23 @@ builds:
     ldflags:
       - -s -w -buildid=
     mod_timestamp: "{{ .CommitTimestamp }}"
+  - id: mcp
+    main: ./cmd/depscope-mcp
+    binary: depscope-mcp
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -buildid= -X main.version={{ .Version }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
   - id: cli
@@ -92,6 +109,40 @@ archives:
           mtime: 2008-01-02T15:04:05Z
           mode: 0644
       # Apache-2.0 第 4(d) 条要求在分发物中保留 NOTICE，因此随归档一起打包。
+      - src: NOTICE
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+      - src: docs/*.md
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+      - src: schemas/*.json
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+  - id: mcp
+    ids:
+      - mcp
+    name_template: "{{ .ProjectName }}_mcp_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+    wrap_in_directory: true
+    builds_info:
+      mtime: 2008-01-02T15:04:05Z
+    files:
+      - src: README.md
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
+      - src: LICENSE*
+        info:
+          mtime: 2008-01-02T15:04:05Z
+          mode: 0644
       - src: NOTICE
         info:
           mtime: 2008-01-02T15:04:05Z
