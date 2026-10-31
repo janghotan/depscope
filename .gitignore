@@ -10,6 +10,7 @@ node_modules/
 .next/
 out/
 *.tsbuildinfo
+*.vsix
 web/test-results/
 web/playwright-report/
 .impeccable/review/

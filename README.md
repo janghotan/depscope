@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  <a href="https://marketplace.visualstudio.com/items?itemName=JanghoTan.depscope-vscode"><img src="https://img.shields.io/visual-studio-marketplace/v/JanghoTan.depscope-vscode" alt="Visual Studio Marketplace Version" /></a>
+</p>
+
+<p align="center">
   <a href="README.zh-CN.md">简体中文</a> · <strong>English</strong> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#offline-demo">Offline demo</a> ·
@@ -444,7 +448,17 @@ The offline web demo works without the API. Details: [website README](web/README
 
 ## VS Code extension
 
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/JanghoTan.depscope-vscode)](https://marketplace.visualstudio.com/items?itemName=JanghoTan.depscope-vscode)
+
 The `vscode-extension/` package brings DepScope's dependency intelligence directly into VS Code without requiring manual CLI invocations.
+
+### Installation
+
+Install the extension directly from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=JanghoTan.depscope-vscode) or via command line:
+
+```sh
+code --install-extension JanghoTan.depscope-vscode
+```
 
 ### Capabilities
 

@@ -3,8 +3,13 @@
   "displayName": "DepScope",
   "description": "Dependency security inspection and vulnerability intelligence for VS Code",
   "version": "0.1.0",
-  "publisher": "depscope",
+  "publisher": "JanghoTan",
   "license": "Apache-2.0",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/janghotan/depscope"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -90,6 +95,7 @@
     "@types/node": "^20.14.0",
     "@types/vscode": "^1.90.0",
     "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.1.0",
     "glob": "^14.0.3",
     "mocha": "^12.0.3",
     "typescript": "^5.4.0"

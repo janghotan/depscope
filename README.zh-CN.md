@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  <a href="https://marketplace.visualstudio.com/items?itemName=JanghoTan.depscope-vscode"><img src="https://img.shields.io/visual-studio-marketplace/v/JanghoTan.depscope-vscode" alt="Visual Studio Marketplace Version" /></a>
+</p>
+
+<p align="center">
   <strong>简体中文</strong> · <a href="README.md">English</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#离线演示">离线演示</a> ·
@@ -439,7 +443,17 @@ pnpm dev
 
 ## VS Code 插件
 
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/JanghoTan.depscope-vscode)](https://marketplace.visualstudio.com/items?itemName=JanghoTan.depscope-vscode)
+
 `vscode-extension/` 目录下的扩展包将 DepScope 的依赖安全分析直接带入编辑器，无需手动在终端执行命令。
+
+### 安装方式
+
+直接从 [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=JanghoTan.depscope-vscode) 安装，或使用命令行安装：
+
+```sh
+code --install-extension JanghoTan.depscope-vscode
+```
 
 ### 功能特性
 

@@ -2,6 +2,18 @@
 
 The `depscope-vscode` extension integrates the DepScope dependency security scanner directly into VS Code. It provides in-editor dependency inspection, vulnerability detection, and supply-chain risk analysis for npm and PyPI projects.
 
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/JanghoTan.depscope-vscode)](https://marketplace.visualstudio.com/items?itemName=JanghoTan.depscope-vscode)
+
+## Installation
+
+Install the extension directly from the Visual Studio Marketplace:
+
+- **VS Code Marketplace**: [Install DepScope from Marketplace](https://marketplace.visualstudio.com/items?itemName=JanghoTan.depscope-vscode)
+- **Command Line**:
+  ```sh
+  code --install-extension JanghoTan.depscope-vscode
+  ```
+
 ## Capabilities
 
 - **Scan Wizard** — A self-contained graphical wizard to detect workspace dependency manifests (`package.json`, `requirements.txt`), select targets, and observe real-time scanning progress without using the Command Palette.
@@ -14,7 +26,9 @@ The `depscope-vscode` extension integrates the DepScope dependency security scan
 - **In-Editor Diagnostics** — Direct integration with VS Code's Problems panel, highlighting vulnerable dependency declaration lines in `package.json` and `requirements.txt`.
 - **Status Bar Integration** — Displays real-time scan status, vulnerability counts, and incomplete coverage alerts with click-to-open wizard access.
 
-## Prerequisites
+## Development
+
+### Prerequisites
 
 The extension acts as a client to the local `depscope-api` service. It does not bundle the Go binary.
 
@@ -25,7 +39,7 @@ Before running the extension, compile `depscope-api` and ensure it is available 
 go build -trimpath -o bin/depscope-api ./cmd/depscope-api
 ```
 
-## Build and Run Locally
+### Build and Run Locally
 
 1. Install Node.js (v20+ recommended) and install extension dependencies:
 
@@ -44,7 +58,7 @@ npm run compile
    - Open the `vscode-extension` folder or repository root in VS Code.
    - Press `F5` (or select **Run > Start Debugging**) to start a new Extension Development Host window.
 
-## Running Tests
+### Running Tests
 
 To run the automated integration test suite in a headless VS Code instance:
 
