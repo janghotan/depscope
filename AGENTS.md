@@ -8,12 +8,10 @@ These instructions apply to every coding agent working in this repository. Read 
 
 1. `README.md` — project scope and current status.
 2. `docs/architecture.md` — approved architecture, boundaries, and open decisions.
-3. `docs/implementation-plan.md` — phase order, dependencies, and exit criteria.
-4. `docs/repository-audit.md` — verified repository and toolchain state.
-5. `docs/contracts.md` — implemented domain model, report contract, status semantics, and engine interfaces.
-6. `docs/risk-rules.md` — documented risk, confidence, typosquat, and failure rules.
-7. `schemas/README.md` — canonical schema rules and validation command.
-8. `testdata/fixtures/README.md` — demo fixture labeling and isolation rules.
+3. `docs/contracts.md` — implemented domain model, report contract, status semantics, and engine interfaces.
+4. `docs/risk-rules.md` — documented risk, confidence, typosquat, and failure rules.
+5. `schemas/README.md` — canonical schema rules and validation command.
+6. `testdata/fixtures/README.md` — demo fixture labeling and isolation rules.
 
 If a phase instruction conflicts with these documents, stop and ask the project owner which source is authoritative. Do not silently reinterpret the architecture.
 
@@ -136,8 +134,6 @@ As of Phase 8 verification (2026-10-26):
 
 - Keep `README.md` aligned with the actual repository state.
 - Update `docs/architecture.md` when component boundaries or contracts change.
-- Update `docs/implementation-plan.md` when phase scope or dependencies change.
-- Update `docs/repository-audit.md` when the verified toolchain or repository state changes materially.
 - Do not create planning, decision, or analysis documents unless requested.
 
 ## Phase boundaries
