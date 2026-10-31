@@ -26,7 +26,7 @@ DepScope 专注于回答一个范围明确的问题：*这个确切的包版本�
 
 DepScope 只读取包的元数据与安全公告，从不安装、导入或执行所扫描的包，也从不运行生命周期脚本。
 
-> **项目状态：** 共享 Go 引擎、Bubble Tea 终端应用、非交互式 CLI、本地 HTTP API 与 Next.js 网站均已实现并在本地测试通过。[最新版本](https://github.com/janghotan/depscope/releases/latest)提供 Linux、macOS 与 Windows 的 CLI 与 API 二进制，但目前不提供任何托管服务。详见[项目状态](#项目状态)。
+> **项目状态：** 共享 Go 引擎、Bubble Tea 终端应用、非交互式 CLI、本地 HTTP API、Next.js 网站与 VS Code 插件均已实现并在本地测试通过。[最新版本](https://github.com/janghotan/depscope/releases/latest)提供 Linux、macOS 与 Windows 的 CLI 与 API 二进制，但目前不提供任何托管服务。详见[项目状态](#项目状态)。
 
 ![DepScope 离线演示的终端报告：一个包含已确认发现的合成 npm 包](docs/assets/terminal-demo.png)
 
@@ -54,7 +54,9 @@ DepScope 把下面三类信息始终保持可见的区分：
 - **全局清单**——只读列出全局安装的顶层 npm 包，以及所选 Python 解释器的 pip 环境；概览分别给出已安装包数、受影响包数与漏洞匹配数。
 - **包比较**——并排扫描两个包，并保留各自独立的失败信息。
 - **本地 HTTP API**——`GET /healthz`、`POST /api/v1/scan` 与 `POST /api/v1/compare`，返回响应前会校验规范 `ScanReport` v1。
+- **Model Context Protocol (MCP) 服务端**——`depscope mcp` 及专用的 `depscope-mcp` 二进制，使用官方 Go SDK 通过 `stdio` 运行，提供 `scan_project`、`scan_package`、`get_finding_details` 与 `get_scan_summary`，具备严格的目录白名单与防御边界（详见 [docs/mcp.md](docs/mcp.md)）。
 - **网站**——基于 Next.js，支持单包扫描、双包比较，以及完全离线、不发起扫描请求的演示记录。
+- **VS Code 插件**——侧边栏可视化扫描向导、四级分类依赖树视图（已确认漏洞 / 启发式信号 / 不完整覆盖 / 安全无风险）、带可折叠参考链接的漏洞详情 Webview，以及高亮 `package.json` 与 `requirements.txt` 中受影响行的编辑器 Problems 诊断标记（见 [vscode-extension/](vscode-extension/)）。
 - **离线演示**——确定性、无网络访问的演示场景，全部经由共享引擎生成，并在每个界面上明确标注。
 - **共享报告契约**——以同一份 JSON Schema（`schemas/scan-report.v1.schema.json`）驱动 Go 校验与 TypeScript 类型生成，确保终端、API 与网站对状态的理解完全一致。
 
@@ -65,6 +67,7 @@ DepScope 把下面三类信息始终保持可见的区分：
 | 预编译 CLI | Linux、macOS 或 Windows，架构为 `amd64` 或 `arm64`；Unix 上需要 `curl`、`tar` 与 `sha256sum`/`shasum` |
 | Go CLI / API（源码构建） | Go 1.26.10 或更高版本（与 `go.mod` 一致） |
 | 网站 | Node.js 24.22.0（见 `.nvmrc`）与 pnpm 12.14.0 |
+| VS Code 插件 | VS Code 1.90.0+、Node.js 20+ 以及编译好的 `depscope-api` 可执行文件 |
 | 实时扫描 | 可访问 npm Registry、PyPI 与 OSV.dev 的 HTTPS 出站网络 |
 | 浏览器测试 | 由 Playwright 管理的 Chromium |
 
@@ -434,6 +437,40 @@ pnpm dev
 
 离线网页演示无需 API 即可使用。详情见[网站说明](web/README.md)。
 
+## VS Code 插件
+
+`vscode-extension/` 目录下的扩展包将 DepScope 的依赖安全分析直接带入编辑器，无需手动在终端执行命令。
+
+### 功能特性
+
+- **可视化扫描向导**——图形化引导确认工作区清单（`package.json`、`requirements.txt`）并实时查看进度，无需依赖命令行或命令面板。
+- **四级依赖树视图**——严格将依赖组织为四个分类：
+  1. **已确认漏洞**（经由 OSV 精确匹配的已知安全公告）
+  2. **启发式信号**（生命周期脚本声明、抢注仿冒预警）
+  3. **不完整覆盖**（存在失败或不可用检查的依赖项——绝不误报为干净无风险）
+  4. **安全无风险**（所有覆盖检查均成功且无任何安全发现）
+- **漏洞详情 Webview**——展示完整漏洞信息、严重级别、OSV 规范链接、可信度分级以及折叠式参考链接，彻底杜绝文本溢出。
+- **代码行问题诊断**——在 `package.json` 与 `requirements.txt` 声明行直接高亮风险依赖，同步沉淀至 VS Code Problems 面板。
+- **状态栏指示器**——常驻状态栏，可直观查看安全状态、漏洞数或不完整覆盖提示，点击即可重新呼出扫描向导。
+
+### 前置依赖
+
+插件运行依赖 `depscope-api` 可执行文件。请先构建并在系统 `PATH` 或工作区根目录 `./bin/` 下提供：
+
+```sh
+go build -trimpath -o bin/depscope-api ./cmd/depscope-api
+```
+
+### 开发与本地运行
+
+```sh
+cd vscode-extension
+npm install
+npm run compile
+```
+
+在 VS Code 中按下 `F5` 即可启动 Extension Development Host 进行调试。详见[插件说明](vscode-extension/README.md)。
+
 ## 本地开发
 
 在仓库根目录运行完整的 Go 检查：
@@ -471,6 +508,15 @@ pnpm test:e2e
 pnpm audit --prod --audit-level high
 ```
 
+运行 VS Code 插件检查：
+
+```sh
+cd vscode-extension
+npm install
+npm run compile
+npm test
+```
+
 默认测试套件不会访问公共包或漏洞服务。实时冒烟测试需要构建标签与环境变量显式开启：
 
 ```sh
@@ -486,12 +532,13 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 | TUI 图标 | 语义化符号与文字成对出现；提供 ASCII 与无图标模式。CLI 输出仍不含图标 |
 | 本地 HTTP API | 已实现；本地、无认证、进程内限流 |
 | 网站（单包扫描、比较、演示记录） | 已在本地实现；尚未部署 |
+| VS Code 插件 | 已实现（侧边栏向导、四级依赖树、Webview 详情与代码诊断）并在本地测试通过 |
 | CI 与 GoReleaser 配置 | CI 与发布工作流在 GitHub 上运行；带标签的版本会发布 CLI 与 API 归档，并提供 SHA-256 校验值（未签名） |
 | 托管 API 或托管网站 | 不提供 |
 | 许可证 | Apache License 2.0；版权 2026 Jangho Tan |
 | Python 递归解析、更多锁文件、CLI JSON 输出、项目与清单的 API 序列化 | 未实现 |
 
-阶段历史见[实施计划](docs/implementation-plan.md)，未决事项见[架构决策](docs/architecture.md)。
+设计历史与未决事项见[架构决策](docs/architecture.md)。
 
 ## 参与贡献
 

@@ -26,7 +26,7 @@ It scans npm and PyPI package releases through version-matched OSV.dev advisorie
 
 DepScope reads package metadata and advisory data. It never installs, imports, or executes the packages it scans, and it never runs lifecycle scripts.
 
-> **Project status:** the shared Go engine, Bubble Tea terminal app, non-interactive CLI, local HTTP API, and Next.js website are implemented and tested locally. The [latest release](https://github.com/janghotan/depscope/releases/latest) publishes CLI and API binaries for Linux, macOS, and Windows, but no hosted service is operated. See [Project status](#project-status).
+> **Project status:** the shared Go engine, Bubble Tea terminal app, non-interactive CLI, local HTTP API, Next.js website, and VS Code extension are implemented and tested locally. The [latest release](https://github.com/janghotan/depscope/releases/latest) publishes CLI and API binaries for Linux, macOS, and Windows, but no hosted service is operated. See [Project status](#project-status).
 
 ![DepScope terminal report from the offline demo: a synthetic npm package with confirmed findings](docs/assets/terminal-demo.png)
 
@@ -56,6 +56,7 @@ A scan that could not read OSV is not a scan that found nothing. DepScope report
 - **Local HTTP API** — `GET /healthz`, `POST /api/v1/scan`, and `POST /api/v1/compare`, returning canonical `ScanReport` v1 values validated before they leave the process.
 - **Model Context Protocol (MCP) server** — `depscope mcp` and dedicated `depscope-mcp` binary running over `stdio` using the official Go SDK, exposing `scan_project`, `scan_package`, `get_finding_details`, and `get_scan_summary` with strict directory allowlisting and defensive boundaries (see [docs/mcp.md](docs/mcp.md)).
 - **Website** — Next.js app for single scans, two-package comparison, and offline demo records that make no API requests.
+- **VS Code extension** — sidebar scan wizard, tree view categorized by Confirmed findings / Heuristic signals / Incomplete coverage / Clean, finding details webview with collapsible references, and in-editor Problems panel diagnostics flagging vulnerable manifest lines in `package.json` and `requirements.txt` (see [vscode-extension/](vscode-extension/)).
 - **Offline demo** — deterministic, network-free scenarios that run entirely through the shared engine, clearly labelled on every surface.
 - **Shared report contract** — one JSON Schema (`schemas/scan-report.v1.schema.json`) drives Go validation and generated TypeScript types, so the terminal, API, and website interpret status the same way.
 
@@ -66,6 +67,7 @@ A scan that could not read OSV is not a scan that found nothing. DepScope report
 | Prebuilt CLI | Linux, macOS, or Windows on `amd64` or `arm64`; `curl`, `tar`, and `sha256sum`/`shasum` on Unix |
 | Go CLI / API (source builds) | Go 1.26.10 or later (matching `go.mod`) |
 | Website | Node.js 24.22.0 (`.nvmrc`) and pnpm 12.14.0 |
+| VS Code extension | VS Code 1.90.0+, Node.js 20+, and the compiled `depscope-api` binary |
 | Live scans | Outbound HTTPS to the npm Registry, PyPI, and OSV.dev |
 | Browser tests | Playwright-managed Chromium |
 
@@ -440,6 +442,40 @@ Open <http://localhost:3000>. Server-side configuration:
 
 The offline web demo works without the API. Details: [website README](web/README.md).
 
+## VS Code extension
+
+The `vscode-extension/` package brings DepScope's dependency intelligence directly into VS Code without requiring manual CLI invocations.
+
+### Capabilities
+
+- **Scan Wizard** — an accessible GUI wizard for selecting workspace manifests (`package.json`, `requirements.txt`) and monitoring real-time scanning progress without using the Command Palette.
+- **Categorized Tree View** — workspace dependencies organized into four strict groups:
+  1. **Confirmed vulnerabilities** (exact OSV-matched CVE/GHSA advisories)
+  2. **Heuristic signals** (install scripts, typosquatting warnings)
+  3. **Incomplete coverage** (packages with failed/unverified checks — never misclassified as clean)
+  4. **Clean** (only packages where all checks succeeded and no findings exist)
+- **Finding Detail Webviews** — comprehensive vulnerability breakdowns including severity, advisory IDs, OSV links, trust level, and collapsible reference links without text overflow.
+- **In-Editor Diagnostics** — flags vulnerable dependencies directly in `package.json` and `requirements.txt` with Problems panel integration.
+- **Status Bar Indicator** — clickable status badge showing clean status, vulnerability counts, or incomplete coverage warnings.
+
+### Prerequisites
+
+The extension requires the `depscope-api` binary built and available on your `PATH` or inside the workspace `./bin/` directory:
+
+```sh
+go build -trimpath -o bin/depscope-api ./cmd/depscope-api
+```
+
+### Build and Run in Development
+
+```sh
+cd vscode-extension
+npm install
+npm run compile
+```
+
+Press `F5` in VS Code to launch the Extension Development Host. Details: [extension README](vscode-extension/README.md).
+
 ## Local development
 
 Run the complete Go checks from the repository root:
@@ -476,6 +512,15 @@ pnpm test:e2e
 pnpm audit --prod --audit-level high
 ```
 
+Run the VS Code extension checks:
+
+```sh
+cd vscode-extension
+npm install
+npm run compile
+npm test
+```
+
 The default test suite never contacts public package or vulnerability services. Live smoke tests are opt-in behind a build tag and environment variable:
 
 ```sh
@@ -491,12 +536,13 @@ DEPSCOPE_LIVE_TESTS=1 go test -tags live -run TestLiveSmokeNPM ./internal/live/
 | TUI icons | Semantic glyphs paired with text; ASCII and icon-free modes. CLI output remains icon-free |
 | Local HTTP API | Implemented; local, unauthenticated, process-local limits |
 | Website (single scan, comparison, demo records) | Implemented locally; not deployed |
+| VS Code extension | Implemented (sidebar wizard, 4-tier tree, webview details, diagnostics); tested locally |
 | CI and GoReleaser configuration | CI and the release workflow run on GitHub; tagged releases publish CLI and API archives with a SHA-256 `checksums.txt` (not signed) |
 | Hosted API or hosted website | Not provided |
 | License | Apache License 2.0; copyright 2026 Jangho Tan |
 | Recursive Python resolution, more lockfiles, CLI JSON output, project/inventory API serialization | Not implemented |
 
-See [implementation plan](docs/implementation-plan.md) for phase history and [architecture decisions](docs/architecture.md) for open items.
+See [architecture decisions](docs/architecture.md) for design history and open items.
 
 ## Contributing
 
