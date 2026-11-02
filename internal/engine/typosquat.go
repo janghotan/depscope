@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf16"
 
 	"github.com/janghotan/depscope/internal/model"
 )
@@ -31,11 +32,20 @@ type TyposquatResult struct {
 	DatasetUpdatedAt time.Time
 }
 
+// referenceEntry 是预处理的参考名称：UTF-16 码元序列与其长度，
+// 用于以 O(1) 获得距离上界并避免每次比较重复解码字符串。
+type referenceEntry struct {
+	name  string
+	units []uint16
+}
+
 // TyposquatChecker 使用版本化参考名称与编辑距离检测可疑相似名称。
 type TyposquatChecker struct {
-	version   string
-	updatedAt time.Time
-	names     map[model.Ecosystem][]string
+	version    string
+	updatedAt  time.Time
+	names      map[model.Ecosystem][]string
+	entries    map[model.Ecosystem][]referenceEntry
+	entryIndex map[model.Ecosystem]map[string]int
 }
 
 type referenceDocument struct {
@@ -96,10 +106,25 @@ func NewTyposquatChecker(data []byte) (*TyposquatChecker, error) {
 		names[parsedEcosystem] = canonical
 	}
 
+	entries := make(map[model.Ecosystem][]referenceEntry, len(names))
+	entryIndex := make(map[model.Ecosystem]map[string]int, len(names))
+	for ecosystem, canonical := range names {
+		list := make([]referenceEntry, 0, len(canonical))
+		index := make(map[string]int, len(canonical))
+		for _, name := range canonical {
+			index[name] = len(list)
+			list = append(list, referenceEntry{name: name, units: utf16Units(name)})
+		}
+		entries[ecosystem] = list
+		entryIndex[ecosystem] = index
+	}
+
 	return &TyposquatChecker{
-		version:   strings.TrimSpace(document.DatasetVersion),
-		updatedAt: updatedAt.UTC(),
-		names:     names,
+		version:    strings.TrimSpace(document.DatasetVersion),
+		updatedAt:  updatedAt.UTC(),
+		names:      names,
+		entries:    entries,
+		entryIndex: entryIndex,
 	}, nil
 }
 
@@ -125,8 +150,8 @@ func (c *TyposquatChecker) Check(ctx context.Context, pkg model.PackageIdentity)
 	if c == nil {
 		return TyposquatResult{}, ErrReferenceUnavailable
 	}
-	references := c.names[pkg.Ecosystem]
-	if len(references) == 0 {
+	entries := c.entries[pkg.Ecosystem]
+	if len(entries) == 0 {
 		return TyposquatResult{}, ErrReferenceUnavailable
 	}
 
@@ -140,20 +165,40 @@ func (c *TyposquatChecker) Check(ctx context.Context, pkg model.PackageIdentity)
 	if len(canonical.Name) < 4 {
 		return TyposquatResult{DatasetVersion: c.version, DatasetUpdatedAt: c.updatedAt}, nil
 	}
+	// O(1) 精确匹配，替代原先对每个参考名称的逐一比较。
+	if _, exists := c.entryIndex[pkg.Ecosystem][canonical.Name]; exists {
+		return TyposquatResult{DatasetVersion: c.version, DatasetUpdatedAt: c.updatedAt}, nil
+	}
+
+	queryUnits := utf16Units(canonical.Name)
+	unitsLen := len(queryUnits)
 
 	bestReference := ""
 	bestDistance := 0
-	for _, reference := range references {
-		if reference == canonical.Name {
-			return TyposquatResult{DatasetVersion: c.version, DatasetUpdatedAt: c.updatedAt}, nil
+	// 长度差是 Damerau-Levenshtein 距离的下界，且该下界对参考名的字节长度同样成立。
+	// 参考名已按字典序排序：一旦后续候选的最小可能距离超过当前最优，
+	// 它们既不可能严格更近、并列时字典序也更差，可提前终止扫描。
+	lowerBound := func(candidateLen int) int {
+		if candidateLen > unitsLen {
+			return candidateLen - unitsLen
 		}
-		if len(reference) < 4 {
+		return unitsLen - candidateLen
+	}
+	for _, entry := range entries {
+		if bestReference != "" {
+			if lowerBound(len(entry.name)) > bestDistance {
+				break
+			}
+			if lowerBound(len(entry.units)) > bestDistance {
+				break
+			}
+		}
+		if len(entry.name) < 4 {
 			continue
 		}
-		distance := damerauLevenshtein(canonical.Name, reference)
-		if bestReference == "" || distance < bestDistance ||
-			(distance == bestDistance && reference < bestReference) {
-			bestReference = reference
+		distance := damerauLevenshteinUnits(queryUnits, entry.units)
+		if bestReference == "" || distance < bestDistance {
+			bestReference = entry.name
 			bestDistance = distance
 		}
 	}
@@ -172,37 +217,58 @@ func (c *TyposquatChecker) Check(ctx context.Context, pkg model.PackageIdentity)
 }
 
 func damerauLevenshtein(left, right string) int {
-	a := []rune(left)
-	b := []rune(right)
-	rows := len(a) + 1
-	cols := len(b) + 1
-	matrix := make([][]int, rows)
-	for i := range matrix {
-		matrix[i] = make([]int, cols)
+	return damerauLevenshteinUnits(utf16Units(left), utf16Units(right))
+}
+
+// damerauLevenshteinUnits 在预解码的 UTF-16 码元序列上计算受限 Damerau-Levenshtein 距离。
+// 使用两行滚动 DP（O(min(n,m)) 额外空间，且每次调用只分配一次），
+// 语义与全矩阵实现完全一致。
+func damerauLevenshteinUnits(a, b []uint16) int {
+	if len(b) < len(a) {
+		a, b = b, a
 	}
-	for i := 0; i < rows; i++ {
-		matrix[i][0] = i
+	rows := len(a)
+	cols := len(b)
+	if rows == 0 {
+		return cols
 	}
-	for j := 0; j < cols; j++ {
-		matrix[0][j] = j
+
+	prev2 := make([]int, cols+1) // matrix[i-2][*]
+	prev := make([]int, cols+1)  // matrix[i-1][*]
+	cur := make([]int, cols+1)   // matrix[i][*]
+	for j := 0; j <= cols; j++ {
+		prev[j] = j
 	}
-	for i := 1; i < rows; i++ {
-		for j := 1; j < cols; j++ {
+
+	var previousRun uint16  // a[i-1]
+	var previousPrevRun uint16 // a[i-2]
+	for i := 1; i <= rows; i++ {
+		cur[0] = i
+		previousPrevRun = previousRun
+		previousRun = a[i-1]
+		for j := 1; j <= cols; j++ {
 			cost := 0
-			if a[i-1] != b[j-1] {
+			if previousRun != b[j-1] {
 				cost = 1
 			}
-			matrix[i][j] = min3(
-				matrix[i-1][j]+1,
-				matrix[i][j-1]+1,
-				matrix[i-1][j-1]+cost,
-			)
-			if i > 1 && j > 1 && a[i-1] == b[j-2] && a[i-2] == b[j-1] {
-				matrix[i][j] = minInt(matrix[i][j], matrix[i-2][j-2]+1)
+			value := min3(prev[j]+1, cur[j-1]+1, prev[j-1]+cost)
+			if i > 1 && j > 1 && previousRun == b[j-2] && previousPrevRun == b[j-1] {
+				value = minInt(value, prev2[j-2]+1)
 			}
+			cur[j] = value
 		}
+		prev2, prev, cur = prev, cur, prev2
 	}
-	return matrix[len(a)][len(b)]
+	return prev[cols]
+}
+
+// utf16Units 将字符串解码为 UTF-16 码元序列，保持与 Python difflib/编辑距离常用口径一致。
+func utf16Units(value string) []uint16 {
+	units := utf16.Encode([]rune(value))
+	if units == nil {
+		units = []uint16{}
+	}
+	return units
 }
 
 func min3(a, b, c int) int {
